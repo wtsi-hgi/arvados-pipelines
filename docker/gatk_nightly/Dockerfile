@@ -52,9 +52,8 @@ RUN \
 ENV JAVA_HOME /usr/lib/jvm/java-7-oracle
 
 # Install GATK from git repo
-ADD . /gatk
+ADD GenomeAnalysisTK.jar /gatk/GenomeAnalysisTK.jar
 WORKDIR /gatk
-RUN tar xf GenomeAnalysisTK-nightly-2015-10-21-g8f29485.tar.bz2
 
 # Switch to crunch user and change to crunch-job work dir
 USER crunch
