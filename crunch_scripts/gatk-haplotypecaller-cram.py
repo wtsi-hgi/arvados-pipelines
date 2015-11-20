@@ -23,7 +23,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     """
     if if_sequence != arvados.current_task()['sequence']:
         return
-    job_input = arvados.current_job()['script_parameters']['input_collection']
+    job_input = arvados.current_job()['script_parameters']['inputs_collection']
     cr = arvados.CollectionReader(job_input)
     cram = {}
     crai = {}
