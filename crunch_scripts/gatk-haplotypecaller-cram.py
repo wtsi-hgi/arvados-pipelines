@@ -121,9 +121,9 @@ if not os.access(ref_file, os.R_OK):
 # TODO: could check readability of .fai and .dict as well?
 
 # Get single CRAM file for this task 
-print "Getting input data from keep"
 task_input = this_task['parameters']['input']
 tmp_input = os.path.join(tmpdir, 'input')
+print "Getting input data from keep for task_input [%s]" % task_input
 try:
     input_dir = arvados.util.collection_extract(collection = task_input, 
                                                 path = tmp_input)
