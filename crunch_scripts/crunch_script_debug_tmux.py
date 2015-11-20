@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import os
-import pickle
-import time
 import sys
+import pty
 
 container = os.environ.get("HOSTNAME", "<container_id>")
 node = os.environ.get("TASK_SLOT_NODE", "<task_slot_node>")
