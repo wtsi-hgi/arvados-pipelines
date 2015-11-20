@@ -54,7 +54,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         exit(0)
 
 
-# Ensure we have a .fasta reference file with corresponding .fai index and .dict
+# Ensure we have a .fa reference file with corresponding .fai index and .dict
 # see: http://gatkforums.broadinstitute.org/discussion/1601/how-can-i-prepare-a-fasta-file-to-use-as-reference
 reference_coll = arvados.current_job()['script_parameters']['reference_collection']
 rcr = arvados.CollectionReader(reference_coll)
@@ -101,12 +101,16 @@ print "Using tmpdir %s" % tmpdir
 
 # Get reference FASTA
 print "Getting reference FASTA from keep"
+ref_file = None
 ref_dir = arvados.util.collection_extract(
     collection = ref_input,
     path = os.path.join(tmpdir, 'ref'))
 for f in arvados.util.listdir_recursive(ref_dir):
-    if re.search(r'\.fasta$', f):
+    if re.search(r'\.fa$', f):
         ref_file = os.path.join(ref_dir, f)
+if ref_file is None:
+    raise InvalidArgumentError("No reference fasta found in reference collection.")
+
 # Ensure we can read the reference file
 if not os.access(ref_file, os.R_OK):
     raise FileAccessError("reference FASTA file not readable: %s" % ref_file)
