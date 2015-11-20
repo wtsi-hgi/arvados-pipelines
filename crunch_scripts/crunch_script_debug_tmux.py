@@ -17,7 +17,7 @@ if child_pid == 0:
   # in child
   sys.stdout.flush()
   try:
-      os.execl("/usr/bin/tmux","/usr/bin/tmux")
+      os.execl("/usr/bin/tmux","/usr/bin/tmux","-2")
   except:
     print "ERROR cannot spawn tmux!"
     raise
