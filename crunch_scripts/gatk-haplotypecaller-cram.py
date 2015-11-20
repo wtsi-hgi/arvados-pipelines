@@ -64,15 +64,19 @@ ref_dict = {}
 ref_input = None
 for rs in rcr.all_streams():
     for rf in rs.all_files():
-        if re.search(r'\.fasta$', rf.name()):
+        if re.search(r'\.fa$', rf.name()):
             ref_fasta[rs.name(), rf.name()] = rf
         elif re.search(r'\.fai$', rf.name()):
             ref_fai[rs.name(), rf.name()] = rf
         elif re.search(r'\.dict$', rf.name()):
             ref_dict[rs.name(), rf.name()] = rf
 for ((s_name, f_name), fasta_f) in ref_fasta.items():
-    fai_f = ref_fai.get((s_name, re.sub(r'fasta$', 'fai', f_name)), None)
-    dict_f = ref_dict.get((s_name, re.sub(r'fasta$', 'dict', f_name)), None)
+    fai_f = ref_fai.get((s_name, re.sub(r'fa$', 'fai', f_name)), 
+                        ref_fai.get((s_name, re.sub(r'fa$', 'fa.fai', f_name)), 
+                                    None))
+    dict_f = ref_dict.get((s_name, re.sub(r'fa$', 'dict', f_name)), 
+                          ref_dict.get((s_name, re.sub(r'fa$', 'fa.dict', f_name)), 
+                                       None))
     if fasta_f and fai_f and dict_f:
         # found a set of all three! 
         ref_input = fasta_f.as_manifest()
