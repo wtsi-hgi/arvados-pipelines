@@ -6,7 +6,7 @@ import time
 
 # Dumping environment
 env = os.environ
-print "Environment:" + env
+print "Environment:" + str(env)
 try:
   pickle.dump(env, open("/tmp/crunch_script_debug.env", "w"))
 except:
