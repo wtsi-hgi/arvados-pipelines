@@ -9,7 +9,7 @@ env = os.environ
 print "Environment:" + str(env)
 env_f = open("/tmp/crunch_script_debug.env", "w")
 for var in os.environ.keys():
-    print >>enf_f, "export %s=\"%s\"" % (var, os.environ[var])
+    print >>env_f, "export %s=\"%s\"" % (var, os.environ[var])
 close(env_f)
 
 container = os.environ.get("HOSTNAME", "<container_id>")
