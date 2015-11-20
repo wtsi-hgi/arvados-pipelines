@@ -102,12 +102,16 @@ print "Using tmpdir %s" % tmpdir
 # Get reference FASTA
 print "Getting reference FASTA from keep"
 ref_file = None
-ref_dir = arvados.util.collection_extract(
-    collection = ref_input,
-    path = os.path.join(tmpdir, 'ref'))
-for f in arvados.util.listdir_recursive(ref_dir):
-    if re.search(r'\.fa$', f):
-        ref_file = os.path.join(ref_dir, f)
+tmp_ref = os.path.join(tmpdir, 'ref')
+try:
+    ref_dir = arvados.util.collection_extract(collection = ref_input,
+                                              path = tmp_ref)
+    for f in arvados.util.listdir_recursive(ref_dir):
+        if re.search(r'\.fa$', f):
+            ref_file = os.path.join(ref_dir, f)
+except:
+    print "ERROR getting reference data from keep collection = [%s] into path = [%s]" % (ref_input, tmp_ref)
+    raise
 if ref_file is None:
     raise InvalidArgumentError("No reference fasta found in reference collection.")
 
@@ -117,16 +121,20 @@ if not os.access(ref_file, os.R_OK):
 # TODO: could check readability of .fai and .dict as well?
 
 # Get single CRAM file for this task 
-print "Getting input CRAM from keep"
+print "Getting input data from keep"
 task_input = this_task['parameters']['input']
-input_dir = arvados.util.collection_extract(
-    collection = task_input,
-    path = os.path.join(tmpdir, 'input'))
-input_cram_files = []
-for f in arvados.util.listdir_recursive(input_dir):
-    if re.search(r'\.cram$', f):
-        stream_name, input_file_name = os.path.split(f)
-        input_cram_files += [os.path.join(input_dir, f)]
+tmp_input = os.path.join(tmpdir, 'input')
+try:
+    input_dir = arvados.util.collection_extract(collection = task_input, 
+                                                path = tmp_input)
+    input_cram_files = []
+    for f in arvados.util.listdir_recursive(input_dir):
+        if re.search(r'\.cram$', f):
+            stream_name, input_file_name = os.path.split(f)
+            input_cram_files += [os.path.join(input_dir, f)]
+except:
+    print "ERROR getting input data from keep collection = [%s] into path = [%s]" % (task_input, tmp_input)
+    raise
 if len(input_cram_files) != 1:
     raise InvalidArgumentError("Expected exactly one cram file per task.")
 
