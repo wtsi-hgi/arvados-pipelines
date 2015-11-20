@@ -3,9 +3,6 @@
 import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 
-import httplib2
-print "DEBUG: httplib2 path = %s" % httplib2.__path__
-
 class InvalidArgumentError(Exception):
     pass
 
