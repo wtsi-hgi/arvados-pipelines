@@ -61,6 +61,7 @@ rcr = arvados.CollectionReader(reference_coll)
 ref_fasta = {}
 ref_fai = {}
 ref_dict = {}
+ref_input = None
 for rs in rcr.all_streams():
     for rf in rs.all_files():
         if re.search(r'\.fasta$', rf.name()):
@@ -78,7 +79,8 @@ for ((s_name, f_name), fasta_f) in ref_fasta.items():
         ref_input += fai_f.as_manifest()
         ref_input += dict_f.as_manifest()
         break
-
+if ref_input is None:
+    raise InvalidArgumentError("Expected a reference fasta with fai and dict in reference_collection.")
 
 # Setup sub tasks 1-N (and terminate if this is task 0)
 one_task_per_cram_file(if_sequence=0, and_end_task=True)
@@ -98,7 +100,7 @@ for f in arvados.util.listdir_recursive(input_dir):
         ref_file = os.path.join(ref_dir, f)
 # Ensure we can read the reference file
 if not os.access(ref_file, os.R_OK):
-    raise FileAccessError("refernce FASTA file not readable: %s" % ref_file)
+    raise FileAccessError("reference FASTA file not readable: %s" % ref_file)
 # TODO: could check readability of .fai and .dict as well?
 
 # Get single CRAM file for this task 
