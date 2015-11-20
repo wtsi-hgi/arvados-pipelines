@@ -96,7 +96,7 @@ for f in arvados.util.listdir_recursive(input_dir):
     if re.search(r'\.fasta$', f):
         ref_file = os.path.join(ref_dir, f)
 # Ensure we can read the reference file
-if !os.access(ref_file, os.R_OK):
+if not os.access(ref_file, os.R_OK):
     raise FileAccessError("refernce FASTA file not readable: %s" % ref_file)
 # TODO: could check readability of .fai and .dict as well?
 
@@ -117,16 +117,16 @@ if len(input_cram_files) != 1:
 cram_file = input_cram_files[0]
 
 # Ensure we can read the CRAM file
-if !os.access(cram_file, os.R_OK):
+if not os.access(cram_file, os.R_OK):
     raise FileAccessError("CRAM file not readable: %s" % cram_file)
 
 # Ensure we have corresponding CRAI index and can read it as well
 cram_file_base, cram_file_ext = os.path.splitext(cram_file)
 assert(cram_file_ext == ".cram")
 crai_file = cram_file_base + ".crai"
-if !os.access(crai_file, os.R_OK):
+if not os.access(crai_file, os.R_OK):
     crai_file = cram_file_base + ".cram.crai"
-    if !os.access(crai_file, os.R_OK):
+    if not os.access(crai_file, os.R_OK):
         raise FileAccessError("No readable CRAM index file for CRAM file: %s" % cram_file)
 
 # Will write to out_dir, make sure it is empty
