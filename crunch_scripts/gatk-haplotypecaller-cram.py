@@ -95,10 +95,14 @@ this_task = arvados.current_task()
 # We will never reach this point if we are in the 0th task
 assert(this_task['sequence'] != 0)
 
+# Get tmpdir
+tmpdir = this_task.tmpdir
+print "using tmpdir %s" % tmpdir
+
 # Get reference FASTA
 ref_dir = arvados.util.collection_extract(
     collection = ref_input,
-    path = os.path.join(this_task.tmpdir, 'ref'))
+    path = os.path.join(tmpdir, 'ref'))
 for f in arvados.util.listdir_recursive(input_dir):
     if re.search(r'\.fasta$', f):
         ref_file = os.path.join(ref_dir, f)
@@ -111,7 +115,7 @@ if not os.access(ref_file, os.R_OK):
 task_input = this_task['parameters']['input']
 input_dir = arvados.util.collection_extract(
     collection = task_input,
-    path = os.path.join(this_task.tmpdir, 'input'))
+    path = os.path.join(tmpdir, 'input'))
 input_cram_files = []
 for f in arvados.util.listdir_recursive(input_dir):
     if re.search(r'\.cram$', f):
