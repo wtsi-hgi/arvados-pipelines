@@ -80,7 +80,7 @@ for ((s_name, f_name), fasta_f) in ref_fasta.items():
         ref_input += dict_f.as_manifest()
         break
 if ref_input is None:
-    raise InvalidArgumentError("Expected a reference fasta with fai and dict in reference_collection.")
+    raise InvalidArgumentError("Expected a reference fasta with fai and dict in reference_collection. Found [%s]" % str(rs.all_files()))
 
 # Setup sub tasks 1-N (and terminate if this is task 0)
 one_task_per_cram_file(if_sequence=0, and_end_task=True)
