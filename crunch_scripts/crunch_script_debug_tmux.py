@@ -16,8 +16,10 @@ except OSError as e:
 if child_pid == 0:
   # in child
   sys.stdout.flush()
+  os.environ.set("TERM", "screen-256color")
   try:
       os.execl("/usr/bin/tmux","/usr/bin/tmux","-2")
+      # never returns
   except:
     print "ERROR cannot spawn tmux!"
     raise
