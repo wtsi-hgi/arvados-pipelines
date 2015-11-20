@@ -33,9 +33,11 @@ RUN \
   apt-get autoremove && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* && \
-  gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
-  adduser --disabled-password --gecos 'Crunch execution user' --uid 15324 --gid 1593 crunch && \
-  install --directory --owner=crunch --group=crunch --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job
+  gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 
+RUN \
+  addgroup --system --gid 1593 arvados && \
+  adduser --system --disabled-password --gecos 'Crunch execution user' --uid 15324 --gid 1593 crunch && \
+  install --directory --owner=crunch --group=arvados --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job
 
 # GATK requires Sun/Oracle JDK (OpenJDK is not supported), install from PPA
 RUN \
