@@ -3,6 +3,7 @@
 import os
 import sys
 import pty
+import time
 
 container = os.environ.get("HOSTNAME", "<container_id>")
 node = os.environ.get("TASK_SLOT_NODE", "<task_slot_node>")
@@ -15,10 +16,11 @@ except OSError as e:
 
 if child_pid == 0:
   # in child
+  print "Starting tmux..."
   sys.stdout.flush()
   os.environ["TERM"] = "screen-256color"
   try:
-      os.execl("/usr/bin/tmux","/usr/bin/tmux","-2")
+      os.execl("/usr/bin/tmux", "/usr/bin/tmux", "-2", "-u")
       # never returns
   except:
     print "ERROR cannot spawn tmux!"
@@ -30,5 +32,11 @@ else:
   except:
     print "ERROR cannot open fd from tmux"
     raise
+  try:
+    while True:
+      print "TMUX: " + tmux.readline() ,
+  except IOError as e:
+    print "Got expected TMUX IOerror: %s" % str(e)
+  print "Sleeping forever"
   while True:
-    print "TMUX: " + tmux.readline()
+    time.sleep(1)
