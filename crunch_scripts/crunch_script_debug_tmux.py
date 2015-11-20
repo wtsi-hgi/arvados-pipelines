@@ -27,16 +27,17 @@ if child_pid == 0:
     raise
 else:
   # in parent
-  try:
-    tmux = os.fdopen(fd)
-  except:
-    print "ERROR cannot open fd from tmux"
-    raise
-  try:
-    while True:
-      print "TMUX: " + tmux.readline() ,
-  except IOError as e:
-    print "Got expected TMUX IOerror: %s" % str(e)
-  print "Sleeping forever"
+  os.read(fd, 100)
+#  try:
+#    tmux = os.fdopen(fd)
+#  except:
+#    print "ERROR cannot open fd from tmux"
+#    raise
+#  try:
+#    while True:
+#      print "TMUX: " + tmux.readline() ,
+#  except IOError as e:
+#    print "Got expected TMUX IOerror: %s" % str(e)
+  print "Sleeping forever..."
   while True:
     time.sleep(1)
