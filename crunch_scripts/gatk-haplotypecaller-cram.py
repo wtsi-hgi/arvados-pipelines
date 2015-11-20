@@ -97,13 +97,14 @@ assert(this_task['sequence'] != 0)
 
 # Get tmpdir
 tmpdir = this_task.tmpdir
-print "using tmpdir %s" % tmpdir
+print "Using tmpdir %s" % tmpdir
 
 # Get reference FASTA
+print "Getting reference FASTA from keep"
 ref_dir = arvados.util.collection_extract(
     collection = ref_input,
     path = os.path.join(tmpdir, 'ref'))
-for f in arvados.util.listdir_recursive(input_dir):
+for f in arvados.util.listdir_recursive(ref_dir):
     if re.search(r'\.fasta$', f):
         ref_file = os.path.join(ref_dir, f)
 # Ensure we can read the reference file
@@ -112,6 +113,7 @@ if not os.access(ref_file, os.R_OK):
 # TODO: could check readability of .fai and .dict as well?
 
 # Get single CRAM file for this task 
+print "Getting input CRAM from keep"
 task_input = this_task['parameters']['input']
 input_dir = arvados.util.collection_extract(
     collection = task_input,
