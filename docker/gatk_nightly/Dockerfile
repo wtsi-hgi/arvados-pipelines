@@ -51,6 +51,13 @@ RUN \
 # Set JAVA_HOME variable
 ENV JAVA_HOME /usr/lib/jvm/java-7-oracle
 
+# Install GRL CA
+ADD grl-ca.pem /etc/ssl/certs/grl-ca.pem
+RUN \
+  ln -s /etc/ssl/certs/grl-ca.pem /usr/lib/ssl/certs/91155464.0 && \
+  cat /etc/ssl/certs/grl-ca.pem >> /etc/ssl/certs/ca-certficates.crt && \
+  cat /etc/ssl/certs/grl-ca.pem >> /usr/local/lib/python2.7/dist-packages/httplib2/cacerts.txt
+
 # Install GATK from git repo
 ADD GenomeAnalysisTK.jar /gatk/GenomeAnalysisTK.jar
 WORKDIR /gatk
