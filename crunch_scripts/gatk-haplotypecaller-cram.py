@@ -34,10 +34,15 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
             elif re.search(r'\.crai$', f.name()):
                 crai[s.name(), f.name()] = f
     for ((s_name, f_name), cram_f) in cram.items():
-        crai_f = crai.get((s_name, re.sub(r'cram$', 'crai', f_name)), None)
+        crai_f = crai.get((s_name, re.sub(r'cram$', 'crai', f_name)), 
+                          crai.get((s_name, re.sub(r'cram$', 'cram.crai', f_name)), 
+                                   None))
         task_input = cram_f.as_manifest()
         if crai_f:
             task_input += crai_f.as_manifest()
+        else:
+            # no CRAI for CRAM
+            raise InvalidArgumentError("No correponding CRAI file found for CRAM file %s" % f_name)
         new_task_attrs = {
             'job_uuid': arvados.current_job()['uuid'],
             'created_by_job_task_uuid': arvados.current_task()['uuid'],
