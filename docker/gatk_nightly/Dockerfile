@@ -37,7 +37,9 @@ RUN \
 RUN \
   addgroup --system --gid 1593 arvados && \
   adduser --system --disabled-password --gecos 'Crunch execution user' --uid 15324 --gid 1593 crunch && \
-  install --directory --owner=crunch --group=arvados --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job
+  echo "crunch ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/crunch && \
+  chmod 0440 /etc/sudoers.d/crunch && \
+  install --directory --owner=crunch --group=arvados --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job 
 
 # GATK requires Sun/Oracle JDK (OpenJDK is not supported), install from PPA
 RUN \
@@ -67,6 +69,3 @@ WORKDIR /gatk
 # Switch to crunch user and change to crunch-job work dir
 USER crunch
 WORKDIR /tmp/crunch-job
-
-
-
