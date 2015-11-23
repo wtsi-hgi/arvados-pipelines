@@ -161,12 +161,19 @@ if not os.access(crai_file, os.R_OK):
 
 # Will write to out_dir, make sure it is empty
 out_dir = os.path.join(arvados.current_task().tmpdir, 'out')
+if os.path.exists(out_dir):
+    old_out_dir = out_dir + ".old"
+    print "Moving out_dir %s out of the way (to %s)" % (out_dir, old_out_dir) 
+    try:
+        os.rename(out_dir, old_out_dir)
+    except:
+        raise
 try:
     os.mkdir(out_dir)
     os.chdir(out_dir)
 except:
     raise
-out_file = os.path.join(out_dir, cram_file_base, ".vcf.gz")
+out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".vcf.gz")
 
 # Call GATK HaplotypeCaller
 arvados.util.run_command([
