@@ -62,7 +62,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     # Create a portable data hash for the ref_input manifest
     try:
         r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
-        ref_input_pdh = r.["portable_data_hash"]
+        ref_input_pdh = r["portable_data_hash"]
     except:
         raise 
 
@@ -91,7 +91,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         # Create a portable data hash for the task's subcollection
         try:
             r = arvados.api().collections().create(body={"manifest_text": task_input}).execute()
-            task_input_pdh = r.["portable_data_hash"]
+            task_input_pdh = r["portable_data_hash"]
         except:
             raise 
         
