@@ -13,7 +13,7 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
-def one_task_per_cram_file(if_sequence=0, and_end_task=True, ref_input):
+def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     """
     Queue one task for each cram file in this job's input collection.
     Each new task will have an "input" parameter: a manifest
@@ -103,7 +103,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True, ref_input):
 this_job = arvados.current_job()
 
 # Setup sub tasks 1-N (and terminate if this is task 0)
-one_task_per_cram_file(if_sequence=0, and_end_task=True, ref_input)
+one_task_per_cram_file(if_sequence=0, and_end_task=True)
 
 # Get object representing the current task
 this_task = arvados.current_task()
