@@ -136,7 +136,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                 break
         chunk_input_pdh = chunk_c.finish()
         chunk_input_pdh_name.append((chunk_input_pdh, chunk_input_name))
-    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh), ','.join([x[0] for x in chunk_input_pdh]))
+    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh_name), ','.join([x[0] for x in chunk_input_pdh_name]))
 
     # prepare CRAM input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
