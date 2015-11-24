@@ -343,13 +343,15 @@ gatk_p = subprocess.Popen(
     close_fds=True,
     shell=False)
 
-grep_p = subprocess.Popen(
-    ["grep", "(Progress|ERROR|FATAL)"],
-    stdin=gatk_p.stdout,
-    stdout=None)
+while gatk_p.poll() is None:
+    line = gatk_p.stdout.readline()
+    if re.search(r'(FATAL|ERROR|ProgressMeter)', line):
+        print "GATK: %s" % line
 
-grep_p.communicate()
-
+gatk_exit = gatk_p.wait()
+if gatk_exit != 0:
+    print "WARNING: GATK exited with exit code %s" % gatk_exit
+    
 # Write a new collection as output
 out = arvados.CollectionWriter()
 
