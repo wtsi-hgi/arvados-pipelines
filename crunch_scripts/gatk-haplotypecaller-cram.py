@@ -212,9 +212,9 @@ this_task = arvados.current_task()
 assert(this_task['sequence'] != 0)
 
 # Get reference FASTA
+ref_file = None
 if copy_ref:
     print "Getting reference FASTA from keep"
-    ref_file = None
     tmp_ref = os.path.join(this_job.tmpdir, 'ref')
     try:
         ref_dir = arvados.util.collection_extract(collection = ref_input,
@@ -237,9 +237,9 @@ if not os.access(ref_file, os.R_OK):
 # TODO: could check readability of .fai and .dict as well?
 
 # Get genome chunk intervals file
+chunk_file = None
 if copy_chunk:
     print "Getting genome chunk intervals file from keep"
-    chunk_file = None
     tmp_chunk = os.path.join(this_job.tmpdir, 'chunk')
     try:
         chunk_dir = arvados.util.collection_extract(collection = chunk_input,
@@ -251,7 +251,7 @@ else:
     print "Mounting chunk collection"
     chunk_dir = arvados.get_task_param_mount('chunk')
 for f in arvados.util.listdir_recursive(chunk_dir):
-    if re.search(r'\.fa$', f):
+    if re.search(r'\.interval_list$', f):
         chunk_file = os.path.join(chunk_dir, f)
 if chunk_file is None:
     raise InvalidArgumentError("No chunk intervals file found in chunk collection.")
