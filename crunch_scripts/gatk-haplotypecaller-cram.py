@@ -190,8 +190,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                     'chunk': chunk_input_pdh
                     }
                 }
-            print "******************** NOT REALLY CREATING TASK!"
-            #arvados.api().job_tasks().create(body=new_task_attrs).execute()
+            arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
     if and_end_task:
         print "Ending task 0 successfully"
