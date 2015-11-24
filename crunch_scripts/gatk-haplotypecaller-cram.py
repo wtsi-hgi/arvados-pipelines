@@ -346,7 +346,7 @@ gatk_p = subprocess.Popen(
 while gatk_p.poll() is None:
     line = gatk_p.stdout.readline()
     if re.search(r'(FATAL|ERROR|ProgressMeter)', line):
-        print "GATK: %s" % line
+        print "GATK: %s" % line.rstrip()
 
 gatk_exit = gatk_p.wait()
 if gatk_exit != 0:
