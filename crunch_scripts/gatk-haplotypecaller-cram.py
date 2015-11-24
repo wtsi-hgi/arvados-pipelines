@@ -115,14 +115,15 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     print "Chunking genome into %s chunks of size ~%s" % (genome_chunks, chunk_len)
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
-        chunk_done = False
+        chunk_intervals_count = 0
         chunk_input_name = dict_reader.name() + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
         print "Creating interval file for chunk %s" % chunk_num
         chunk_c = arvados.collection.CollectionWriter(num_retries=3)
         chunk_c.start_new_file(newfilename=chunk_input_name)
         chunk_c.write(interval_header)
         remaining_len = chunk_len
-        for i, sn in enumerate(sns):
+        while len(sns) > 0:
+            sn = sns.pop(0)
             if not sn_intervals.has_key(sn):
                 raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
             start, end = sn_intervals[sn]
@@ -132,14 +133,20 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                 end = remaining_len + start - 1
                 assert((end-start+1) <= remaining_len)
                 sn_intervals[sn] = (end+1, real_end)
-                chunk_done = True
-            interval = "%s\t%s\t%s\t+\t%s" % (sn, start, end, "interval_%s_%s" % (chunk_num, sn))
+                sns.insert(0, sn)
+            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
+            remaining_len -= (end-start+1)
             chunk_c.write(interval)
-            if chunk_done:
+            chunk_intervals_count += 1
+            if remaining_len <= 0:
                 break
-        chunk_input_pdh = chunk_c.finish()
-        chunk_input_pdh_name.append((chunk_input_pdh, chunk_input_name))
-    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh_name), ','.join([x[0] for x in chunk_input_pdh_name]))
+        if chunk_intervals_count > 0:
+            chunk_input_pdh = chunk_c.finish()
+            print "Chunk intervals file %s saved as %s" % (chunk_input_name, chunk_input_pdh)
+            chunk_input_pdh_name.append((chunk_input_pdh, chunk_input_name))
+        else:
+            print "WARNING: skipping empty intervals for %s" % chunk_input_name
+    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh_name), ' '.join([x[0] for x in chunk_input_pdh_name]))
 
     # prepare CRAM input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
