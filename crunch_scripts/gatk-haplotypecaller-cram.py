@@ -8,7 +8,7 @@ copy_ref = False
 copy_chunk = False
 copy_input = False
 # TODO: make genome_chunks a parameter
-genome_chunks = 5
+genome_chunks = 10
 # TODO: make skip_sq_sn_regex a paramter
 skip_sq_sn_regex = '_decoy$'
 skip_sq_sn_r = re.compile(skip_sq_sn_regex)
