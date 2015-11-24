@@ -323,18 +323,32 @@ out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz")
 log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz.log")
 
 # Call GATK HaplotypeCaller
-arvados.util.run_command([
-    "java", "-jar", "/gatk/GenomeAnalysisTK.jar", 
-    "-T", "HaplotypeCaller", 
-    "-R", ref_file,
-    "-I", cram_file,
-    "-L", chunk_file,
-    "--emitRefConfidence", "GVCF", 
-    "--variant_index_type", "LINEAR", 
-    "--variant_index_parameter", "128000", 
-    "-o", out_file,
-    "--log_to_file", log_file
-])
+gatk_p = subprocess.Popen(
+    [
+        "java", "-jar", "/gatk/GenomeAnalysisTK.jar", 
+        "-T", "HaplotypeCaller", 
+        "-R", ref_file,
+        "-I", cram_file,
+        "-L", chunk_file,
+        "--emitRefConfidence", "GVCF", 
+        "--variant_index_type", "LINEAR", 
+        "--variant_index_parameter", "128000", 
+        "-o", out_file,
+        "-l", "INFO",
+        "--log_to_file", log_file
+        ], 
+    stdin=None,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT,
+    close_fds=True,
+    shell=False)
+
+grep_p = subprocess.Popen(
+    ["grep", "(Progress|ERROR|FATAL)"],
+    stdin=gatk_p.stdout,
+    stdout=None)
+
+grep_p.communicate()
 
 # Write a new collection as output
 out = arvados.CollectionWriter()
