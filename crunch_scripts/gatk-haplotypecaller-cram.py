@@ -92,19 +92,19 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         sn = None
         ln = None
         for tagval in sq.split("\t"):
-            tag, value = tagval.split(":", 2)
-            if tag == "SN":
-                sn = value
-            if tag == "LN":
-                ln = value
+            tv = tagval.split(":", 1)
+            if tv[0] == "SN":
+                sn = tv[1]
+            if tv[0] == "LN":
+                ln = tv[1]
             if sn and ln:
                 break
         if not (sn and ln):
             raise InvalidArgumentError("Dict file SQ entry missing required SN and/or LN parameters: [%s]" % sq)
         assert(sn and ln)
-        if sq_lens.has_key(sn):
+        if sn_intervals.has_key(sn):
             raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
-        sq_lens[sn] = (1, int(ln))
+        sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
         total_len += int(ln)
 
@@ -122,7 +122,9 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         chunk_c.start_new_file(newfilename=chunk_input_name)
         chunk_c.write(interval_header)
         remaining_len = chunk_len
-        for sn, i in enumerate(sns):
+        for i, sn in enumerate(sns):
+            if not sn_intervals.has_key(sn):
+                raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
             start, end = sn_intervals[sn]
             if (end-start+1) > remaining_len:
                 # not enough space for the whole sq, split it
