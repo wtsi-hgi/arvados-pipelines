@@ -206,7 +206,7 @@ try:
     os.chdir(out_dir)
 except:
     raise
-out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".vcf.gz")
+out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz")
 
 # Call GATK HaplotypeCaller
 arvados.util.run_command([
