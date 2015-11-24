@@ -325,7 +325,7 @@ log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz.l
 # Call GATK HaplotypeCaller
 gatk_p = subprocess.Popen(
     [
-        "java", "-jar", "/gatk/GenomeAnalysisTK.jar", 
+        "java", "-d64", "-Xmx10g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
         "-T", "HaplotypeCaller", 
         "-R", ref_file,
         "-I", cram_file,
