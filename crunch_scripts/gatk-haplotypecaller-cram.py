@@ -9,6 +9,9 @@ copy_chunk = False
 copy_input = False
 # TODO: make genome_chunks a parameter
 genome_chunks = 5
+# TODO: make skip_sq_sn_regex a paramter
+skip_sq_sn_regex = '_decoy$'
+skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
 class InvalidArgumentError(Exception):
     pass
@@ -85,10 +88,10 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     sns = []
     total_len = 0
     for sq in dict_lines:
-        print "Adding [%s] to interval header" % sq
-        interval_header += sq
         if re.search(r'^@SQ', sq) is None:
             raise InvalidArgumentError("Dict file contains malformed SQ line: [%s]" % sq)
+        print "Adding [%s] to interval header" % sq
+        interval_header += sq
         sn = None
         ln = None
         for tagval in sq.split("\t"):
@@ -104,6 +107,9 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         assert(sn and ln)
         if sn_intervals.has_key(sn):
             raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
+        if skip_sq_sn_r.search(sn):
+            print "Skipping SQ based on skip_sq_sn_regex (/%s/ matches %s)" % (skip_sq_sn_regex, sn)
+            next
         sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
         total_len += int(ln)
