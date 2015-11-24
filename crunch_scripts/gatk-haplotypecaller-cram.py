@@ -36,7 +36,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     ref_dict = {}
     ref_input = None
     for rs in rcr.all_streams():
-        for rf in rcr.all_files():
+        for rf in rs.all_files():
             if re.search(r'\.fa$', rf.name()):
                 ref_fasta[rs.name(), rf.name()] = rf
             elif re.search(r'\.fai$', rf.name()):
