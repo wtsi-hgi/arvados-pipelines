@@ -5,7 +5,9 @@ import arvados      # Import the Arvados sdk module
 import re
 
 copy_ref = False
+copy_chunk = False
 copy_input = False
+# TODO: make genome_chunks a parameter
 genome_chunks = 5
 
 class InvalidArgumentError(Exception):
@@ -219,11 +221,33 @@ for f in arvados.util.listdir_recursive(ref_dir):
         ref_file = os.path.join(ref_dir, f)
 if ref_file is None:
     raise InvalidArgumentError("No reference fasta found in reference collection.")
-
 # Ensure we can read the reference file
 if not os.access(ref_file, os.R_OK):
     raise FileAccessError("reference FASTA file not readable: %s" % ref_file)
 # TODO: could check readability of .fai and .dict as well?
+
+# Get genome chunk intervals file
+if copy_chunk:
+    print "Getting genome chunk intervals file from keep"
+    chunk_file = None
+    tmp_chunk = os.path.join(this_job.tmpdir, 'chunk')
+    try:
+        chunk_dir = arvados.util.collection_extract(collection = chunk_input,
+                                                  path = tmp_chunk)
+    except:
+        print "ERROR getting chunk intervals file from keep collection = [%s] into path = [%s]" % (chunk_input, tmp_chunk)
+        raise
+else:
+    print "Mounting chunk collection"
+    chunk_dir = arvados.get_task_param_mount('chunk')
+for f in arvados.util.listdir_recursive(chunk_dir):
+    if re.search(r'\.fa$', f):
+        chunk_file = os.path.join(chunk_dir, f)
+if chunk_file is None:
+    raise InvalidArgumentError("No chunk intervals file found in chunk collection.")
+# Ensure we can read the chunk file
+if not os.access(chunk_file, os.R_OK):
+    raise FileAccessError("Chunk intervals file not readable: %s" % chunk_file)
 
 # Get single CRAM file for this task 
 input_dir = None
@@ -288,6 +312,7 @@ arvados.util.run_command([
     "-T", "HaplotypeCaller", 
     "-R", ref_file,
     "-I", cram_file,
+    "-L", chunk_file,
     "--emitRefConfidence", "GVCF", 
     "--variant_index_type", "LINEAR", 
     "--variant_index_parameter", "128000", 
