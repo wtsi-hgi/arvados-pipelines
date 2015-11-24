@@ -90,7 +90,6 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     for sq in dict_lines:
         if re.search(r'^@SQ', sq) is None:
             raise InvalidArgumentError("Dict file contains malformed SQ line: [%s]" % sq)
-        print "Adding [%s] to interval header" % sq
         interval_header += sq
         sn = None
         ln = None
@@ -108,7 +107,6 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         if sn_intervals.has_key(sn):
             raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
         if skip_sq_sn_r.search(sn):
-            print "Skipping SQ based on skip_sq_sn_regex (/%s/ matches %s)" % (skip_sq_sn_regex, sn)
             next
         sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
