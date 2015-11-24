@@ -124,7 +124,7 @@ if copy_ref:
         raise
 else:
     print "Mounting reference FASTA collection"
-    ref_dir = arvados.get_job_param_mount('ref')
+    ref_dir = arvados.get_task_param_mount('ref')
 
 for f in arvados.util.listdir_recursive(ref_dir):
     if re.search(r'\.fa$', f):
@@ -151,7 +151,7 @@ if copy_input:
         raise
 else:
     print "Mounting task input collection"
-    input_dir = arvados.get_job_param_mount('input')
+    input_dir = arvados.get_task_param_mount('input')
     
 input_cram_files = []
 for f in arvados.util.listdir_recursive(input_dir):
