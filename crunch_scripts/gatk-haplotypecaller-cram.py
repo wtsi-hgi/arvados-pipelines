@@ -3,6 +3,7 @@
 import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
+import subprocess
 
 copy_ref = False
 copy_chunk = False
