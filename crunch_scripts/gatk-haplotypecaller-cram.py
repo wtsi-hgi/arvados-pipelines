@@ -59,6 +59,13 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     if ref_input is None:
         raise InvalidArgumentError("Expected a reference fasta with fai and dict in reference_collection. Found [%s]" % ' '.join(rf.name() for rf in rs.all_files()))
 
+    # Create a portable data hash for the ref_input manifest
+    try:
+        r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
+        ref_input_pdh = r.["portable_data_hash"]
+    except:
+        raise 
+
     # prepare CRAM input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
     cr = arvados.CollectionReader(job_input)
@@ -80,6 +87,14 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         else:
             # no CRAI for CRAM
             raise InvalidArgumentError("No correponding CRAI file found for CRAM file %s" % f_name)
+
+        # Create a portable data hash for the task's subcollection
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": task_input}).execute()
+            task_input_pdh = r.["portable_data_hash"]
+        except:
+            raise 
+        
         # Create task for each CRAM
         print "Creating new task to process %s" % f_name
         new_task_attrs = {
@@ -87,8 +102,8 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
             'created_by_job_task_uuid': arvados.current_task()['uuid'],
             'sequence': if_sequence + 1,
             'parameters': {
-                'input': task_input,
-                'ref': ref_input
+                'input': task_input_pdh,
+                'ref': ref_input_pdh
                 }
             }
         arvados.api().job_tasks().create(body=new_task_attrs).execute()
