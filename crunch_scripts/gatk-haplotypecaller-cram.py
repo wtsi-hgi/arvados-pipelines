@@ -280,6 +280,7 @@ try:
 except:
     raise
 out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz")
+log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz.log")
 
 # Call GATK HaplotypeCaller
 arvados.util.run_command([
@@ -290,7 +291,8 @@ arvados.util.run_command([
     "--emitRefConfidence", "GVCF", 
     "--variant_index_type", "LINEAR", 
     "--variant_index_parameter", "128000", 
-    "-o", out_file
+    "-o", out_file,
+    "--log_to_file", log_file
 ])
 
 # Write a new collection as output
