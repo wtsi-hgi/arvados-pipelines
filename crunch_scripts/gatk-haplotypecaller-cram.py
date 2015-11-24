@@ -75,16 +75,17 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
 
     # Load the dict data
     interval_header = ""
-    dict_header = dict_reader.readline()
+    dict_lines = dict_reader.readlines()
+    dict_header = dict_lines.pop(0)
     if re.search(r'^@HD', dict_header) is None:
         raise InvalidArgumentError("Dict file in reference collection does not have correct header: [%s]" % dict_header)
     interval_header += dict_header
     print "Dict header is %s" % dict_header
-    dict_sqs = dict_reader.readlines()
     sn_intervals = dict()
     sns = []
     total_len = 0
-    for sq in dict_sqs:
+    for sq in dict_lines:
+        print "Adding [%s] to interval header" % sq
         interval_header += sq
         if re.search(r'^@SQ', sq) is None:
             raise InvalidArgumentError("Dict file contains malformed SQ line: [%s]" % sq)
@@ -169,7 +170,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         
         for chunk_input_pdh, chunk_input_name in chunk_input_pdh_name:
             # Create task for each CRAM / chunk
-            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_pdh_name)
+            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             new_task_attrs = {
                 'job_uuid': arvados.current_job()['uuid'],
                 'created_by_job_task_uuid': arvados.current_task()['uuid'],
@@ -180,7 +181,8 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                     'chunk': chunk_input_pdh
                     }
                 }
-            arvados.api().job_tasks().create(body=new_task_attrs).execute()
+            print "******************** NOT REALLY CREATING TASK!"
+            #arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
     if and_end_task:
         print "Ending task 0 successfully"
