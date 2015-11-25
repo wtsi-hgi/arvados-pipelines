@@ -318,8 +318,8 @@ try:
     os.chdir(out_dir)
 except:
     raise
-out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz")
-log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz.log")
+out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz")
+log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz.log")
 
 # Call GATK HaplotypeCaller
 gatk_p = subprocess.Popen(
