@@ -6,7 +6,7 @@ import re
 import subprocess
 
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
-group_by_regex = '.*[.](?P<group_by>([[:digit:]]+_of_[[:digit::]]+)[.]'
+group_by_regex = '.*[.](?P<group_by>[[:digit:]]+_of_[[:digit::]]+)[.]'
 max_gvcfs_to_combine = 200
 
 class InvalidArgumentError(Exception):
