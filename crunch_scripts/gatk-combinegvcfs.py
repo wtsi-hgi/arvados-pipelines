@@ -241,7 +241,7 @@ def gatk_combine_gvcfs(ref_file, gvcf_files, out_file):
     for gvcf_file in gvcf_files:
         gatk_args.extend(["--variant", gvcf_file])
     gatk_args.extend([
-        "-nt", "8",
+        "-nct", "8",
         "-o", out_file
     ])
     print "Calling GATK: %s" % gatk_args
