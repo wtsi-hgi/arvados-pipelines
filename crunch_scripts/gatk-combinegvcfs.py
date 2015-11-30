@@ -217,19 +217,23 @@ def one_task_per_interval(interval_count,
 
     interval_reader = open(interval_list_file, mode="r")
 
-    # skip all lines starting with '@'
-    for line in interval_reader.readline():
-        if line[0] != '@':
-            break
-
+    lines = interval_reader.readlines()
     sn_intervals = dict()
     sns = []
     total_len = 0
-    for line in interval_reader.readline():
-        (sn, start, end, plus, name) = line.split("\t", 4)
+    for line in lines:
+        if line[0] == '@':
+            # skip all lines starting with '@'
+            continue
+        fields = line.split("\t")
+        if len(fields) != 5:
+            raise InvalidArgumentError("interval_list %s has invalid line [%s] - expected 5 fields but got %s" % (interval_list_file, line, len(fields)))
+        sn = fields[0]
+        start = int(fields[1])
+        end = int(fields[2])
         length = int(end) - int(start) + 1
         total_len += int(length)
-        sn_intervals[sn] = (int(start), len(end))
+        sn_intervals[sn] = (start, end)
         sns.append(sn)
 
     print "Total chunk length is %s" % total_len
@@ -262,21 +266,18 @@ def one_task_per_interval(interval_count,
             intervals.append(interval)
         else:
             print "WARNING: skipping empty intervals for %s" % interval_input_name
-    print "Have %s intervals: [%s]" % (len(intervals), ' '.join([[','.join(x) for x in interval] for interval in intervals]))
+    print "Have %s intervals" % (len(intervals))
 
     for interval in intervals:
         interval_str = ' '.join(interval)
         print "Creating new task to process interval: [%s]" % interval_str
+        new_task_params = arvados.current_task()['parameters']
+        new_task_params['interval'] = interval_str
         new_task_attrs = {
                 'job_uuid': arvados.current_job()['uuid'],
                 'created_by_job_task_uuid': arvados.current_task()['uuid'],
                 'sequence': if_sequence + 1,
-                'parameters': {
-                    'inputs': task_inputs_pdh,
-                    'ref': ref_input_pdh,
-                    'name': name,
-                    'interval': interval_str
-                    }
+                'parameters': new_task_params
                 }
         arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
