@@ -6,7 +6,7 @@ import re
 import subprocess
 
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
-group_by_regex = '.*[.](?P<group_by>[[:digit:]]+_of_[[:digit::]]+)[.]'
+group_by_regex = '[.](?P<group_by>[0-9]+_of_[0-9]+)[.].*.g.vcf.gz$'
 max_gvcfs_to_combine = 200
 
 class InvalidArgumentError(Exception):
@@ -102,6 +102,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
         stream_name = s.name()
         gvcf_by_group = {}
         gvcf_indices = {}
+        print "Processing files in stream %s" % stream_name
         for f in s.all_files():
             m = re.search(group_by_r, f.name())
             if m:
@@ -113,8 +114,8 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
                 gvcf_indices[s.name(), f.name()] = f
             else:
                 print "WARNING: ignoring irrelevant file %s/%s in inputs_collection" % (s.name(), f.name())
-    for group_name in gvcf_by_group.items():
-        print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name].items()), group_name)
+    for group_name in gvcf_by_group.keys():
+        print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
         task_inputs_manifest = ""
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
