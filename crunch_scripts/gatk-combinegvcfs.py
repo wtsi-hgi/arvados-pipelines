@@ -449,7 +449,7 @@ def main():
     intervals = []
     for interval in interval_str.split():
         intervals.extend(["--intervals", interval])
-    out_file = os.path.join(out_dir, name + ".g.vcf.gz")
+    out_file = os.path.join(out_dir, name + "." + '_'.join(intervals) + ".g.vcf.gz")
     gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, out_file, extra_args=intervals)
 
     if gatk_exit != 0:
