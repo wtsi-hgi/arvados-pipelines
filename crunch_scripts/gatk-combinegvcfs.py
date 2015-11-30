@@ -288,7 +288,7 @@ def main():
     name = arvados.current_task()['parameters'].get('name')
     if not name:
         name = "unknown"
-    out_file = os.path.join(out_dir, name, "g.vcf.gz")
+    out_file = os.path.join(out_dir, name + ".g.vcf.gz")
     gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, out_file)
 
     if gatk_exit != 0:
