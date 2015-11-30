@@ -317,6 +317,8 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
             input_gvcf_files.append(os.path.join(inputs_dir, f))
         elif re.search(r'\.tbi$', f):
             pass
+        elif re.search(r'\.interval_list$', f):
+            pass
         else:
             print "WARNING: collection contains unexpected file %s" % f
     if len(input_gvcf_files) == 0:
@@ -445,7 +447,7 @@ def main():
     if not interval_str:
         interval_str = ""
     intervals = []
-    for interval in split(interval_str):
+    for interval in interval_str.split():
         intervals.extend(["--intervals", interval])
     out_file = os.path.join(out_dir, name + ".g.vcf.gz")
     gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, out_file, extra_args=intervals)
