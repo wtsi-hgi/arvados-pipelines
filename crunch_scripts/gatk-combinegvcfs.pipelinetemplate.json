@@ -18,7 +18,7 @@
    "runtime_constraints":{
     "docker_image":"mercury/gatk_nightly",
     "min_nodes":10,
-    "max_tasks_per_node":5
+    "max_tasks_per_node":40
    }
   }
  },
