@@ -93,8 +93,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
     if if_sequence != arvados.current_task()['sequence']:
         return
 
-    gvcf_group_by_r = re.compile(group_by_regex + '.*\.g\.vcf\.gz$')
-    interval_list_group_by_r = re.compile(group_by_regex + '.*\.interval_list$')
+    group_by_r = re.compile(group_by_regex)
 
     # prepare gVCF input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
@@ -110,21 +109,22 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
         for f in s.all_files():
             if re.search(r'\.tbi$', f.name()):
                 gvcf_indices[s.name(), f.name()] = f
-                next
-            gvcf_m = re.search(gvcf_group_by_r, f.name())
-            if gvcf_m:
-                group_name = gvcf_m.group('group_by')
-                if group_name not in gvcf_by_group:
-                    gvcf_by_group[group_name] = dict()
-                gvcf_by_group[group_name][s.name(), f.name()] = f
-                next
-            interval_list_m = re.search(interval_list_group_by_r, f.name())
-            if interval_list_m:
-                group_name = interval_list_m.group('group_by')
-                if group_name not in interval_list_by_group:
-                    interval_list_by_group[group_name] = dict()
-                interval_list_by_group[group_name][s.name(), f.name()] = f
-                next
+                continue
+            m = re.search(group_by_r, f.name())
+            if m:
+                group_name = m.group('group_by')
+                gvcf_m = re.search(r'\.g\.vcf\.gz$', f.name())
+                if gvcf_m:
+                    if group_name not in gvcf_by_group:
+                        gvcf_by_group[group_name] = dict()
+                    gvcf_by_group[group_name][s.name(), f.name()] = f
+                    continue
+                interval_list_m = re.search(r'\.interval_list', f.name())
+                if interval_list_m:
+                    if group_name not in interval_list_by_group:
+                        interval_list_by_group[group_name] = dict()
+                    interval_list_by_group[group_name][s.name(), f.name()] = f
+                    continue
             # if we make it this far, we have files that we are ignoring
             ignored_files.append("%s/%s" % (s.name(), f.name()))
     for group_name in gvcf_by_group.keys():
@@ -135,7 +135,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
         interval_lists = interval_list_by_group[group_name].keys()
         if len(interval_lists) > 1:
             raise InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
-        task_inputs_manifest = interval_lists.get(interval_list).as_manifest()
+        task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
             gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
