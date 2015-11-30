@@ -137,14 +137,24 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
             raise 
         
         # Create task to process this group
-        print "Creating new task to process %s::%s" % (stream_name, group_name)
+        name_components = []
+        if len(stream_name) > 0 and stream_name != ".":
+            name_components.append(stream_name)
+        if len(group_name) > 0:
+            name_components.append(group_name)
+        if len(name_components) == 0:
+            name = "all"
+        else:
+            name = '::'.join(name_components)
+        print "Creating new task to process %s" % name
         new_task_attrs = {
                 'job_uuid': arvados.current_job()['uuid'],
                 'created_by_job_task_uuid': arvados.current_task()['uuid'],
                 'sequence': if_sequence + 1,
                 'parameters': {
                     'inputs': task_inputs_pdh,
-                    'ref': ref_input_pdh
+                    'ref': ref_input_pdh,
+                    'name': name
                     }
                 }
         arvados.api().job_tasks().create(body=new_task_attrs).execute()
@@ -181,10 +191,14 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Sanity check input gVCFs    
     input_gvcf_files = []
     for f in arvados.util.listdir_recursive(inputs_dir):
-        if re.search(r'\.g.vcf.gz$', f):
-            input_gvcf_files += f
-    if len(input_gvcf_files) > 0:
-        raise InvalidArgumentError("Expected one or more .g.vcf.gz files in collection (found 0)")
+        if re.search(r'\.g\.vcf\.gz$', f):
+            input_gvcf_files.append(os.path.join(inputs_dir, f))
+        elif re.search(r'\.tbi$', f):
+            pass
+        else:
+            print "WARNING: collection contains unexpected file %s" % f
+    if len(input_gvcf_files) == 0:
+        raise InvalidArgumentError("Expected one or more .g.vcf.gz files in collection (found 0 while recursively searching %s)" % inputs_dir)
 
     # Ensure we can read the gVCF files and that they each have an index
     for gvcf_file in input_gvcf_files:
@@ -192,11 +206,11 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
             raise FileAccessError("gVCF file not readable: %s" % gvcf_file)
 
         # Ensure we have corresponding .tbi index and can read it as well
-        gvcf_file_base, gvcf_file_ext = os.path.splitext(gvcf_file)
-        assert(gvcf_file_ext == ".g.vcf.gz")
-        tbi_file = gvcf_file_base + ".g.vcf.gz.tbi"
+        (gvcf_file_base, gvcf_file_ext) = os.path.splitext(gvcf_file)
+        assert(gvcf_file_ext == ".gz")
+        tbi_file = gvcf_file_base + ".gz.tbi"
         if not os.access(tbi_file, os.R_OK):
-            tbi_file = gvcf_file_base + ".g.vcf.tbi"
+            tbi_file = gvcf_file_base + ".tbi"
             if not os.access(tbi_file, os.R_OK):
                 raise FileAccessError("No readable gVCF index file for gVCF file: %s" % gvcf_file)
     return input_gvcf_files
@@ -216,22 +230,20 @@ def prepare_out_dir():
         os.chdir(out_dir)
     except:
         raise
+    return out_dir
 
-def gatk_combine_gvcfs():
-    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz")
-    log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz.log")
-
+def gatk_combine_gvcfs(ref_file, gvcf_files, out_file):
     # Call GATK CombineGVCFs
     gatk_args = [
             "java", "-d64", "-Xmx40g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
             "-T", "CombineGVCFs", 
             "-R", ref_file]
     for gvcf_file in gvcf_files:
-        gatk_args.append(["--variant", gvcf_file])
-    gatk_args.append([
-            "-nt", "8",
-            "-o", out_file
-            ])
+        gatk_args.extend(["--variant", gvcf_file])
+    gatk_args.extend([
+        "-nt", "8",
+        "-o", out_file
+    ])
     print "Calling GATK: %s" % gatk_args
     gatk_p = subprocess.Popen(
         gatk_args,
@@ -274,7 +286,11 @@ def main():
     ref_file = mount_gatk_reference(ref_param="ref")
     gvcf_files = mount_gatk_gvcf_inputs(inputs_param="inputs")
     out_dir = prepare_out_dir()
-    gatk_exit = gatk_combine_gvcfs(ref_file)
+    name = arvados.current_task()['parameters'].get('name')
+    if not name:
+        name = "unknown"
+    out_file = os.path.join(out_dir, name, "g.vcf.gz")
+    gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, out_file)
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
