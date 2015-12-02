@@ -179,7 +179,8 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
                     'name': name
                     }
                 }
-        arvados.api().job_tasks().create(body=new_task_attrs).execute()
+        print "not creating new task with body: [%s]" % new_task_attrs
+        #arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
     # report on any ignored files
     if len(ignored_files) > 0:
@@ -278,7 +279,7 @@ def one_task_per_interval(interval_count,
 
     for interval in intervals:
         interval_str = ' '.join(interval)
-        print "Creating new task to process interval: [%s]" % interval_str
+        print "Creating task to process interval: [%s]" % interval_str
         new_task_params = arvados.current_task()['parameters']
         new_task_params['interval'] = interval_str
         task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, index_params)
@@ -319,22 +320,25 @@ def get_reusable_tasks(sequence, index_params):
                     reusable_tasks[ct_index] = task
     return reusable_tasks
 
-def create_or_reuse_task(reusable_tasks, sequence, parameters, index_parameters):
-    # See if there is a task in reusable_tasks that can be reused
-    ct_index = tuple([parameters[index_param] for index_param in index_params])
-    if ct_index in reusable_tasks:
-        reuse_task = reusable_tasks[ct_index]
-        print "Found existing JobTask %s from Job %s to use instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'])
-        # remove task from reusable_tasks as it won't be used more than once
-        del reusable_tasks[ct_index]
-        return reuse_task
-    # we did not find a reusable task, create a new one
+def create_or_reuse_task(reusable_tasks, sequence, parameters, index_params):
     new_task_attrs = {
             'job_uuid': arvados.current_job()['uuid'],
             'created_by_job_task_uuid': arvados.current_task()['uuid'],
             'sequence': sequence,
             'parameters': parameters
             }
+    # See if there is a task in reusable_tasks that can be reused
+    ct_index = tuple([parameters[index_param] for index_param in index_params])
+    if ct_index in reusable_tasks:
+        # have a task from which to reuse the output, prepare to create a new, but already finished, task with that output
+        reuse_task = reusable_tasks[ct_index]
+        print "Found existing JobTask %s from Job %s. Will use output %s from that JobTask instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'], reuse_task['output'])
+        # remove task from reusable_tasks as it won't be used more than once
+        del reusable_tasks[ct_index]
+        # copy relevant attrs from reuse_task so that the new tasks started already finished
+        for attr in ['success', 'output', 'progress', 'started_at', 'finished_at', 'parameters', ]:
+            new_task_attrs[attr] = reuse_task[attr]
+    # Create the "new" task (may be new work or may be already finished work)
     new_task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
     if not new_task:
         raise APIError("Attempt to create new job_task failed: [%s]" % new_task_attrs)
