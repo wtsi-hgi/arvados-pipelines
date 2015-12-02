@@ -16,6 +16,9 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
+class APIError(Exception):
+    pass
+
 def prepare_gatk_reference_collection(reference_coll):
     """
     Checks that the supplied reference_collection has the required 
@@ -193,6 +196,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
         exit(0)
 
 def one_task_per_interval(interval_count,
+                          reuse_tasks=True,
                           if_sequence=0, and_end_task=True):
     """
     Queue one task for each of interval_count intervals, splitting 
@@ -268,25 +272,73 @@ def one_task_per_interval(interval_count,
             print "WARNING: skipping empty intervals for %s" % interval_input_name
     print "Have %s intervals" % (len(intervals))
 
+    # get candidates for task reuse
+    index_params = ['name', 'inputs', 'interval', 'ref']
+    reusable_tasks = get_reusable_tasks(if_sequence + 1, index_params)
+
     for interval in intervals:
         interval_str = ' '.join(interval)
         print "Creating new task to process interval: [%s]" % interval_str
         new_task_params = arvados.current_task()['parameters']
         new_task_params['interval'] = interval_str
-        new_task_attrs = {
-                'job_uuid': arvados.current_job()['uuid'],
-                'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                'sequence': if_sequence + 1,
-                'parameters': new_task_params
-                }
-        arvados.api().job_tasks().create(body=new_task_attrs).execute()
-
+        task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, index_params)
+        
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
         arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={'success':True}
                                          ).execute()
         exit(0)
+
+def get_reusable_tasks(sequence, index_params):
+    reusable_tasks = {}
+    job_filters=[
+        ['script', '=', 'gatk-combinegvcfs.py'],
+        ['repository','=',arvados.current_job()['repository']], 
+        ['script_version', 'in git', '6ca726fc265f9e55765bf1fdf71b86285b8a0ff2'], 
+        ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']], 
+        ]
+    jobs = arvados.api().jobs().list(filters=job_filters).execute()
+    for job in jobs['items']:
+        tasks = arvados.api().job_tasks().list(limit=100000,
+                                               filters=[
+                ['job_uuid', '=', job['uuid']],
+                ['sequence', '=', str(sequence)],
+                ['success', '=', 'True'],
+                ]).execute()
+        if tasks['items_available'] > 0:
+            print "Have %s potential reusable task outputs from job %s" % ( tasks['items_available'], job['uuid'] )
+            for task in tasks['items']:
+                ct_index = tuple([task['parameters'][index_param] for index_param in index_params])
+                if ct_index in reusable_tasks:
+                    # we have already seen a task with these parameters (from another job?) - verify they have the same output
+                    if reusable_tasks[ct_index]['output'] != task['output']:
+                        print "WARNING: found two existing candidate JobTasks for parameters %s and the output does not match! (using JobTask %s from Job %s with output %s, but JobTask %s from Job %s had output %s)" % (ct_index, reusable_tasks[ct_index]['uuid'], reusable_tasks[ct_index]['job_uuid'], reusable_tasks[ct_index]['output'], task['uuid'], task['job_uuid'], task['output'])
+                else:
+                    # store the candidate task in reusable_tasks, indexed on the tuple of params specified in index_params
+                    reusable_tasks[ct_index] = task
+    return reusable_tasks
+
+def create_or_reuse_task(reusable_tasks, sequence, parameters, index_parameters):
+    # See if there is a task in reusable_tasks that can be reused
+    ct_index = tuple([parameters[index_param] for index_param in index_params])
+    if ct_index in reusable_tasks:
+        reuse_task = reusable_tasks[ct_index]
+        print "Found existing JobTask %s from Job %s to use instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'])
+        # remove task from reusable_tasks as it won't be used more than once
+        del reusable_tasks[ct_index]
+        return reuse_task
+    # we did not find a reusable task, create a new one
+    new_task_attrs = {
+            'job_uuid': arvados.current_job()['uuid'],
+            'created_by_job_task_uuid': arvados.current_task()['uuid'],
+            'sequence': sequence,
+            'parameters': parameters
+            }
+    new_task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+    if not new_task:
+        raise APIError("Attempt to create new job_task failed: [%s]" % new_task_attrs)
+    return new_task
 
 def mount_gatk_reference(ref_param="ref"):
     # Get reference FASTA
@@ -430,6 +482,7 @@ def main():
     # Phase II: Read interval_list and split into additional intervals
     ################################################################################
     one_task_per_interval(interval_count,
+                          reuse_tasks=True,
                           if_sequence=1, and_end_task=True)
 
     # We will never reach this point if we are in the 1st task sequence
