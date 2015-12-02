@@ -179,8 +179,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
                     'name': name
                     }
                 }
-        print "not creating new task with body: [%s]" % new_task_attrs
-        #arvados.api().job_tasks().create(body=new_task_attrs).execute()
+        arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
     # report on any ignored files
     if len(ignored_files) > 0:
