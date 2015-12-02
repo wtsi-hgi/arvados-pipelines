@@ -334,9 +334,12 @@ def create_or_reuse_task(reusable_tasks, sequence, parameters, index_params):
         print "Found existing JobTask %s from Job %s. Will use output %s from that JobTask instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'], reuse_task['output'])
         # remove task from reusable_tasks as it won't be used more than once
         del reusable_tasks[ct_index]
-        # copy relevant attrs from reuse_task so that the new tasks started already finished
+        # copy relevant attrs from reuse_task so that the new tasks start already finished
         for attr in ['success', 'output', 'progress', 'started_at', 'finished_at', 'parameters', ]:
             new_task_attrs[attr] = reuse_task[attr]
+        # crunch seems to ignore the fact that the job says it is done and queue it anyway
+        # signal ourselves to just immediately exit successfully when we are run
+        new_task_attrs['parameters']['reuse_job_task'] = reuse_task['uuid']
     # Create the "new" task (may be new work or may be already finished work)
     new_task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
     if not new_task:
@@ -492,7 +495,14 @@ def main():
     assert(arvados.current_task()['sequence'] > 1)
 
     ################################################################################
-    # Phase III: Combine gVCFs!
+    # Phase IIIa: If we are a "reuse" task, just set our output and be done with it
+    ################################################################################
+    if 'reuse_job_task' in arvados.current_task()['parameters']:
+        print "This task's work was already done by JobTask %s" % arvados.current_task()['parameters']['reuse_job_task']
+        exit(0)
+
+    ################################################################################
+    # Phase IIIb: Combine gVCFs!
     ################################################################################
     ref_file = mount_gatk_reference(ref_param="ref")
     gvcf_files = mount_gatk_gvcf_inputs(inputs_param="inputs")
