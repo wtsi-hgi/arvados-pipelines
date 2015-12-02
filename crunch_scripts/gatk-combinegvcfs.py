@@ -377,7 +377,8 @@ def prepare_out_dir():
         raise
     return out_dir
 
-def gatk_combine_gvcfs(ref_file, gvcf_files, out_file, extra_args=[]):
+def gatk_combine_gvcfs(ref_file, gvcf_files, out_path, extra_args=[]):
+    print "gatk_combine_gvcfs called with ref_file=[%s] gvcf_files=[%s] out_path=[%s] extra_args=[%s]" % (ref_file, ' '.join(gvcf_files), out_path, ' '.join(extra_args))
     # Call GATK CombineGVCFs
     gatk_args = [
             "java", "-d64", "-Xmx5g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
@@ -386,7 +387,7 @@ def gatk_combine_gvcfs(ref_file, gvcf_files, out_file, extra_args=[]):
     for gvcf_file in gvcf_files:
         gatk_args.extend(["--variant", gvcf_file])
     gatk_args.extend([
-        "-o", out_file
+        "-o", out_path
     ])
     if extra_args:
         gatk_args.extend(extra_args)
@@ -449,8 +450,14 @@ def main():
     intervals = []
     for interval in interval_str.split():
         intervals.extend(["--intervals", interval])
-    out_file = os.path.join(out_dir, name + "." + '_'.join(intervals) + ".g.vcf.gz")
-    gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, out_file, extra_args=intervals)
+    out_file = name + "." + '_'.join(intervals) + ".g.vcf.gz"
+    if len(out_file) > 255:
+        out_file = name + "." + '_'.join([intervals[0], intervals[-1]]) + ".g.vcf.gz"
+        print "Output file name was too long, shortened it to: %s" % out_file
+    if len(out_file) > 255:
+        raise InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
+    # CombineGVCFs! 
+    gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_args=intervals)
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
