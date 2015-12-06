@@ -9,7 +9,7 @@ copy_ref = False
 copy_chunk = False
 copy_input = False
 # TODO: make genome_chunks a parameter
-genome_chunks = 10
+genome_chunks = 200
 # TODO: make skip_sq_sn_regex a paramter
 skip_sq_sn_regex = '_decoy$'
 skip_sq_sn_r = re.compile(skip_sq_sn_regex)
@@ -319,7 +319,6 @@ try:
 except:
     raise
 out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz")
-log_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz.log")
 
 # Call GATK HaplotypeCaller
 gatk_p = subprocess.Popen(
@@ -334,8 +333,7 @@ gatk_p = subprocess.Popen(
         "--variant_index_type", "LINEAR", 
         "--variant_index_parameter", "128000", 
         "-o", out_file,
-        "-l", "INFO",
-        "--log_to_file", log_file
+        "-l", "INFO"
         ], 
     stdin=None,
     stdout=subprocess.PIPE,
