@@ -121,7 +121,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
     cr = arvados.CollectionReader(job_input)
     ignored_files = []
-    for s in sorted(cr.all_streams(), key=lambda stream: stream.name()):
+    for s in sorted(list(set(cr.all_streams())), key=lambda stream: stream.name()):
         # handle each stream separately
         stream_name = s.name()
         gvcf_by_group = {}
