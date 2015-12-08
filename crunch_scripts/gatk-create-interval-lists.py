@@ -5,6 +5,10 @@ import arvados      # Import the Arvados sdk module
 import re
 import subprocess
 
+# TODO: make skip_sq_sn_regex a paramter
+skip_sq_sn_regex = '_decoy$'
+skip_sq_sn_r = re.compile(skip_sq_sn_regex)
+
 class InvalidArgumentError(Exception):
     pass
 
