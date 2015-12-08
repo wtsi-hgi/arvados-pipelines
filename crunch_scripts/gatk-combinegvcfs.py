@@ -68,8 +68,8 @@ def prepare_gatk_reference_collection(reference_coll):
     return ref_input_pdh
 
 def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh):
-    # finalise the last stream
-    for group_name in gvcf_by_group.keys():
+    print "Finalising stream %s" % stream_name
+    for group_name in sorted(gvcf_by_group.keys()):
         print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
         # require interval_list for this group
         if group_name not in interval_list_by_group:
@@ -97,28 +97,28 @@ def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_gr
         except:
             raise 
 
-    # Create task to process this group
-    name_components = []
-    if len(stream_name) > 0 and stream_name != ".":
-        name_components.append(stream_name)
-    if len(group_name) > 0:
-        name_components.append(group_name)
-    if len(name_components) == 0:
-        name = "all"
-    else:
-        name = '::'.join(name_components)
-    print "Creating new task to process %s" % name
-    new_task_attrs = {
-            'job_uuid': arvados.current_job()['uuid'],
-            'created_by_job_task_uuid': arvados.current_task()['uuid'],
-            'sequence': if_sequence + 1,
-            'parameters': {
-                'inputs': task_inputs_pdh,
-                'ref': ref_input_pdh,
-                'name': name
+        # Create task to process this group
+        name_components = []
+        if len(stream_name) > 0 and stream_name != ".":
+            name_components.append(stream_name)
+        if len(group_name) > 0:
+            name_components.append(group_name)
+        if len(name_components) == 0:
+            name = "all"
+        else:
+            name = '::'.join(name_components)
+        print "Creating new task to process %s" % name
+        new_task_attrs = {
+                'job_uuid': arvados.current_job()['uuid'],
+                'created_by_job_task_uuid': arvados.current_task()['uuid'],
+                'sequence': if_sequence + 1,
+                'parameters': {
+                    'inputs': task_inputs_pdh,
+                    'ref': ref_input_pdh,
+                    'name': name
+                    }
                 }
-            }
-    arvados.api().job_tasks().create(body=new_task_attrs).execute()
+        arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
 
 def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, 
