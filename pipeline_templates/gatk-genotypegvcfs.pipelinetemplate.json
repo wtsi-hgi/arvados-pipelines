@@ -1,0 +1,30 @@
+{
+ "name":"GATK 3.5 GenotypeGVCFs",
+ "components":{
+  "gatk-genotypegvcfs":{
+   "script":"gatk-genotypegvcfs.py",
+   "script_version":"master",
+   "repository":"jr17/hgi",
+   "script_parameters":{
+    "reference_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    },
+    "inputs_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    },
+    "interval_lists_collection":{
+     "required":false,
+     "dataclass":"Collection"
+    }
+   },
+   "runtime_constraints":{
+    "docker_image":"mercury/gatk-3.5",
+    "min_nodes":10,
+    "max_tasks_per_node":20
+   }
+  }
+ },
+ "description":"Genotype gVCFs to VCFs using GATK GenotypeGVCFs"
+}

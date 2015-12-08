@@ -300,7 +300,8 @@ def gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, extr
             "java", "-d64", "-Xmx8g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
             "-T", "GenotypeGVCFs", 
             "-R", ref_file,
-            "-L", interval_list_file]
+            "-L", interval_list_file,
+            "-nt", "2"]
     for gvcf_file in gvcf_files:
         gatk_args.extend(["--variant", gvcf_file])
     gatk_args.extend([
