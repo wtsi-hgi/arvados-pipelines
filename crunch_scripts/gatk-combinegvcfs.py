@@ -218,7 +218,6 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
                     continue
             # if we make it this far, we have files that we are ignoring
             ignored_files.append("%s/%s" % (s.name(), f.name()))
-            create_blah
     # finally, process the last stream
     process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh)
 
