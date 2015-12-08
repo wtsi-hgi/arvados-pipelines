@@ -8,7 +8,7 @@ import subprocess
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
 group_by_regex = '[.](?P<group_by>[0-9]+_of_[0-9]+)[.]'
 max_gvcfs_to_combine = 200
-interval_count = 40
+interval_count = 1
 
 class InvalidArgumentError(Exception):
     pass
@@ -513,15 +513,19 @@ def main():
     interval_str = arvados.current_task()['parameters'].get('interval')
     if not interval_str:
         interval_str = ""
+    interval_strs = interval_str.split()
     intervals = []
-    for interval in interval_str.split():
+    for interval in interval_strs:
         intervals.extend(["--intervals", interval])
-    out_file = name + "." + '_'.join(intervals) + ".g.vcf.gz"
-    if len(out_file) > 255:
-        out_file = name + "." + '_'.join([intervals[0], intervals[-1]]) + ".g.vcf.gz"
-        print "Output file name was too long, shortened it to: %s" % out_file
-    if len(out_file) > 255:
-        raise InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
+    out_file = name + ".g.vcf.gz"
+    if interval_count > 1:
+        out_file = name + "." + '_'.join(interval_strs) + ".g.vcf.gz"
+        if len(out_file) > 255:
+            out_file = name + "." + '_'.join([interval_strs[0], interval_strs[-1]]) + ".g.vcf.gz"
+            print "Output file name was too long with full interval list, shortened it to: %s" % out_file
+        if len(out_file) > 255:
+            raise InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
+
     # CombineGVCFs! 
     gatk_exit = gatk_combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_args=intervals)
 
