@@ -67,6 +67,60 @@ def prepare_gatk_reference_collection(reference_coll):
         raise 
     return ref_input_pdh
 
+def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group):
+    # finalise the last stream
+    for group_name in gvcf_by_group.keys():
+        print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
+        # require interval_list for this group
+        if group_name not in interval_list_by_group:
+            raise InvalidArgumentError("Inputs collection did not contain interval_list for group %s" % group_name)
+        interval_lists = interval_list_by_group[group_name].keys()
+        if len(interval_lists) > 1:
+            raise InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
+        task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
+        for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
+            task_inputs_manifest += gvcf_f.as_manifest()
+            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
+                                            gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)), 
+                                                             None))
+            if gvcf_index_f:
+                task_inputs_manifest += gvcf_index_f.as_manifest()
+            else:
+                # no index for gVCF - TODO: should this be an error or warning?
+                print "WARNING: No correponding .tbi index file found for gVCF file %s" % gvcf_name
+                #raise InvalidArgumentError("No correponding .tbi index file found for gVCF file %s" % gvcf_name)
+
+        # Create a portable data hash for the task's subcollection
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": task_inputs_manifest}).execute()
+            task_inputs_pdh = r["portable_data_hash"]
+        except:
+            raise 
+
+    # Create task to process this group
+    name_components = []
+    if len(stream_name) > 0 and stream_name != ".":
+        name_components.append(stream_name)
+    if len(group_name) > 0:
+        name_components.append(group_name)
+    if len(name_components) == 0:
+        name = "all"
+    else:
+        name = '::'.join(name_components)
+    print "Creating new task to process %s" % name
+    new_task_attrs = {
+            'job_uuid': arvados.current_job()['uuid'],
+            'created_by_job_task_uuid': arvados.current_task()['uuid'],
+            'sequence': if_sequence + 1,
+            'parameters': {
+                'inputs': task_inputs_pdh,
+                'ref': ref_input_pdh,
+                'name': name
+                }
+            }
+    arvados.api().job_tasks().create(body=new_task_attrs).execute()
+
+
 def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, 
                                        if_sequence=0, and_end_task=True):
     """
@@ -126,12 +180,19 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
     gvcf_indices = {}
     for s in sorted(cr.all_streams(), key=lambda stream: stream.name()):
         stream_name = s.name()
-        # handle each stream separately
+        # handle each stream name separately
         if stream_name != last_stream_name:
-            gvcf_by_group = {}
-            gvcf_indices = {}
-            last_stream_name = stream_name
-            print "Processing files in stream %s" % stream_name
+            if last_stream_name != "":
+                print "Done processing files in stream %s" % last_stream_name
+                process_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group)
+                # now that we are done with last_stream_name, reinitialise dicts to 
+                # process data from new stream
+                last_stream_name = stream_name
+                print "Processing files in stream %s" % stream_name
+                gvcf_by_group = {}
+                gvcf_indices = {}
+
+        # loop over all the files in this stream (there may be only one)
         for f in s.all_files():
             if re.search(r'\.tbi$', f.name()):
                 gvcf_indices[s.name(), f.name()] = f
@@ -157,56 +218,9 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
                     continue
             # if we make it this far, we have files that we are ignoring
             ignored_files.append("%s/%s" % (s.name(), f.name()))
-        for group_name in gvcf_by_group.keys():
-            print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
-            # require interval_list for this group
-            if group_name not in interval_list_by_group:
-                raise InvalidArgumentError("Inputs collection did not contain interval_list for group %s" % group_name)
-            interval_lists = interval_list_by_group[group_name].keys()
-            if len(interval_lists) > 1:
-                raise InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
-            task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
-            for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
-                task_inputs_manifest += gvcf_f.as_manifest()
-                gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
-                                                gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)), 
-                                                                 None))
-                if gvcf_index_f:
-                    task_inputs_manifest += gvcf_index_f.as_manifest()
-                else:
-                    # no index for gVCF - TODO: should this be an error or warning?
-                    print "WARNING: No correponding .tbi index file found for gVCF file %s" % gvcf_name
-                    #raise InvalidArgumentError("No correponding .tbi index file found for gVCF file %s" % gvcf_name)
-
-            # Create a portable data hash for the task's subcollection
-            try:
-                r = arvados.api().collections().create(body={"manifest_text": task_inputs_manifest}).execute()
-                task_inputs_pdh = r["portable_data_hash"]
-            except:
-                raise 
-        
-        # Create task to process this group
-        name_components = []
-        if len(stream_name) > 0 and stream_name != ".":
-            name_components.append(stream_name)
-        if len(group_name) > 0:
-            name_components.append(group_name)
-        if len(name_components) == 0:
-            name = "all"
-        else:
-            name = '::'.join(name_components)
-        print "Creating new task to process %s" % name
-        new_task_attrs = {
-                'job_uuid': arvados.current_job()['uuid'],
-                'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                'sequence': if_sequence + 1,
-                'parameters': {
-                    'inputs': task_inputs_pdh,
-                    'ref': ref_input_pdh,
-                    'name': name
-                    }
-                }
-        arvados.api().job_tasks().create(body=new_task_attrs).execute()
+            create_blah
+    # finally, process the last stream
+    process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group)
 
     # report on any ignored files
     if len(ignored_files) > 0:
