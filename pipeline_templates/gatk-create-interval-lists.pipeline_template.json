@@ -1,0 +1,27 @@
+{
+ "name":"GATK Create Interval Lists",
+ "components":{
+  "gatk-create-interval-lists":{
+   "script":"gatk-create-interval-lists.py",
+   "script_version":"master",
+   "repository":"jr17/hgi",
+   "script_parameters":{
+    "reference_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    },
+    "genome_chunks":{
+     "required":true,
+     "dataclass":"number",
+     "description":"The number of chunks in which to chunk the genome (must be a positive integer)."
+    }
+   },
+   "runtime_constraints":{
+    "docker_image":"mercury/gatk-3.5",
+    "min_nodes":1,
+    "max_tasks_per_node":40
+   }
+  }
+ },
+ "description":"Create collection of interval_list files representing evenly sized genome chunks of the entire reference genome."
+}
