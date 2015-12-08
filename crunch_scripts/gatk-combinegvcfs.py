@@ -67,7 +67,7 @@ def prepare_gatk_reference_collection(reference_coll):
         raise 
     return ref_input_pdh
 
-def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group):
+def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh):
     # finalise the last stream
     for group_name in gvcf_by_group.keys():
         print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
@@ -184,7 +184,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
         if stream_name != last_stream_name:
             if last_stream_name != "":
                 print "Done processing files in stream %s" % last_stream_name
-                process_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group)
+                process_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh)
                 # now that we are done with last_stream_name, reinitialise dicts to 
                 # process data from new stream
                 last_stream_name = stream_name
@@ -220,7 +220,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
             ignored_files.append("%s/%s" % (s.name(), f.name()))
             create_blah
     # finally, process the last stream
-    process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group)
+    process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh)
 
     # report on any ignored files
     if len(ignored_files) > 0:
