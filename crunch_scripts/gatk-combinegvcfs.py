@@ -98,6 +98,25 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
 
     group_by_r = re.compile(group_by_regex)
 
+    # prepare interval_lists
+    il_coll = arvados.current_job()['script_parameters']['interval_lists_collection']
+    il_cr = arvados.CollectionReader(il_coll)
+    il_ignored_files = []
+    interval_list_by_group = {}
+    for s in il_cr.all_streams():
+        for f in s.all_files():
+            m = re.search(group_by_r, f.name())
+            if m:
+                group_name = m.group('group_by')
+                interval_list_m = re.search(r'\.interval_list', f.name())
+                if interval_list_m:
+                    if group_name not in interval_list_by_group:
+                        interval_list_by_group[group_name] = dict()
+                    interval_list_by_group[group_name][s.name(), f.name()] = f
+                    continue
+            # if we make it this far, we have files that we are ignoring
+            il_ignored_files.append("%s/%s" % (s.name(), f.name()))
+
     # prepare gVCF input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
     cr = arvados.CollectionReader(job_input)
@@ -106,7 +125,6 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
         # handle each stream separately
         stream_name = s.name()
         gvcf_by_group = {}
-        interval_list_by_group = {}
         gvcf_indices = {}
         print "Processing files in stream %s" % stream_name
         for f in s.all_files():
@@ -126,37 +144,41 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh,
                 if interval_list_m:
                     if group_name not in interval_list_by_group:
                         interval_list_by_group[group_name] = dict()
-                    interval_list_by_group[group_name][s.name(), f.name()] = f
+                    if (s.name(), f.name()) in interval_list_by_group[group_name]:
+                        if interval_list_by_group[group_name][s.name(), f.name()].as_manifest() != f.as_manifest():
+                            raise InvalidArgumentError("Already have interval_list for group %s file %s/%s, but manifests are not identical!" % (group_name, s.name(), f.name()))
+                    else: 
+                        interval_list_by_group[group_name][s.name(), f.name()] = f
                     continue
             # if we make it this far, we have files that we are ignoring
             ignored_files.append("%s/%s" % (s.name(), f.name()))
-    for group_name in gvcf_by_group.keys():
-        print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
-        # require interval_list for this group
-        if group_name not in interval_list_by_group:
-            raise InvalidArgumentError("Inputs collection did not contain interval_list for group %s" % group_name)
-        interval_lists = interval_list_by_group[group_name].keys()
-        if len(interval_lists) > 1:
-            raise InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
-        task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
-        for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
-            task_inputs_manifest += gvcf_f.as_manifest()
-            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
-                                            gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)), 
-                                                             None))
-            if gvcf_index_f:
-                task_inputs_manifest += gvcf_index_f.as_manifest()
-            else:
-                # no index for gVCF - TODO: should this be an error or warning?
-                print "WARNING: No correponding .tbi index file found for gVCF file %s" % gvcf_name
-                #raise InvalidArgumentError("No correponding .tbi index file found for gVCF file %s" % gvcf_name)
+        for group_name in gvcf_by_group.keys():
+            print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
+            # require interval_list for this group
+            if group_name not in interval_list_by_group:
+                raise InvalidArgumentError("Inputs collection did not contain interval_list for group %s" % group_name)
+            interval_lists = interval_list_by_group[group_name].keys()
+            if len(interval_lists) > 1:
+                raise InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
+            task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
+            for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
+                task_inputs_manifest += gvcf_f.as_manifest()
+                gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
+                                                gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)), 
+                                                                 None))
+                if gvcf_index_f:
+                    task_inputs_manifest += gvcf_index_f.as_manifest()
+                else:
+                    # no index for gVCF - TODO: should this be an error or warning?
+                    print "WARNING: No correponding .tbi index file found for gVCF file %s" % gvcf_name
+                    #raise InvalidArgumentError("No correponding .tbi index file found for gVCF file %s" % gvcf_name)
 
-        # Create a portable data hash for the task's subcollection
-        try:
-            r = arvados.api().collections().create(body={"manifest_text": task_inputs_manifest}).execute()
-            task_inputs_pdh = r["portable_data_hash"]
-        except:
-            raise 
+            # Create a portable data hash for the task's subcollection
+            try:
+                r = arvados.api().collections().create(body={"manifest_text": task_inputs_manifest}).execute()
+                task_inputs_pdh = r["portable_data_hash"]
+            except:
+                raise 
         
         # Create task to process this group
         name_components = []
