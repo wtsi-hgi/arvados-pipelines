@@ -5,13 +5,16 @@ import arvados      # Import the Arvados sdk module
 import re
 import subprocess
 
-# TODO: make group_by_regex a parameter
-group_by_regex = '[.](?P<group_by>[0-9]+_of_[0-9]+)[.].*.g.vcf.gz$'
+# TODO: make group_by_regex and max_gvcfs_to_combine parameters
+group_by_regex = '[.](?P<group_by>[0-9]+_of_[0-9]+)[.]'
 
 class InvalidArgumentError(Exception):
     pass
 
 class FileAccessError(Exception):
+    pass
+
+class APIError(Exception):
     pass
 
 def prepare_gatk_reference_collection(reference_coll):
@@ -62,50 +65,17 @@ def prepare_gatk_reference_collection(reference_coll):
         raise 
     return ref_input_pdh
 
-def prepare_gatk_dbsnp_collection(dbsnp_coll):
-    """
-    Checks that the supplied dbsnp_collection has the required 
-    files and only the required files for GATK. 
-    Returns: a portable data hash for the dbsnp collection
-    """
-    # Ensure we have a .vcf.gz dbsnp file with corresponding .tbi index
-    dcr = arvados.CollectionReader(dbsnp_coll)
-    dbsnp_vcf = {}
-    dbsnp_tbi = {}
-    dbsnp_input = None
-    dict_reader = None
-    for rs in dcr.all_streams():
-        for rf in rs.all_files():
-            if re.search(r'\.vcf\.gz$', rf.name()):
-                dbsnp_vcf[rs.name(), rf.name()] = rf
-            elif re.search(r'\.tbi$', rf.name()):
-                dbsnp_tbi[rs.name(), rf.name()] = rf
-    for ((s_name, f_name), vcf_f) in dbsnp_vcf.items():
-        tbi_f = dbsnp_tbi.get((s_name, re.sub(r'\.vcf\.gz$', '.vcf.gz.tbi', f_name)), 
-                              dbsnp_tbi.get((s_name, re.sub(r'\.vcf\.gz$', '\.vcf.tbi', f_name)), 
-                                            None))
-        if vcf_f and tbi_f:
-            # found a set of both
-            dbsnp_input = vcf_f.as_manifest()
-            dbsnp_input += tbi_f.as_manifest()
-            break
-    if dbsnp_input is None:
-        raise InvalidArgumentError("Expected a dbsnp vcf with tbi in dbsnp_collection. Found [%s]" % ' '.join(rf.name() for rf in rs.all_files()))
-    # Create and return a portable data hash for the dbsnp_input manifest
-    try:
-        r = arvados.api().collections().create(body={"manifest_text": dbsnp_input}).execute()
-        dbsnp_input_pdh = r["portable_data_hash"]
-    except:
-        raise 
-    return dbsnp_input_pdh
+def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh):
+    print "Finalising stream %s" % stream_name
 
-def one_task_per_group(group_by_regex, n, ref_input_pdh, dbsnp_input_pdh, 
+
+def one_task_per_group(group_by_regex, ref_input_pdh, 
                        if_sequence=0, and_end_task=True):
     """
-    Queue one task for each group of gVCFs in the inputs_collection,
-    with grouping based on the value of the named capture group 
-    "group_by" in the group_by_regex against the filename in the 
-    inputs_collection.
+    Queue one task for each group of gVCFs and corresponding interval_list
+    in the inputs_collection, with grouping based on the value of the named 
+    capture group "group_by" in the group_by_regex against the filename in 
+    the inputs_collection.
 
     Each new task will have an "inputs" parameter: a manifest
     containing a set of one or more gVCF files and its corresponding 
@@ -114,7 +84,7 @@ def one_task_per_group(group_by_regex, n, ref_input_pdh, dbsnp_input_pdh,
     Each new task will also have a "ref" parameter: a manifest 
     containing the reference files to use. 
 
-    Note that any files not matching the group_by_regex are ignored. 
+    Note that all gVCFs not matching the group_by_regex are ignored. 
 
     if_sequence and and_end_task arguments have the same significance
     as in arvados.job_setup.one_task_per_input_file().
@@ -124,26 +94,69 @@ def one_task_per_group(group_by_regex, n, ref_input_pdh, dbsnp_input_pdh,
 
     group_by_r = re.compile(group_by_regex)
 
-    # prepare gVCF input collections
-    job_input = arvados.current_job()['script_parameters']['inputs_collection']
-    cr = arvados.CollectionReader(job_input)
-    for s in cr.all_streams():
-        gvcf_by_group = {}
-        gvcf_indices = {}
+    # prepare interval_lists
+    il_coll = arvados.current_job()['script_parameters']['interval_lists_collection']
+    il_cr = arvados.CollectionReader(il_coll)
+    il_ignored_files = []
+    interval_list_by_group = {}
+    for s in il_cr.all_streams():
         for f in s.all_files():
             m = re.search(group_by_r, f.name())
             if m:
                 group_name = m.group('group_by')
-                if group_name not in gvcf_by_group:
-                    gvcf_by_group[group_name] = dict()
-                gvcf_by_group[group_name][s.name(), f.name()] = f
-            elif re.search(r'\.tbi$', f.name()):
+                interval_list_m = re.search(r'\.interval_list', f.name())
+                if interval_list_m:
+                    if group_name not in interval_list_by_group:
+                        interval_list_by_group[group_name] = dict()
+                    interval_list_by_group[group_name][s.name(), f.name()] = f
+                    continue
+            # if we make it this far, we have files that we are ignoring
+            il_ignored_files.append("%s/%s" % (s.name(), f.name()))
+
+    # prepare gVCF input collections
+    job_input = arvados.current_job()['script_parameters']['inputs_collection']
+    cr = arvados.CollectionReader(job_input)
+    ignored_files = []
+    last_stream_name = ""
+    gvcf_by_group = {}
+    gvcf_indices = {}
+    for s in sorted(cr.all_streams(), key=lambda stream: stream.name()):
+        for f in s.all_files():
+            if re.search(r'\.tbi$', f.name()):
                 gvcf_indices[s.name(), f.name()] = f
-            else:
-                print "WARNING: ignoring irrelevant file %s/%s in inputs_collection" % (s.name(), f.name())
-    for group_name in gvcf_by_group.keys():
+                continue
+            m = re.search(group_by_r, f.name())
+            if m:
+                group_name = m.group('group_by')
+                gvcf_m = re.search(r'\.g\.vcf\.gz$', f.name())
+                if gvcf_m:
+                    if group_name not in gvcf_by_group:
+                        gvcf_by_group[group_name] = dict()
+                    gvcf_by_group[group_name][s.name(), f.name()] = f
+                    continue
+                interval_list_m = re.search(r'\.interval_list', f.name())
+                if interval_list_m:
+                    if group_name not in interval_list_by_group:
+                        interval_list_by_group[group_name] = dict()
+                    if (s.name(), f.name()) in interval_list_by_group[group_name]:
+                        if interval_list_by_group[group_name][s.name(), f.name()].as_manifest() != f.as_manifest():
+                            raise InvalidArgumentError("Already have interval_list for group %s file %s/%s, but manifests are not identical!" % (group_name, s.name(), f.name()))
+                    else: 
+                        interval_list_by_group[group_name][s.name(), f.name()] = f
+                    continue
+            # if we make it this far, we have files that we are ignoring
+            ignored_files.append("%s/%s" % (s.name(), f.name()))
+
+    # process each group
+    for group_name in sorted(gvcf_by_group.keys()):
         print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
-        task_inputs_manifest = ""
+        # require interval_list for this group
+        if group_name not in interval_list_by_group:
+            raise InvalidArgumentError("Inputs collection did not contain interval_list for group %s" % group_name)
+        interval_lists = interval_list_by_group[group_name].keys()
+        if len(interval_lists) > 1:
+            raise InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
+        task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
             gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
@@ -162,7 +175,7 @@ def one_task_per_group(group_by_regex, n, ref_input_pdh, dbsnp_input_pdh,
             task_inputs_pdh = r["portable_data_hash"]
         except:
             raise 
-        
+
         # Create task to process this group
         print "Creating new task to process %s" % group_name
         new_task_attrs = {
@@ -172,11 +185,17 @@ def one_task_per_group(group_by_regex, n, ref_input_pdh, dbsnp_input_pdh,
                 'parameters': {
                     'inputs': task_inputs_pdh,
                     'ref': ref_input_pdh,
-                    'dbsnp': dbsnp_input_pdh,
                     'name': group_name
                     }
                 }
         arvados.api().job_tasks().create(body=new_task_attrs).execute()
+
+    # report on any ignored files
+    if len(ignored_files) > 0:
+        print "WARNING: ignored non-matching files in inputs_collection: %s" % (' '.join(ignored_files))
+        # TODO: could use `setmedian` from https://github.com/ztane/python-Levenshtein
+        # to print most representative "median" filename (i.e. skipped 15 files like median), then compare the 
+        # rest of the files to that median (perhaps with `ratio`) 
 
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
@@ -202,23 +221,6 @@ def mount_gatk_reference(ref_param="ref"):
     # TODO: could check readability of .fai and .dict as well?
     return ref_file
 
-def mount_gatk_dbsnp(dbsnp_param="dbsnp"):
-    # Get dbsnp VCF
-    print "Mounting dbsnp collection"
-    dbsnp_dir = arvados.get_task_param_mount(dbsnp_param)
-
-    # Sanity check dbsnp VCF
-    for f in arvados.util.listdir_recursive(dbsnp_dir):
-        if re.search(r'\.vcf\.gz$', f):
-            dbsnp_file = os.path.join(dbsnp_dir, f)
-    if dbsnp_file is None:
-        raise InvalidArgumentError("No dbsnp VCF file found in dbsnp collection.")
-    # Ensure we can read the dbsnp file
-    if not os.access(dbsnp_file, os.R_OK):
-        raise FileAccessError("dbsnp VCF file not readable: %s" % dbsnp_file)
-    # TODO: could check readability of .tbi as well
-    return dbsnp_file
-
 def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Get input gVCFs for this task
     print "Mounting task input collection"
@@ -230,6 +232,8 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
         if re.search(r'\.g\.vcf\.gz$', f):
             input_gvcf_files.append(os.path.join(inputs_dir, f))
         elif re.search(r'\.tbi$', f):
+            pass
+        elif re.search(r'\.interval_list$', f):
             pass
         else:
             print "WARNING: collection contains unexpected file %s" % f
@@ -251,6 +255,27 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
                 raise FileAccessError("No readable gVCF index file for gVCF file: %s" % gvcf_file)
     return input_gvcf_files
 
+def mount_gatk_interval_list_input(inputs_param="inputs"):
+    # Get interval_list for this task
+    print "Mounting task input collection to get interval_list"
+    inputs_dir = arvados.get_task_param_mount('inputs')
+
+    # Sanity check input interval_list (there can be only one)
+    input_interval_lists = []
+    for f in arvados.util.listdir_recursive(inputs_dir):
+        if re.search(r'\.interval_list$', f):
+            input_interval_lists.append(os.path.join(inputs_dir, f))
+    if len(input_interval_lists) != 1:
+        raise InvalidArgumentError("Expected exactly one interval_list in inputs collection (found %s)" % len(input_interval_lists))
+
+    assert(len(input_interval_lists) == 1)
+    interval_list_file = input_interval_lists[0]
+
+    if not os.access(interval_list_file, os.R_OK):
+        raise FileAccessError("interval_list file not readable: %s" % interval_list_file)
+
+    return interval_list_file
+
 def prepare_out_dir():
     # Will write to out_dir, make sure it is empty
     out_dir = os.path.join(arvados.current_task().tmpdir, 'out')
@@ -268,19 +293,18 @@ def prepare_out_dir():
         raise
     return out_dir
 
-def gatk_genotype_gvcfs(ref_file, dbsnp_file, gvcf_files, out_file):
+def gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, extra_args=[]):
+    print "gatk_combine_gvcfs called with ref_file=[%s] interval_list_file=[%s] gvcf_files=[%s] out_path=[%s]" % (ref_file, interval_list_file, ' '.join(gvcf_files), out_path)
     # Call GATK GenotypeGVCFs
     gatk_args = [
-            "java", "-d64", "-Xmx40g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
+            "java", "-d64", "-Xmx8g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
             "-T", "GenotypeGVCFs", 
             "-R", ref_file,
-            "--dbsnp", dbsnp_file,
-            "-nt", 8
-            ]
+            "-L", interval_list_file]
     for gvcf_file in gvcf_files:
         gatk_args.extend(["--variant", gvcf_file])
     gatk_args.extend([
-        "-o", out_file
+        "-o", out_path
     ])
     print "Calling GATK: %s" % gatk_args
     gatk_p = subprocess.Popen(
@@ -310,27 +334,27 @@ def main():
     #          (and terminate if this is task 0) 
     ################################################################################
     ref_input_pdh = prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
-    dbsnp_input_pdh = prepare_gatk_dbsnp_collection(dbsnp_coll=arvados.current_job()['script_parameters']['dbsnp_collection'])
     one_task_per_group(group_by_regex, 
-                       ref_input_pdh, dbsnp_input_pdh, 
+                       ref_input_pdh, 
                        if_sequence=0, and_end_task=True)
 
-    # We will never reach this point if we are in the 0th task
+    # We will never reach this point if we are in the 0th task sequence
     assert(arvados.current_task()['sequence'] > 0)
 
-
     ################################################################################
-    # Phase II: Combine gVCFs!
+    # Phase II: Genotype gVCFs!
     ################################################################################
     ref_file = mount_gatk_reference(ref_param="ref")
-    dbsnp_file = mount_gatk_dbsnp(dbsnp_param="dbsnp")
+    interval_list_file = mount_gatk_interval_list_input(inputs_param="inputs")
     gvcf_files = mount_gatk_gvcf_inputs(inputs_param="inputs")
     out_dir = prepare_out_dir()
     name = arvados.current_task()['parameters'].get('name')
     if not name:
         name = "unknown"
-    out_file = os.path.join(out_dir, name + ".g.vcf.gz")
-    gatk_exit = gatk_genotype_gvcfs(ref_file, dbsnp_file, gvcf_files, out_file)
+    out_file = name + ".vcf.gz"
+
+    # GenotypeGVCFs! 
+    gatk_exit = gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, os.path.join(out_dir, out_file))
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
