@@ -9,7 +9,7 @@ import jinja2
 RUNNER_CONFIG_TEMPLATE = "/etc/runner/gvcf.mpileup.conf.j2"
 
 # TODO: make genome_chunks a parameter
-genome_chunks = 200
+genome_chunks = 1
 # TODO: make skip_sq_sn_regex a paramter
 skip_sq_sn_regex = '_decoy$'
 skip_sq_sn_r = re.compile(skip_sq_sn_regex)
@@ -120,11 +120,11 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
         chunk_intervals_count = 0
-        chunk_input_name = dict_reader.name() + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
+        chunk_input_name = dict_reader.name() + (".%s_of_%s.region_list.txt" % (chunk_num, genome_chunks))
         print "Creating interval file for chunk %s" % chunk_num
         chunk_c = arvados.collection.CollectionWriter(num_retries=3)
         chunk_c.start_new_file(newfilename=chunk_input_name)
-        chunk_c.write(interval_header)
+        # chunk_c.write(interval_header)
         remaining_len = chunk_len
         while len(sns) > 0:
             sn = sns.pop(0)
@@ -138,7 +138,8 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                 assert((end-start+1) <= remaining_len)
                 sn_intervals[sn] = (end+1, real_end)
                 sns.insert(0, sn)
-            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
+            #interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
+            interval = "%s\t%s\t%s\n" % (sn, start, end)
             remaining_len -= (end-start+1)
             chunk_c.write(interval)
             chunk_intervals_count += 1
@@ -238,7 +239,7 @@ def main():
     chunk_dir = arvados.get_task_param_mount('chunk')
 
     for f in arvados.util.listdir_recursive(chunk_dir):
-        if re.search(r'\.interval_list$', f):
+        if re.search(r'\.region_list.txt$', f):
             chunk_file = os.path.join(chunk_dir, f)
     if chunk_file is None:
         raise InvalidArgumentError("No chunk intervals file found in chunk collection.")
