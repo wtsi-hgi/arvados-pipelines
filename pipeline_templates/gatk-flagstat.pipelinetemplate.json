@@ -1,0 +1,24 @@
+{
+    "name": "GATK FlagStat Test",
+      "components": {
+        "gatk-flagstat": {
+          "script": "gatk-flagstat.py",
+          "script_version": "master",
+          "repository": "hgi",
+          "script_parameters": {
+            "reference_collection": {
+              "required": true,
+              "dataclass": "Collection"
+            },
+            "inputs_collection": {
+              "required": true,
+              "dataclass": "Collection"
+            }
+	  },
+          "runtime_constraints": {
+            "docker_image": "mercury/gatk_nightly" 
+          }
+	}
+      }
+}
+

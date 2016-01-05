@@ -1,0 +1,22 @@
+{
+    "name": "GATK HaplotypeCaller by chr",
+      "components": {
+        "gatk-flagstat": {
+          "script": "gatk-haplotypecaller-by-chr.py",
+          "script_version": "master",
+          "repository": "hgi",
+          "script_parameters": {
+            "reference_collection": {
+              "required": true,
+              "dataclass": "Collection"
+            },
+            "inputs_collection": {
+              "required": true,
+              "dataclass": "Collection"
+            }
+	  },
+          "runtime_constraints": {
+            "docker_image": "mercury/gatk_nightly" 
+          }
+	}
+}
