@@ -330,6 +330,25 @@ def main():
     if runner_exit != 0:
         print "WARNING: runner exited with exit code %s" % runner_exit
 
+    # clean up out_dir
+    try:
+        os.remove(os.path.join(out_dir, "run-bt-mpileup.lock"))
+        os.remove(os.path.join(out_dir, "mpileup.conf"))
+        os.remove(os.path.join(out_dir, "cleaned-job-outputs.tgz"))
+    except:
+        print "WARNING: could not remove some output files!"
+        pass
+
+    out_bcf = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".bcf")
+    try:
+        os.rename(os.path.join(out_dir, "all.bcf"), out_bcf))
+        os.rename(os.path.join(out_dir, "all.bcf.csi"), out_bcf + ".csi"))
+        os.rename(os.path.join(out_dir, "all.bcf.filt.vchk"), out_bcf + ".filt.vchk"))
+        os.rename(os.path.join(out_dir, "all.bcf.vchk"), out_bcf + ".vchk"))
+    except:
+        print "WARNING: could not rename some output files!"
+        pass
+
     # Write a new collection as output
     out = arvados.CollectionWriter()
 
