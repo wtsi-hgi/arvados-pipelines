@@ -292,6 +292,7 @@ def main():
         raise
 #    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz")
     config_file = os.path.join(out_dir, "mpileup.conf")
+    lock_file = os.path.join(out_dir, "run-bt-mpileup.lock")
 
     if not os.path.exists(RUNNER_CONFIG_TEMPLATE):
         raise FileAccessError("No runner configuration template at %s" % RUNNER_CONFIG_TEMPLATE)
@@ -311,7 +312,8 @@ def main():
             "run-bt-mpileup", 
             "+config", config_file, 
             "+js", "mpm",
-            "+loop", "60",
+            "+loop", "5",
+            "+lock", lock_file,
             "-o", out_dir
             ], 
         stdin=None,
