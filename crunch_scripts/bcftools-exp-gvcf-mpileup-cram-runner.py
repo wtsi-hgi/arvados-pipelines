@@ -291,8 +291,8 @@ def main():
     except:
         raise
 #    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz")
-    config_file = os.path.join(out_dir, "mpileup.conf")
-    lock_file = os.path.join(out_dir, "run-bt-mpileup.lock")
+    config_file = os.path.join(arvados.current_task().tmpdir, "mpileup.conf")
+    lock_file = os.path.join(arvados.current_task().tmpdir, "run-bt-mpileup.lock")
 
     if not os.path.exists(RUNNER_CONFIG_TEMPLATE):
         raise FileAccessError("No runner configuration template at %s" % RUNNER_CONFIG_TEMPLATE)
