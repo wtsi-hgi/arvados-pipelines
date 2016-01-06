@@ -314,7 +314,6 @@ def main():
             "+js", "mpm",
             "+loop", "5",
             "+lock", lock_file,
-            "+maxjobs", "40", # should not be needed as it should come from /proc/cpuinfo
             "-o", out_dir
             ], 
         stdin=None,
