@@ -293,8 +293,8 @@ def main():
 #    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.vcf.gz")
     config_file = os.path.join(out_dir, "mpileup.conf")
 
-    if not os.path.exists(runner_config_template):
-        raise FileAccessError("No runner configuration template at %s" % runner_config_template)
+    if not os.path.exists(RUNNER_CONFIG_TEMPLATE):
+        raise FileAccessError("No runner configuration template at %s" % RUNNER_CONFIG_TEMPLATE)
     # generate config
     runner_config_text = jinja2.Environment(loader=jinja2.FileSystemLoader("/")).get_template(RUNNER_CONFIG_TEMPLATE).render( 
         fasta_reference = ref_file, 
