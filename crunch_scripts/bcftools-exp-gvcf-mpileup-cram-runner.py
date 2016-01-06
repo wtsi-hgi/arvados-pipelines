@@ -296,7 +296,7 @@ def main():
     if not os.path.exists(runner_config_template):
         raise FileAccessError("No runner configuration template at %s" % runner_config_template)
     # generate config
-    runner_config_text = jinja2.Environment().get_template(RUNNER_CONFIG_TEMPLATE).render( 
+    runner_config_text = jinja2.Environment(loader=jinja2.FileSystemLoader("/")).get_template(RUNNER_CONFIG_TEMPLATE).render( 
         fasta_reference = ref_file, 
         input_cram = cram_file, 
         regions = chunk_file )
