@@ -341,10 +341,10 @@ def main():
 
     out_bcf = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".bcf")
     try:
-        os.rename(os.path.join(out_dir, "all.bcf"), out_bcf))
-        os.rename(os.path.join(out_dir, "all.bcf.csi"), out_bcf + ".csi"))
-        os.rename(os.path.join(out_dir, "all.bcf.filt.vchk"), out_bcf + ".filt.vchk"))
-        os.rename(os.path.join(out_dir, "all.bcf.vchk"), out_bcf + ".vchk"))
+        os.rename(os.path.join(out_dir, "all.bcf"), out_bcf)
+        os.rename(os.path.join(out_dir, "all.bcf.csi"), out_bcf + ".csi")
+        os.rename(os.path.join(out_dir, "all.bcf.filt.vchk"), out_bcf + ".filt.vchk")
+        os.rename(os.path.join(out_dir, "all.bcf.vchk"), out_bcf + ".vchk")
     except:
         print "WARNING: could not rename some output files!"
         pass
