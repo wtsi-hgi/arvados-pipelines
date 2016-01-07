@@ -10,8 +10,10 @@ RUNNER_CONFIG_TEMPLATE = "/etc/runner/gvcf.mpileup.conf.j2"
 
 # TODO: make genome_chunks a parameter
 genome_chunks = 1
+
 # TODO: make skip_sq_sn_regex a paramter
-skip_sq_sn_regex = '_decoy$'
+#skip_sq_sn_regex = '_decoy$'
+skip_sq_sn_regex = '[_-]'
 skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
 class InvalidArgumentError(Exception):
