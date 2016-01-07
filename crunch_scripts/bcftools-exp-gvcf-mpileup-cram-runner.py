@@ -324,7 +324,9 @@ def main():
 
     while runner_p.poll() is None:
         line = runner_p.stdout.readline()
-        print "RUNNER: %s" % line.rstrip()
+        # only print '#### unfinished' lines or things that are errors or warnings
+        if re.search(r'\d+\s+unfinished', line) or re.search(r'(FATAL|ERROR|WARNING)', line, flags=re.IGNORECASE):
+            print "RUNNER: %s" % line.rstrip()
 
     runner_exit = runner_p.wait()
     if runner_exit != 0:
