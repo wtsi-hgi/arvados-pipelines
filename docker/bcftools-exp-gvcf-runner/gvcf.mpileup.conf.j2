@@ -1,0 +1,75 @@
+
+            # For sanity checking that your config file is not obsolete. Update the version key in your 
+            #  config file to get rid of the warnings.
+            #
+            # What changed since version:
+            #   1377691623 .. New version of bcftools requires sample files to be prefixed with ':'.
+            #   1394700014 .. Switched from "vcf-concat" to "bcftools concat"
+            #   1427807557 .. Major changes: the "pops", "sample_list", and "bams" keys were replaced by "alns",
+            #                   "ploidy" changed, "chroms" removed, "regions" changed, "bcftools" replaced by
+            #                   "call" and added "index", "filter" and "vcfstats" changed.
+            #
+            version  => '1427807557',
+
+            # Add -P ILLUMINA or -P SLX if the BAMs contain also reads from different platforms. 
+            mpileup  => 'bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15',
+            call     => 'bcftools view',
+            norm     => 'bcftools norm',
+            index    => 'bcftools index',
+            vcfstats => 'bcftools stats -c both',
+            filter   => undef,
+            concat   => 'bcftools concat',
+            htsfile  => 'htsfile',
+ 
+            fa_ref   => '{{ fasta_reference }}',
+
+            # alns: A single bam/cram file, a list of bam/cram files in a file,
+            # or a hash which defines the population structure.
+            # When the "alns" key is not a hash, the samples are grouped by the
+            # @RG:SM tag from across all bams and called jointly. 
+            # Otherwise, the hash controls the sex, output sample names, and
+            # samples/bams to be called jointly. The following columns are recognised:
+            #   grp  .. group name. Files from the same group will be called jointly.
+            #   aln  .. bam/cram file name
+            #   sex  .. one of the sexes defined in 'ploidy'. If not given, 'assumed_sex' is used.
+            #   smpl .. sample name to call
+            #   disp .. sample display name (i.e., rename sample)
+            #
+            # alns => 'file.bam',
+            # alns => 'list_of_files.txt',
+            # alns => { fname=>'file.list', columns=>['grp','aln']},
+            # alns => { fname=>'singlesample.list', columns=>['grp','aln']},
+            alns => '{{ input_cram }}',
+
+            # Restrict calling to the listed regions only. Provide either an
+            # array or a file name with a list of regions (whitespace delimited
+            # file with the columns CHR,FROM,TO).
+            #
+            # regions => 'regions_list.txt',
+            # regions => [ qw(1:1-1000000 1:1000001-5000000) ],
+            # regions => [ qw(chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY) ],
+            # regions => [ qw(chr20) ],
+            regions => '{{ regions }}',
+
+            assumed_sex    => 'F',   # The default sex, see also 'ploidy' definitions
+            merge_chroms   => 1,     # Create whole-genome VCF or stop at per-chromosome VCFs?
+            merge_groups   => 0,     # After calling each group separately, create a single VCF?
+            chunk_size     => 1000000,
+            do_clean       => 1,     # Remove runner's temporary files
+            shuffle_chunks => 0,     # Process chunks in random order to randomize disk access
+            debug_chunks   => 0,
+
+            # File or array with ploidy definitions in the format accepted by
+            # bcftools. If not defined, the default ploidy is used, unlisted
+            # regions are diploid:
+            #       X 1 60000 M 1
+            #       X 2699521 154931043 M 1
+            #       Y 1 59373566 M 1
+            #       Y 1 59373566 F 0
+            #       MT 1 16569 M 1
+            #       MT 1 16569 F 1
+            #
+            ploidy => undef,
+            
+#            limits   => { runtime=>24*60 },
+    
