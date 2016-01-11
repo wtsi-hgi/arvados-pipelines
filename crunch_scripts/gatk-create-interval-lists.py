@@ -5,10 +5,6 @@ import arvados      # Import the Arvados sdk module
 import re
 import subprocess
 
-# TODO: make skip_sq_sn_regex a paramter
-skip_sq_sn_regex = '_decoy$'
-skip_sq_sn_r = re.compile(skip_sq_sn_regex)
-
 class InvalidArgumentError(Exception):
     pass
 
@@ -63,7 +59,7 @@ def prepare_gatk_reference_collection(reference_coll):
         raise 
     return ref_input_pdh
 
-def create_interval_lists(genome_chunks, reference_coll):
+def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
     rcr = arvados.CollectionReader(reference_coll)
     ref_dict = []
     dict_reader = None
@@ -154,6 +150,9 @@ def create_interval_lists(genome_chunks, reference_coll):
     return chunk_input_pdh
 
 def main():
+    skip_sq_sn_regex = arvados.current_job()['script_parameters']['skip_sq_sn_regerx'] || '_decoy$'
+    skip_sq_sn_r = re.compile(skip_sq_sn_regex)
+
     genome_chunks = int(arvados.current_job()['script_parameters']['genome_chunks'])
     if genome_chunks < 1:
         raise InvalidArgumentError("genome_chunks must be a positive integer")
@@ -162,7 +161,7 @@ def main():
     ref_input_pdh = prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
 
     # Create an interval_list file for each chunk based on the .dict in the reference collection
-    output_locator = create_interval_lists(genome_chunks, ref_input_pdh)
+    output_locator = create_interval_lists(genome_chunks, ref_input_pdh, skip_sq_sn_r)
 
     # Use the resulting locator as the output for this task.
     arvados.current_task().set_output(output_locator)
