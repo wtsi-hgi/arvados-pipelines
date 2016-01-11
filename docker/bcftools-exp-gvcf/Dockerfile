@@ -56,23 +56,25 @@ RUN \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
 
-# Install vr-runner
+# Install htslib + samtools 1.3 from source
 RUN \
-  apt-add-repository multiverse && \
   apt-get -q=2 update && \
-  apt-get -q=2 -y --no-install-recommends install \
-    git \
-    libmath-random-perl \
-    libipc-run3-perl \
-  && \
+  apt-get -q=2 -y --no-install-recommends install build-essential git zlib1g-dev libncurses5-dev && \
   cd /tmp && \
-  git clone https://github.com/wtsi-hgi/vr-runner.git && \
-  cd vr-runner && \
-  cp scripts/run-* /usr/local/bin && \
-  mkdir -p /usr/local/lib/site_perl && \
-  cp -r modules/* /usr/local/lib/site_perl/ && \
+  git clone https://github.com/samtools/htslib.git && \
+  cd htslib && \
+  git checkout 1.3 && \
+  make && \
+  cd .. && \
+  git clone https://github.com/samtools/samtools.git && \
+  cd samtools && \
+  git checkout 1.3 && \
+  make && \
+  cp samtools /usr/local/bin && \
   cd && \
-  rm -rf /tmp/vr-runner && \
+  rm -rf /tmp/htslib && \
+  rm -rf /tmp/samtools && \
+  apt-get -q=2 -y purge build-essential zlib1g-dev && \
   apt-get -q=2 -y autoremove && \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
