@@ -1,0 +1,26 @@
+{
+ "name":"bcftools experimental gvcf calling",
+ "components":{
+  "bcftools-exp-gvcf-call-runner":{
+   "script":"crunch_script_debug_sleep.py",
+   "script_version":"master",
+   "repository":"jr17/hgi",
+   "script_parameters":{
+    "reference_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    },
+    "inputs_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    }
+   },
+   "runtime_constraints":{
+    "docker_image":"mercury/bcftools-exp-gvcf",
+    "min_nodes":1,
+    "max_tasks_per_node":1
+   }
+  }
+ },
+ "description":"gVCF calling using experimental bcftools"
+}
