@@ -1,8 +1,8 @@
 {
- "name":"bcftools experimental gvcf mpileup (CRAM to GVCF)",
+ "name":"bcftools experimental gvcf mpileup (CRAM to GVCF) non-chunked",
  "components":{
-  "bcftools-exp-gvcf-mpileup-cram":{
-   "script":"crunch_script_debug_sleep.py",
+  "bcftools-exp-gvcf-mpileup-cram-non-chunked":{
+   "script":"bcftools-exp-gvcf-mpileup-cram.py",
    "script_version":"master",
    "repository":"jr17/hgi",
    "script_parameters":{
@@ -17,8 +17,8 @@
    },
    "runtime_constraints":{
     "docker_image":"mercury/bcftools-exp-gvcf",
-    "min_nodes":1,
-    "max_tasks_per_node":40
+    "min_nodes":10,
+    "max_tasks_per_node":10
    }
   }
  },
