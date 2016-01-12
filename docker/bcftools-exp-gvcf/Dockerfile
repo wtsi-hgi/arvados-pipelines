@@ -79,16 +79,5 @@ RUN \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
 
-# Install GRL CA
-ADD grl-ca.pem /etc/ssl/certs/grl-ca.pem
-RUN \
-  ln -s /etc/ssl/certs/grl-ca.pem /usr/lib/ssl/certs/91155464.0 && \
-  cat /etc/ssl/certs/grl-ca.pem >> /etc/ssl/certs/ca-certificates.crt && \
-  cat /etc/ssl/certs/grl-ca.pem >> /usr/local/lib/python2.7/dist-packages/httplib2/cacerts.txt
-
-# Install runner configuration templates
-ADD gvcf.mpileup.conf.j2 /etc/runner/gvcf.mpileup.conf.j2
-ADD gvcf.calling.conf.j2 /etc/runner/gvcf.calling.conf.j2
-
 # Switch back to crunch user
 USER crunch
