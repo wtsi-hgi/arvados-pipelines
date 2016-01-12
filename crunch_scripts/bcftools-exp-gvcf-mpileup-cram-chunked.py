@@ -299,14 +299,19 @@ def main():
     regions = []
     print "Preparing region list from chunk file [%s]" % chunk_file
     with open(chunk_file, 'r') as f:
-        (chr, start, end) = f.readline().rstrip().split()
-        region = "%s:%s-%s" % (chr, start, end)
-        regions.append(region)
+        for line in f.readlines():
+            (chr, start, end) = line.rstrip().split()
+            region = "%s:%s-%s" % (chr, start, end)
+            regions.append(region)
+    total_region_count = len(regions)
 
-    print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % len(regions)
+    print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % total_region_count
+
     concat_fifos = dict()
-    for i in range(len(regions)):
-        fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part.%s.g.bcf" % i))
+    current_region_num = 0
+    for region in regions:
+        current_region_num += 1
+        fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.bcf" % (current_region_num, total_region_count)))
         try:
             os.mkfifo(fifo, 0600)
         except:
@@ -322,17 +327,20 @@ def main():
         print "could not mkfifo %s" % index_fifo
         raise
 
-    final_tee_cmd = ["tee", tmp_out_file, index_fifo]
+    final_tee_cmd = ["tee", index_fifo]
 
     bcftools_index_cmd = ["bcftools", "index",
                           index_fifo]
 
     bcftools_concat_cmd = ["bcftools", "concat",
-                           "-Ou"]
+                           "-Ob"]
     bcftools_concat_cmd.extend([concat_fifos[region] for region in regions])
 
     # create OS pipe for "bcftools concat | tee"
     final_tee_stdin_pipe_read, final_tee_stdin_pipe_write = os.pipe()
+
+    # open file for output file (temporary name as the fifo is named the final output name)
+    final_tee_out_f = open(tmp_out_file, 'wb')
 
     # list of fds on which to watch for and process output
     watch_fds = []
@@ -344,7 +352,7 @@ def main():
     try:
         final_tee_p = subprocess.Popen(final_tee_cmd,
                                        stdin=final_tee_stdin_pipe_read,
-                                       stdout=None,
+                                       stdout=final_tee_out_f,
                                        stderr=subprocess.PIPE,
                                        close_fds=True,
                                        shell=False)
@@ -385,7 +393,6 @@ def main():
     bcftools_norm_p = None
     bcftools_mpileup_p = None
     current_region_num = 0
-    total_region_count = len(regions)
     while (
             (final_tee_p.poll() is None) or
             (bcftools_index_p.poll() is None) or
@@ -408,8 +415,8 @@ def main():
                 )
                 or
                 (
-                    (bcftools_norm_p.poll() is not None) and 
-                    (bcftools_mpileup_p.poll() is not None)
+                    (bcftools_norm_p and bcftools_norm_p.poll() is not None) and 
+                    (bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None)
                 )
         ):
             # neither bcftools_norm_p nor bcftools_mpileup_p processes 
@@ -520,6 +527,7 @@ def main():
             print "tee completed successfully"
             watch_fds.remove(final_tee_p.stderr)
             del watch_fd_tags[final_tee_p.stderr]
+            final_tee_out_f.close()
             final_tee_p = None
 
     print "Complete, removing temporary files and renaming output"
