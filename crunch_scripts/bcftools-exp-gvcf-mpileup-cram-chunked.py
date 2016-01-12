@@ -292,48 +292,82 @@ def main():
     except:
         raise
 #    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.bcf")
-    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.bcf")
+    final_out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.bcf")
+    tmp_out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.bcf.tmp")
 
 #    bash_cmd_pipe = "samtools view -h -u -@ 1 -T %s %s | bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou - | bcftools view  -Ou | bcftools norm -f %s -Ob -o %s" % (ref_file, cram_file, ref_file, ref_file, out_file)
-    bcftools_mpileup_cmds = []
-    print "Preparing bcftools mpileup commands for each region in chunk file [%s]" % chunk_file
+    regions = []
+    print "Preparing region list from chunk file [%s]" % chunk_file
     with open(chunk_file, 'r') as f:
         (chr, start, end) = f.readline().rstrip().split()
         region = "%s:%s-%s" % (chr, start, end)
-        bcftools_mpileup_cmd = ["bcftools", "mpileup",
-                                "-t", "AD,INFO/AD",
-                                "-C50", 
-                                "-pm2", 
-                                "-F0.1",
-                                "-d10000",
-                                "--gvcf", "1,2,3,4,5,10,15",
-                                "-f", ref_file,
-                                "-Ou",
-                                "-r", region,
-                                cram_file]
-        bcftools_mpileup_cmds.append(bcftools_mpileup_cmd)
-    print "Will run %s bcftools mpileup commands (one for each region)" % len(bcftools_mpileup_cmds)
+        regions.append(region)
 
-    bcftools_norm_cmd = ["bcftools", "norm", 
-                         "-f", ref_file, 
-                         "-Ob", 
-                         "-o", out_file]
-    # TODO index
+    print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % len(regions)
+    concat_fifos = dict()
+    for i in range(len(regions)):
+        fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + ".part." + i + ".g.bcf"))
+        try:
+            os.mkfifo(fifo, 0600)
+        except:
+            print "could not mkfifo %s" % fifo
+            raise
+        concat_fifos[region] = fifo
 
-    bcftools_norm_stdin_pipe_read, bcftools_norm_stdin_pipe_write = os.pipe()
-    # Call bcftools pipeline
-    print "Running [%s]" % bcftools_norm_cmd
+    index_fifo = final_out_file
+    print "Preparing fifo for final output to bcftools index [%s]" % index_fifo
     try:
-        bcftools_norm_p = subprocess.Popen(bcftools_norm_cmd, 
-                                      stdin=bcftools_norm_stdin_pipe_read,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE,
-                                      close_fds=True,
-                                      shell=False)
-    except Exception as e:
-        print "Could not run bcftools norm: [%s] running [%s]" % (e, bcftools_norm_cmd)
+        os.mkfifo(index_fifo, 0600)
+    except:
+        print "could not mkfifo %s" % index_fifo
         raise
 
+    final_tee_cmd = ["tee", tmp_out_file, index_fifo]
+
+    bcftools_index_cmd = ["bcftools", "index",
+                          index_fifo]
+
+    # create OS pipe for "bcftools concat | tee"
+    final_tee_stdin_pipe_read, final_tee_stdin_pipe_write = os.pipe()
+
+    # run bcftools pipeline
+    print "Running [%s]" % final_tee_cmd
+    try:
+        final_tee_p = subprocess.Popen(final_tee_cmd,
+                                       stdin=final_tee_stdin_pipe_read,
+                                       stdout=None,
+                                       stderr=subprocess.PIPE,
+                                       close_fds=True,
+                                       shell=False)
+    except Exception as e:
+        print "Could not run tee: [%s] running [%s]" % (e, final_tee_cmd)
+        raise
+
+    print "Running [%s]" % bcftools_index_cmd
+    try:
+        bcftools_index_p = subprocess.Popen(bcftools_index_cmd,
+                                             stdin=None,
+                                             stdout=None,
+                                             stderr=subprocess.PIPE,
+                                             close_fds=True,
+                                             shell=False)
+    except Exception as e:
+        print "Could not run bcftools index: [%s] running [%s]" % (e, bcftools_index_cmd)
+        raise
+
+    print "Running [%s]" % bcftools_concat_cmd
+    try:
+        bcftools_concat_p = subprocess.Popen(bcftools_concat_cmd,
+                                             stdin=None,
+                                             stdout=final_tee_stdin_pipe_write,
+                                             stderr=subprocess.PIPE,
+                                             close_fds=True,
+                                             shell=False)
+    except Exception as e:
+        print "Could not run bcftools concat: [%s] running [%s]" % (e, bcftools_concat_cmd)
+        raise
+
+    bcftools_norm_p = None
     bcftools_mpileup_p = None
     while bcftools_norm_p.poll() is None:
         # bcftools_norm process has not terminated
@@ -349,13 +383,42 @@ def main():
         
         if bcftools_mpileup_p is None or bcftools_mpileup_p.poll() is not None:
             # bcftools_mpileup process has not yet started or has finished
-            if len(bcftools_mpileup_cmds) > 0:
-                # have more bcftools_mpileup_cmds to run
-                bcftools_mpileup_cmd = bcftools_mpileup_cmds.pop(0)
+            if len(regions) > 0:
+                # have more regions to run
+                region = regions.pop(0)
+                concat_fifo = concat_fifos[region]
+                bcftools_norm_cmd = ["bcftools", "norm", 
+                                     "-f", ref_file, 
+                                     "-Ob",
+                                     "-o", concat_fifo]
+                bcftools_mpileup_cmd = ["bcftools", "mpileup",
+                                        "-t", "AD,INFO/AD",
+                                        "-C50", 
+                                        "-pm2", 
+                                        "-F0.1",
+                                        "-d10000",
+                                        "--gvcf", "1,2,3,4,5,10,15",
+                                        "-f", ref_file,
+                                        "-Ou",
+                                        "-r", region,
+                                        cram_file]
+                print "Running [%s]" % bcftools_norm_cmd
+                try:
+                    bcftools_norm_p = subprocess.Popen(bcftools_norm_cmd, 
+                                                  stdin=final_tee_stdin_pipe_read,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE,
+                                                  close_fds=True,
+                                                  shell=False)
+                except Exception as e:
+                    print "Could not run bcftools norm: [%s] running [%s]" % (e, bcftools_norm_cmd)
+                    raise
+
+
                 print "Running [%s]" % bcftools_mpileup_cmd
                 try:
                     bcftools_mpileup_p = subprocess.Popen(bcftools_mpileup_cmd,
-                                                 stdout=bcftools_norm_stdin_pipe_write,
+                                                 stdout=final_tee_stdin_pipe_write,
                                                  stderr=subprocess.PIPE,
                                                  close_fds=True,
                                                  shell=False)
@@ -365,10 +428,10 @@ def main():
 
         if bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None:
             # an bcftools_mpileup process has finished
-            if len(bcftools_mpileup_cmds) <= 0:
+            if len(regions) <= 0:
                 bcftools_mpileup_p = None
-                print "No more bcftools_mpileup_cmds to run, closing pipe"
-                os.close(bcftools_norm_stdin_pipe_write)
+                print "No more regions to run, closing pipe"
+                os.close(final_tee_stdin_pipe_write)
 
         bcftools_norm_stderr_read = select([bcftools_norm_p.stderr], [], [], 0)[0]
 #        print "select returned bcftools_norm_stderr_read [%s]" % bcftools_norm_stderr_read
