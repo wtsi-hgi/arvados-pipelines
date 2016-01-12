@@ -6,8 +6,6 @@ import re
 import subprocess
 import jinja2
 
-RUNNER_CONFIG_TEMPLATE = "/etc/runner/gvcf.mpileup.conf.j2"
-
 # TODO: make genome_chunks a parameter
 genome_chunks = 200
 
@@ -300,20 +298,21 @@ def main():
     # TODO index
 
     # Call bcftools
-    runner_p = subprocess.Popen(bash_cmd_pipe, 
+    print "Calling shell to run [%s]" % bash_cmd_pipe
+    bcftools_p = subprocess.Popen(bash_cmd_pipe, 
         stdin=None,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         close_fds=True,
         shell=True)
 
-    while runner_p.poll() is None:
-        line = runner_p.stdout.readline()
+    while bcftools_p.poll() is None:
+        line = bcftools_p.stdout.readline()
         print "BCFTOOLS: %s" % line.rstrip()
 
-    runner_exit = runner_p.wait()
-    if runner_exit != 0:
-        print "WARNING: runner exited with exit code %s" % runner_exit
+    bcftools_exit = bcftools_p.wait()
+    if bcftools_exit != 0:
+        print "WARNING: bcftools exited with exit code %s" % bcftools_exit
 
     # Write a new collection as output
     out = arvados.CollectionWriter()
