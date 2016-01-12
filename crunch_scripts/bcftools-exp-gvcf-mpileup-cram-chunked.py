@@ -475,6 +475,7 @@ def main():
             watch_fds.remove(bcftools_mpileup_p.stderr)
             del watch_fd_tags[bcftools_mpileup_p.stderr]
             os.close(bcftools_norm_stdin_pipe_write)
+            bcftools_mpileup_p = None
 
         if bcftools_norm_p and bcftools_norm_p.poll() is not None:
             # an bcftools norm process has finished
@@ -486,6 +487,7 @@ def main():
             watch_fds.remove(bcftools_norm_p.stderr)
             del watch_fd_tags[bcftools_norm_p.stderr]
             os.close(bcftools_norm_stdin_pipe_read)
+            bcftools_norm_p = None
 
         if bcftools_concat_p and bcftools_concat_p.poll() is not None:
             # the bcftools concat process has finished
@@ -496,6 +498,7 @@ def main():
             print "bcftools concat completed successfully"
             watch_fds.remove(bcftools_concat_p.stderr)
             del watch_fd_tags[bcftools_concat_p.stderr]
+            bcftools_concat_p = None
 
         if bcftools_index_p and bcftools_index_p.poll() is not None:
             # the bcftools index process has finished
@@ -506,6 +509,7 @@ def main():
             print "bcftools index completed successfully"
             watch_fds.remove(bcftools_index_p.stderr)
             del watch_fd_tags[bcftools_index_p.stderr]
+            bcftools_index_p = None
 
         if final_tee_p and final_tee_p.poll() is not None:
             # the final tee process has finished
@@ -516,6 +520,7 @@ def main():
             print "tee completed successfully"
             watch_fds.remove(final_tee_p.stderr)
             del watch_fd_tags[final_tee_p.stderr]
+            final_tee_p = None
 
     print "Complete, removing temporary files and renaming output"
     os.remove(index_fifo)
