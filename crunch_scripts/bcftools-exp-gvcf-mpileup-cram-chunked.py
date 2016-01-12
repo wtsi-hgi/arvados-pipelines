@@ -306,7 +306,7 @@ def main():
     print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % len(regions)
     concat_fifos = dict()
     for i in range(len(regions)):
-        fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + ".part." + i + ".g.bcf")
+        fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part.%s.g.bcf" % i))
         try:
             os.mkfifo(fifo, 0600)
         except:
