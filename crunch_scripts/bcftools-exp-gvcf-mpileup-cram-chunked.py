@@ -294,25 +294,55 @@ def main():
     out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.bcf")
 
     # TODO process regions from interval_list
-    bash_cmd_pipe = "samtools view -h -u -@ 1 -T %s %s | bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou - | bcftools view  -Ou | bcftools norm -f %s -Ob -o %s" % (ref_file, cram_file, ref_file, ref_file, out_file)
+#    bash_cmd_pipe = "samtools view -h -u -@ 1 -T %s %s | bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou - | bcftools view  -Ou | bcftools norm -f %s -Ob -o %s" % (ref_file, cram_file, ref_file, ref_file, out_file)
+#    mpileup_cmd = "bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou -" % (ref_file)
+#    final_cmd = "bcftools norm -f %s -Ob -o %s" % (ref_file, out_file)
+    final_cmd = "cat"
     # TODO index
+    mpileups = ["echo 1", "echo 2", "echo 3"]
 
-    # Call bcftools
-    print "Calling shell to run [%s]" % bash_cmd_pipe
-    bcftools_p = subprocess.Popen(bash_cmd_pipe, 
-        stdin=None,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        close_fds=True,
-        shell=True)
+    final_read, final_write = os.pipe()
+    # Call bcftools pipeline
+    print "Running [%s]" % final_cmd
+    final_p = subprocess.Popen(final_cmd, 
+                                  stdin=final_read,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDERR,
+                                  close_fds=True,
+                                  shell=False)
+    mpileup_p = None
+    while final_p.poll() is None:
+        # final process has not terminated
+        if mpileup_p and mpileup_p.poll() is None:
+            # mpileup process has not terminated
+            if len(select.select([mpileup_p.stderr], [], [], 0)[0]) > 0:
+                # mpileup_p.stderr has output to be read (hopefully it is a whole line's worth!)
+                line = mpileup_p.stderr.readline()
+                print "bcftools mpileup: %s" % line.rstrip()
+        
+        if mpileup_p is None or mpileup_p.poll() is not None:
+            # mpileup process has not yet started or has finished
+            if len(mpileups) > 0:
+                # have more mpileups to run
+                mpileup_cmd = mpileups.pop(0)
+                print "Running [%s]" % mpileup_cmd
+                mpileup_p = subprocess.Popen(mpileup_cmd,
+                                             stdout=final_write,
+                                             stderr=subprocess.STDERR,
+                                             close_fds=True,
+                                             shell=False)
+            else:
+                # no more mpileups, close the pipe
+                print "No more mpileups to run, closing pipe"
+                final_write.close()
+        if len(select.select([final_p.stderr], [], [], 0)[0]) > 0:
+            # final_p.stderr has output to be read (again, there is a risk if it is not going to be a whole line that we'll get stuck here)
+            line = final_p.stderr.readline()
+            print "bcftools norm: %s" % line.rstrip()
 
-    while bcftools_p.poll() is None:
-        line = bcftools_p.stdout.readline()
-        print "BCFTOOLS: %s" % line.rstrip()
-
-    bcftools_exit = bcftools_p.wait()
-    if bcftools_exit != 0:
-        print "WARNING: bcftools exited with exit code %s" % bcftools_exit
+    final_exit = final_p.wait()
+    if final_exit != 0:
+        print "WARNING: bcftools norm exited with exit code %s" % final_exit
 
     # Write a new collection as output
     out = arvados.CollectionWriter()
