@@ -269,6 +269,14 @@ def close_process_if_finished(p, tag="", close_fds=[], close_files=[]):
     else:
         return p
 
+def watch_fds_and_print_output():
+    # check for any output to be read and print it
+    ready_fds = select(watch_fds, [], [], 0)[0]
+    for fd in ready_fds: 
+        tag = watch_fd_tags[fd]
+        line = fd.readline()
+        if line:
+            print "%s: %s" % (tag, line.rstrip())
 
 def main():
     signal(SIGINT, sigint_handler)
@@ -344,7 +352,8 @@ def main():
             raise FileAccessError("No readable CRAM index file for CRAM file: %s" % cram_file)
 
     # Will write to out_dir, make sure it is empty
-    out_dir = os.path.join(arvados.current_task().tmpdir, 'out')
+    tmp_dir = arvados.current_task().tmpdir
+    out_dir = os.path.join(tmp_dir, 'out')
     if os.path.exists(out_dir):
         old_out_dir = out_dir + ".old"
         print "Moving out_dir %s out of the way (to %s)" % (out_dir, old_out_dir) 
@@ -358,8 +367,8 @@ def main():
     except:
         raise
 #    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.bcf")
-    final_out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.bcf")
-    tmp_out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.bcf.tmp")
+    final_out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz")
+    tmp_out_file = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".g.vcf.gz.tmp")
 
 #    bash_cmd_pipe = "samtools view -h -u -@ 1 -T %s %s | bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou - | bcftools view  -Ou | bcftools norm -f %s -Ob -o %s" % (ref_file, cram_file, ref_file, ref_file, out_file)
     regions = []
@@ -379,11 +388,9 @@ def main():
     concat_fifos = dict()
     concat_headeronly_tmps = dict()
     current_region_num = 0
-    concat_fifos_fofn = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + ".fifos_fofn")
-    concat_fifos_fofn_f = open(concat_fifos_fofn, 'w')
     for region in regions:
         current_region_num += 1
-        concat_fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.vcf" % (current_region_num, total_region_count)))
+        concat_fifo = os.path.join(tmp_dir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.vcf.gz" % (current_region_num, total_region_count)))
         try:
             os.mkfifo(concat_fifo, 0600)
         except:
@@ -391,19 +398,17 @@ def main():
             raise
         fifos_to_delete.append(concat_fifo)
         concat_fifos[region] = concat_fifo
-        concat_fifos_fofn_f.write("%s\n" % concat_fifo)
-        concat_headeronly_tmp = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.headeronly.g.bcf" % (current_region_num, total_region_count)))
+        concat_headeronly_tmp = os.path.join(tmp_dir, os.path.basename(cram_file_base) + (".part_%s_of_%s.headeronly.g.vcf.gz" % (current_region_num, total_region_count)))
         concat_headeronly_tmps[region] = concat_headeronly_tmp
-    concat_fifos_fofn_f.close()
 
-    index_fifo = final_out_file
+    # index_fifo = final_out_file 
     # print "Preparing fifo for final output to bcftools index [%s]" % index_fifo
     # try:
     #     os.mkfifo(index_fifo, 0600)
     # except:
     #     print "could not mkfifo %s" % index_fifo
     #     raise
-
+    index_fifo = os.path.join(tmp_dir, ".index_fifo")
     bcftools_index_cmd = ["bcftools", "index",
                           index_fifo]
 
@@ -437,6 +442,7 @@ def main():
     bcftools_mpileup_p = None
     current_region_num = 0
     current_concat_fifo_f = None
+    regions_to_process = list(regions)
     while (
             (final_tee_p and final_tee_p.poll() is None) or
 #            (bcftools_index_p and bcftools_index_p.poll() is None) or
@@ -444,13 +450,7 @@ def main():
     ):
         # at least one of the final aggregation processes is still running
 
-        # check for any output to be read and print it
-        ready_fds = select(watch_fds, [], [], 0)[0]
-        for fd in ready_fds: 
-            tag = watch_fd_tags[fd]
-            line = fd.readline()
-            if line:
-                print "%s: %s" % (tag, line.rstrip())
+        watch_fds_and_print_output()
             
         if (((bcftools_norm_p is None) and (bcftools_mpileup_p is None))
             or
@@ -458,20 +458,20 @@ def main():
              (bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None))):
             # neither bcftools_norm_p nor bcftools_mpileup_p processes 
             # are running (they have not yet started or have finished)
-            if len(regions) > 0:
+            if len(regions_to_process) > 0:
                 # have more regions to run
-                region = regions.pop(0)
+                region = regions_to_process.pop(0)
                 current_region_num += 1
                 region_label = "%s/%s [%s]" % (current_region_num, total_region_count, region)
                 concat_fifo = concat_fifos[region]
-                bcftools_view_noheader_input_fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
+                bcftools_view_noheader_input_fifo = os.path.join(tmp_dir, os.path.basename(cram_file_base) + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
                 part_tee_cmd = ["tee", bcftools_view_noheader_input_fifo]
-                bcftools_view_noheader_cmd = ["bcftools", "view", "-H", bcftools_view_noheader_input_fifo]
+                bcftools_view_noheader_cmd = ["bcftools", "view", "-H", "-Oz", bcftools_view_noheader_input_fifo]
                 concat_headeronly_tmp = concat_headeronly_tmps[region]
-                bcftools_view_headeronly_cmd = ["bcftools", "view", "-h", "-o", concat_headeronly_tmp]
+                bcftools_view_headeronly_cmd = ["bcftools", "view", "-h", "-Oz", "-o", concat_headeronly_tmp]
                 bcftools_norm_cmd = ["bcftools", "norm", 
                                      "-f", ref_file, 
-                                     "-Ov"]
+                                     "-Ou"]
                 bcftools_mpileup_cmd = ["bcftools", "mpileup",
                                         "-t", "AD,INFO/AD",
                                         "-C50", 
@@ -497,7 +497,7 @@ def main():
                 try:
                     os.mkfifo(bcftools_view_noheader_input_fifo, 0600)
                 except:
-                    print "ERROR: could not mkfifo %s" % concat_fifo
+                    print "ERROR: could not mkfifo %s" % bcftools_view_noheader_input_fifo
                     raise
                 fifos_to_delete.append(bcftools_view_noheader_input_fifo)
 
@@ -579,13 +579,49 @@ def main():
         except:
             raise
 
-    print "headeronly files ready for concat: %s" % ([concat_headeronly_tmps[region] for region in regions])
+    concat_headeronly_tmp_fofn = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".fifos_fofn")
+    tmp_files_to_delete = []
+    print "Preparing fofn for bcftools concat (headeronly): %s" % (concat_headeronly_tmp_fofn)
+    with open(concat_headeronly_tmp_fofn, 'w') as f:
+        print "Checking files for regions: %s" % regions
+        for concat_headeronly_tmp in [concat_headeronly_tmps[region] for region in regions]:
+            if os.path.exists(concat_headeronly_tmp):
+                print "Adding %s to fofn" % concat_headeronly_tmp
+                f.write("%s\n" % concat_headeronly_tmp)
+                tmp_files_to_delete.append(concat_headeronly_tmp)
+            else:
+                print "WARNING: no output file for %s (there was probably no data in the region)" % concat_headeronly_tmp
 
-    print "Complete, removing temporary files and renaming output"
+    final_headeronly_tmp = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".headeronly.g.vcf.gz")
+    bcftools_concat_headeronly_cmd = ["bcftools", "concat", "-Oz", "-o", final_headeronly_tmp, "-f", concat_headeronly_tmp_fofn]
+    bcftools_concat_headeronly_p = run_child_cmd(bcftools_concat_headeronly_cmd,
+                                                 tag="bcftools concat (headeronly)")
+    while (bcftools_concat_headeronly_p and bcftools_concat_headeronly_p.poll() is None):
+        watch_fds_and_print_output()
+    bcftools_concat_headeronly_p = close_process_if_finished(bcftools_concat_headeronly_p,
+                                                             "bcftools concat (headeronly)")
+    if bcftools_concat_headeronly_p is not None:
+        print "ERROR: failed to cleanly terminate bcftools concat (headeronly)"
+
+    print "Preparing final output file [%s]" % (final_out_file)
+    final_concat_cmd = ["cat", final_headeronly_tmp, tmp_out_file]
+    final_out_file_f = open(final_out_file, 'wb')
+    final_concat_p = run_child_cmd(final_concat_cmd, tag="cat (header+data)", stdout=final_out_file_f)
+    while (final_concat_p and final_concat_p.poll() is None):
+        watch_fds_and_print_output()
+    final_concat_p = close_process_if_finished(final_concat_p,
+                                               "cat (header+data)",
+                                               close_files=[final_out_file_f])
+    if final_concat_p is not None:
+        print "ERROR: failed to cleanly terminate cat (header+data)"
+
+    print "Complete, removing temporary files"
     os.remove(index_fifo)
-    for concat_fifo in [concat_fifos[region] for region in regions]:
-        os.remove(concat_fifo)
-    os.rename(tmp_out_file, final_out_file)
+    os.remove(concat_headeronly_tmp_fofn)
+    os.remove(final_headeronly_tmp)
+    os.remove(tmp_out_file)
+    for tmp_file in tmp_files_to_delete:
+        os.remove(tmp_file)
 
     # Write a new collection as output
     out = arvados.CollectionWriter()
