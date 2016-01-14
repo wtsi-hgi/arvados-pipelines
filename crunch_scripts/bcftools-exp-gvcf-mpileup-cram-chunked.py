@@ -375,7 +375,6 @@ def main():
     print "Preparing region list from chunk file [%s]" % chunk_file
     with open(chunk_file, 'r') as f:
         for line in f.readlines():
-            n += 1
             (chr, start, end) = line.rstrip().split()
             region = "%s:%s-%s" % (chr, start, end)
             regions.append(region)
