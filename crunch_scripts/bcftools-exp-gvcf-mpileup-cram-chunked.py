@@ -7,14 +7,7 @@ import subprocess
 import jinja2
 from select import select
 from signal import signal, SIGINT, SIGTERM, SIGKILL
-
-# TODO: make genome_chunks a parameter
-genome_chunks = 200
-
-# TODO: make skip_sq_sn_regex a paramter
-skip_sq_sn_regex = '_decoy$'
-#skip_sq_sn_regex = '([_-]|EBV)'
-skip_sq_sn_r = re.compile(skip_sq_sn_regex)
+from time import sleep
 
 # list of process ids of all children
 child_pids = []
@@ -34,7 +27,9 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
-def one_task_per_cram_file(if_sequence=0, and_end_task=True):
+def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
+                           skip_sq_sn_regex='_decoy$', 
+                           genome_chunks=200):
     """
     Queue one task for each cram file in this job's input collection.
     Each new task will have an "input" parameter: a manifest
@@ -47,6 +42,8 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     """
     if if_sequence != arvados.current_task()['sequence']:
         return
+
+    skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
     # Ensure we have a .fa reference file with corresponding .fai index and .dict
     reference_coll = arvados.current_job()['script_parameters']['reference_collection']
@@ -289,9 +286,17 @@ def main():
     signal(SIGTERM, sigterm_handler)
     
     this_job = arvados.current_job()
+    
+    skip_sq_sn_regex = this_job['script_parameters']['skip_sq_sn_regex']
+
+    genome_chunks = int(this_job['script_parameters']['genome_chunks'])
+    if genome_chunks < 1:
+        raise InvalidArgumentError("genome_chunks must be a positive integer")
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
-    one_task_per_cram_file(if_sequence=0, and_end_task=True)
+    one_task_per_cram_file(if_sequence=0, and_end_task=True, 
+                           skip_sq_sn_regex=skip_sq_sn_regex, 
+                           genome_chunks=genome_chunks)
 
     # Get object representing the current task
     this_task = arvados.current_task()
@@ -546,6 +551,9 @@ def main():
         ):
             print "All region work has completed"
             break
+        else:
+            sleep(0.01)
+            # continue to next loop iteration
 
 
     if len(child_pids) > 0:
@@ -604,8 +612,11 @@ def main():
                                                    close_fds=[final_bcftools_view_stdin_pipe_write])
         if not ((final_concat_p and final_concat_p.poll() is None)
                 or (final_bcftools_view_p and final_bcftools_view_p.poll() is None)):
-            # none of the processes are still running
+            # none of the processes are still running, we're done! 
             break
+        else:
+            sleep(0.01)
+            # continue to next loop iteration
 
     if final_bcftools_view_p is not None:
         print "ERROR: failed to cleanly terminate final bcftools view -Oz"
