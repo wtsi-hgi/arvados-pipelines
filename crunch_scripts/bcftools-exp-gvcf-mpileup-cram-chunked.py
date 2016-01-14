@@ -368,19 +368,16 @@ def main():
         raise
 #    out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + "." + os.path.basename(chunk_file) + ".g.bcf")
     final_out_file = os.path.join(out_dir, os.path.basename(cram_file_base) + ".g.vcf.gz")
-    tmp_out_file = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".g.vcf.gz.tmp")
+    tmp_out_file = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".g.vcf.tmp")
 
 #    bash_cmd_pipe = "samtools view -h -u -@ 1 -T %s %s | bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou - | bcftools view  -Ou | bcftools norm -f %s -Ob -o %s" % (ref_file, cram_file, ref_file, ref_file, out_file)
     regions = []
     print "Preparing region list from chunk file [%s]" % chunk_file
-    n=0
     with open(chunk_file, 'r') as f:
         for line in f.readlines():
-            n += 1
             (chr, start, end) = line.rstrip().split()
             region = "%s:%s-%s" % (chr, start, end)
-            if n <= 10:
-                regions.append(region)
+            regions.append(region)
     total_region_count = len(regions)
 
     print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % total_region_count
@@ -390,7 +387,7 @@ def main():
     current_region_num = 0
     for region in regions:
         current_region_num += 1
-        concat_fifo = os.path.join(tmp_dir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.vcf.gz" % (current_region_num, total_region_count)))
+        concat_fifo = os.path.join(tmp_dir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.vcf" % (current_region_num, total_region_count)))
         try:
             os.mkfifo(concat_fifo, 0600)
         except:
@@ -466,7 +463,7 @@ def main():
                 concat_fifo = concat_fifos[region]
                 bcftools_view_noheader_input_fifo = os.path.join(tmp_dir, os.path.basename(cram_file_base) + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
                 part_tee_cmd = ["tee", bcftools_view_noheader_input_fifo]
-                bcftools_view_noheader_cmd = ["bcftools", "view", "-H", "-Oz", bcftools_view_noheader_input_fifo]
+                bcftools_view_noheader_cmd = ["bcftools", "view", "-H", "-Ov", bcftools_view_noheader_input_fifo]
                 concat_headeronly_tmp = concat_headeronly_tmps[region]
                 bcftools_view_headeronly_cmd = ["bcftools", "view", "-h", "-Oz", "-o", concat_headeronly_tmp]
                 bcftools_norm_cmd = ["bcftools", "norm", 
@@ -592,8 +589,8 @@ def main():
             else:
                 print "WARNING: no output file for %s (there was probably no data in the region)" % concat_headeronly_tmp
 
-    final_headeronly_tmp = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".headeronly.g.vcf.gz")
-    bcftools_concat_headeronly_cmd = ["bcftools", "concat", "-Oz", "-o", final_headeronly_tmp, "-f", concat_headeronly_tmp_fofn]
+    final_headeronly_tmp = os.path.join(tmp_dir, os.path.basename(cram_file_base) + ".headeronly.g.vcf")
+    bcftools_concat_headeronly_cmd = ["bcftools", "concat", "-Ov", "-o", final_headeronly_tmp, "-f", concat_headeronly_tmp_fofn]
     bcftools_concat_headeronly_p = run_child_cmd(bcftools_concat_headeronly_cmd,
                                                  tag="bcftools concat (headeronly)")
     while (bcftools_concat_headeronly_p and bcftools_concat_headeronly_p.poll() is None):
@@ -603,17 +600,41 @@ def main():
     if bcftools_concat_headeronly_p is not None:
         print "ERROR: failed to cleanly terminate bcftools concat (headeronly)"
 
+    print "Creating final 'cat | bcftools view -Oz' pipe"
+    final_bcftools_view_stdin_pipe_read, final_bcftools_view_stdin_pipe_write = os.pipe()
     print "Preparing final output file [%s]" % (final_out_file)
+    final_bcftools_view_cmd = ["bcftools", "view", "-Oz", "-o", final_out_file]
     final_concat_cmd = ["cat", final_headeronly_tmp, tmp_out_file]
-    final_out_file_f = open(final_out_file, 'wb')
-    final_concat_p = run_child_cmd(final_concat_cmd, tag="cat (header+data)", stdout=final_out_file_f)
-    while (final_concat_p and final_concat_p.poll() is None):
+    final_bcftools_view_p = run_child_cmd(final_bcftools_view_cmd, tag="final bcftools view -Oz", stdin=final_bcftools_view_stdin_pipe_read)
+    final_concat_p = run_child_cmd(final_concat_cmd, tag="final cat (header+data)", stdout=final_bcftools_view_stdin_pipe_write)
+    while True:
         watch_fds_and_print_output()
-    final_concat_p = close_process_if_finished(final_concat_p,
-                                               "cat (header+data)",
-                                               close_files=[final_out_file_f])
+        final_bcftools_view_p = close_process_if_finished(final_bcftools_view_p,
+                                                          "final bcftools view -Oz",
+                                                          close_fds=[final_bcftools_view_stdin_pipe_read])
+        final_concat_p = close_process_if_finished(final_concat_p,
+                                                   "final cat (header+data)",
+                                                   close_fds=[final_bcftools_view_stdin_pipe_write])
+        if not ((final_concat_p and final_concat_p.poll() is None)
+                or (final_bcftools_view_p and final_bcftools_view_p.poll() is None)):
+            # none of the processes are still running
+            break
+
+    if final_bcftools_view_p is not None:
+        print "ERROR: failed to cleanly terminate final bcftools view -Oz"
+
     if final_concat_p is not None:
-        print "ERROR: failed to cleanly terminate cat (header+data)"
+        print "ERROR: failed to cleanly terminate final cat (header+data)"
+
+    print "Indexing final output file [%s]" % (final_out_file)
+    bcftools_index_cmd = ["bcftools", "index", final_out_file]
+    bcftools_index_p = run_child_cmd(bcftools_index_cmd, tag="bcftools index")
+    while (bcftools_index_p and bcftools_index_p.poll() is None):
+        watch_fds_and_print_output()
+    bcftools_index_p = close_process_if_finished(bcftools_index_p,
+                                               "bcftools index")
+    if bcftools_index_p is not None:
+        print "ERROR: failed to cleanly terminate bcftools index"
 
     print "Complete, removing temporary files"
     os.remove(index_fifo)
