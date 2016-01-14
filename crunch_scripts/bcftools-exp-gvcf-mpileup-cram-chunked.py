@@ -388,61 +388,34 @@ def main():
 
     print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % total_region_count
 
-    concat_fifos = dict()
+    concat_noheader_fifos = dict()
     concat_headeronly_tmps = dict()
     current_region_num = 0
     for region in regions:
         current_region_num += 1
-        concat_fifo = os.path.join(tmp_dir, output_basename + (".part_%s_of_%s.g.vcf" % (current_region_num, total_region_count)))
+        concat_noheader_fifo = os.path.join(tmp_dir, output_basename + (".part_%s_of_%s.g.vcf" % (current_region_num, total_region_count)))
         try:
-            os.mkfifo(concat_fifo, 0600)
+            os.mkfifo(concat_noheader_fifo, 0600)
         except:
-            print "ERROR: could not mkfifo %s" % concat_fifo
+            print "ERROR: could not mkfifo %s" % concat_noheader_fifo
             raise
-        fifos_to_delete.append(concat_fifo)
-        concat_fifos[region] = concat_fifo
+        fifos_to_delete.append(concat_noheader_fifo)
+        concat_noheader_fifos[region] = concat_noheader_fifo
         concat_headeronly_tmp = os.path.join(tmp_dir, output_basename + (".part_%s_of_%s.headeronly.g.vcf.gz" % (current_region_num, total_region_count)))
         concat_headeronly_tmps[region] = concat_headeronly_tmp
 
-    # index_fifo = final_out_file 
-    # print "Preparing fifo for final output to bcftools index [%s]" % index_fifo
-    # try:
-    #     os.mkfifo(index_fifo, 0600)
-    # except:
-    #     print "could not mkfifo %s" % index_fifo
-    #     raise
-    index_fifo = os.path.join(tmp_dir, ".index_fifo")
-    bcftools_index_cmd = ["bcftools", "index",
-                          index_fifo]
+    region_concat_cmd = ["cat"]
+    region_concat_cmd.extend([concat_noheader_fifos[region] for region in regions])
 
-    final_tee_cmd = ["tee", index_fifo]
-
-    bcftools_concat_cmd = ["cat"]
-    bcftools_concat_cmd.extend([concat_fifos[region] for region in regions])
-    # bcftools_concat_cmd = ["bcftools", "concat",
-    #                        "-Ov", 
-    #                        "-f", concat_fifos_fofn]
-
-    # create OS pipe for "bcftools concat | tee"
-    final_tee_stdin_pipe_read, final_tee_stdin_pipe_write = os.pipe()
-
-    # open file for output file (temporary name as the fifo is named the final output name)
-    final_tee_out_f = open(out_file_tmp, 'wb')
-
-    # bcftools_index_p = run_child_cmd(bcftools_index_cmd,
-    #                            tag="bcftools index (stderr)")
-
-    final_tee_p = run_child_cmd(final_tee_cmd,
-                                stdin=final_tee_stdin_pipe_read,
-                                stdout=final_tee_out_f,
-                                tag="tee (stderr)")
-
-    bcftools_concat_p = run_child_cmd(bcftools_concat_cmd,
-                                      stdout=final_tee_stdin_pipe_write,
-                                      tag="bcftools concat (stderr)")
+    # open file for output file
+    out_file_tmp_f = open(out_file_tmp, 'wb')
+    
+    region_concat_p = run_child_cmd(region_concat_cmd,
+                                    stdout=out_file_tmp_f,
+                                    tag="bcftools concat (stderr)")
     
     current_region_num = 0
-    current_concat_fifo_f = None
+    current_concat_noheader_fifo_f = None
     regions_to_process = list(regions)
     bcftools_mpileup_p = None
     bcftools_norm_p = None
@@ -468,7 +441,7 @@ def main():
                 region = regions_to_process.pop(0)
                 current_region_num += 1
                 region_label = "%s/%s [%s]" % (current_region_num, total_region_count, region)
-                concat_fifo = concat_fifos[region]
+                concat_noheader_fifo = concat_noheader_fifos[region]
                 bcftools_view_noheader_input_fifo = os.path.join(tmp_dir, output_basename + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
                 part_tee_cmd = ["tee", bcftools_view_noheader_input_fifo]
                 bcftools_view_noheader_cmd = ["bcftools", "view", "-H", "-Ov", bcftools_view_noheader_input_fifo]
@@ -506,12 +479,12 @@ def main():
                     raise
                 fifos_to_delete.append(bcftools_view_noheader_input_fifo)
 
-                print "Opening concat fifo %s for writing" % concat_fifo
-                if current_concat_fifo_f is not None:
-                    #print "ERROR: current_concat_fifo_f was not closed properly"
-                    #raise Exception("current_concat_fifo_f was not closed properly")
-                    current_concat_fifo_f.close()
-                current_concat_fifo_f = open(concat_fifo, 'wb')
+                print "Opening concat fifo %s for writing" % concat_noheader_fifo
+                if current_concat_noheader_fifo_f is not None:
+                    #print "ERROR: current_concat_noheader_fifo_f was not closed properly"
+                    #raise Exception("current_concat_noheader_fifo_f was not closed properly")
+                    current_concat_noheader_fifo_f.close()
+                current_concat_noheader_fifo_f = open(concat_noheader_fifo, 'wb')
 
                 bcftools_mpileup_p = run_child_cmd(bcftools_mpileup_cmd,
                                                    stdout=bcftools_norm_stdin_pipe_write,
@@ -532,7 +505,7 @@ def main():
                                                            tag="bcftools view -h %s" % (region_label))
 
                 bcftools_view_noheader_p = run_child_cmd(bcftools_view_noheader_cmd,
-                                                         stdout=current_concat_fifo_f,
+                                                         stdout=current_concat_noheader_fifo_f,
                                                          tag="bcftools view %s" % (region_label))
 
         bcftools_mpileup_p = close_process_if_finished(bcftools_mpileup_p,
@@ -556,24 +529,15 @@ def main():
 
         bcftools_view_noheader_p = close_process_if_finished(bcftools_view_noheader_p,
                                                              "bcftools view %s" % (region_label),
-                                                             close_files=[current_concat_fifo_f])
+                                                             close_files=[current_concat_noheader_fifo_f])
 
-        bcftools_concat_p = close_process_if_finished(bcftools_concat_p,
+        region_concat_p = close_process_if_finished(region_concat_p,
                                                       "bcftools concat",
-                                                      close_fds=[final_tee_stdin_pipe_write])
-
-        # bcftools_index_p = close_process_if_finished(bcftools_index_p,
-        #                                              "bcftools index")
-
-        final_tee_p = close_process_if_finished(final_tee_p,
-                                                "tee",
-                                                close_fds=[final_tee_stdin_pipe_read],
-                                                close_files=[final_tee_out_f])
+                                                      close_files=[out_file_tmp_f])
 
         # end loop once all processes have finished
         if not (
-                (final_tee_p and final_tee_p.poll() is None) 
-                or (bcftools_concat_p and bcftools_concat_p.poll() is None)
+                (region_concat_p and region_concat_p.poll() is None)
                 or (bcftools_view_noheader_p and bcftools_view_noheader_p.poll() is None)
                 or (bcftools_view_headeronly_p and bcftools_view_headeronly_p.poll() is None)
                 or (part_tee_p and part_tee_p.poll() is None)
@@ -660,7 +624,7 @@ def main():
         print "ERROR: failed to cleanly terminate bcftools index"
 
     print "Complete, removing temporary files"
-    os.remove(index_fifo)
+    #os.remove(index_fifo)
     os.remove(concat_headeronly_tmp_fofn)
     os.remove(final_headeronly_tmp)
     os.remove(out_file_tmp)
