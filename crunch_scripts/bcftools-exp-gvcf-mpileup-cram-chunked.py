@@ -250,11 +250,11 @@ def run_child_cmd(cmd, stdin=None, stdout=None, tag="child command"):
     watch_fd_tags[p.stderr] = tag
     return p
 
-def close_process_if_finished(p, tag="", close_fds=[], close_files=[]):
+def close_process_if_finished(p, tag="", close_fds=[], close_files=[], ignore_error=False):
     if p and p.poll() is not None:
         # process has finished
         exitval = p.wait()
-        if exitval != 0:
+        if (not ignore_error) and (exitval != 0):
             print "WARNING: %s exited with exit code %s" % (tag, exitval)
             raise Exception("%s exited with exit code %s" % (tag, exitval))
         print "%s completed successfully" % (tag)
@@ -268,6 +268,12 @@ def close_process_if_finished(p, tag="", close_fds=[], close_files=[]):
         return None
     else:
         return p
+    # elif p:
+    #     print "process %s (%s) still running" % (tag, p.pid)
+    #     return p
+    # else:
+    #     print "process %s is gone" % (tag)
+    #     return p
 
 def watch_fds_and_print_output():
     # check for any output to be read and print it
@@ -435,26 +441,28 @@ def main():
                                       stdout=final_tee_stdin_pipe_write,
                                       tag="bcftools concat (stderr)")
     
-    bcftools_norm_p = None
-    bcftools_mpileup_p = None
     current_region_num = 0
     current_concat_fifo_f = None
     regions_to_process = list(regions)
-    while (
-            (final_tee_p and final_tee_p.poll() is None) or
-#            (bcftools_index_p and bcftools_index_p.poll() is None) or
-            (bcftools_concat_p and bcftools_concat_p.poll() is None)
-    ):
-        # at least one of the final aggregation processes is still running
+    bcftools_mpileup_p = None
+    bcftools_norm_p = None
+    part_tee_p = None
+    bcftools_view_headeronly_p = None
+    bcftools_view_noheader_p = None
+    while True:
+        # at least one of the regional aggregation processes is still running
 
         watch_fds_and_print_output()
-            
-        if (((bcftools_norm_p is None) and (bcftools_mpileup_p is None))
-            or
-            ((bcftools_norm_p and bcftools_norm_p.poll() is not None) and 
-             (bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None))):
-            # neither bcftools_norm_p nor bcftools_mpileup_p processes 
-            # are running (they have not yet started or have finished)
+    
+        if (
+                (bcftools_mpileup_p is None) and
+                (bcftools_norm_p is None) and 
+                (part_tee_p is None) and
+                (bcftools_view_headeronly_p is None) and 
+                (bcftools_view_noheader_p is None)
+        ):
+            # no per-region processes are running (they have finished or 
+            # have not yet started)
             if len(regions_to_process) > 0:
                 # have more regions to run
                 region = regions_to_process.pop(0)
@@ -539,7 +547,8 @@ def main():
         part_tee_p = close_process_if_finished(part_tee_p,
                                                "tee %s" % (region_label),
                                                close_fds=[part_tee_stdin_pipe_read,
-                                                          bcftools_view_headeronly_stdin_pipe_write])
+                                                          bcftools_view_headeronly_stdin_pipe_write],
+                                               ignore_error=True)
 
         bcftools_view_headeronly_p = close_process_if_finished(bcftools_view_headeronly_p,
                                                                "bcftools view -h %s" % (region_label),
@@ -560,6 +569,20 @@ def main():
                                                 "tee",
                                                 close_fds=[final_tee_stdin_pipe_read],
                                                 close_files=[final_tee_out_f])
+
+        # end loop once all processes have finished
+        if not (
+                (final_tee_p and final_tee_p.poll() is None) 
+                or (bcftools_concat_p and bcftools_concat_p.poll() is None)
+                or (bcftools_view_noheader_p and bcftools_view_noheader_p.poll() is None)
+                or (bcftools_view_headeronly_p and bcftools_view_headeronly_p.poll() is None)
+                or (part_tee_p and part_tee_p.poll() is None)
+                or (bcftools_norm_p and bcftools_norm_p.poll() is None)
+                or (bcftools_mpileup_p and bcftools_mpileup_p.poll() is None)
+        ):
+            print "All region work has completed"
+            break
+
 
     if len(child_pids) > 0:
         print "WARNING: some children are still alive: [%s]" % (child_pids)
