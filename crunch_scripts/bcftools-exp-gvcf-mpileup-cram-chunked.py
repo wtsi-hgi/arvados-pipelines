@@ -6,6 +6,7 @@ import re
 import subprocess
 import jinja2
 from select import select
+from signal import signal, SIGINT, SIGTERM, SIGKILL
 
 # TODO: make genome_chunks a parameter
 genome_chunks = 200
@@ -14,6 +15,18 @@ genome_chunks = 200
 #skip_sq_sn_regex = '_decoy$'
 skip_sq_sn_regex = '([_-]|EBV)'
 skip_sq_sn_r = re.compile(skip_sq_sn_regex)
+
+# list of process ids of all children
+child_pids = []
+
+# list of fds on which to watch for and process output
+watch_fds = []
+
+# dict mapping from fd to the text to tag the output with
+watch_fd_tags = dict()
+
+# fifos to delete after processing is done
+fifos_to_delete = []
 
 class InvalidArgumentError(Exception):
     pass
@@ -205,9 +218,62 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                                          ).execute()
         exit(0)
 
+def sigint_handler(signum, frame):
+    print "sigint_handler received signal %s" % signum
+    # pass signal along to children
+    for pid in child_pids:
+        os.kill(pid, SIGINT)
+
+def sigterm_handler(signum, frame):
+    print "sigterm_handler received signal %s" % signum
+    # pass signal along to children
+    for pid in child_pids:
+        os.kill(pid, SIGTERM)
+    # also try to SIGKILL children
+    for pid in child_pids:
+        os.kill(pid, SIGKILL)
+
+def run_child_cmd(cmd, stdin=None, stdout=None, tag="child command"):
+    print "Running %s" % cmd
+    try:
+        p = subprocess.Popen(cmd,
+                             stdin=stdin,
+                             stdout=stdout,
+                             stderr=subprocess.PIPE,
+                             close_fds=True,
+                             shell=False)
+    except Exception as e:
+        print "Error running %s: [%s] running %s" % (tag, e, bcftools_mpileup_cmd)
+        raise
+    child_pids.append(p.pid)
+    watch_fds.append(p.stderr)
+    watch_fd_tags[p.stderr] = tag
+    return p
+
+def close_process_if_finished(p, tag="", close_fds=[], close_files=[]):
+    if p and p.poll() is not None:
+        # process has finished
+        exitval = p.wait()
+        if exitval != 0:
+            print "WARNING: %s exited with exit code %s" % (tag, exitval)
+            raise Exception("%s exited with exit code %s" % (tag, exitval))
+        print "%s completed successfully" % (tag)
+        child_pids.remove(p.pid)
+        watch_fds.remove(p.stderr)
+        del watch_fd_tags[p.stderr]
+        for fd in close_fds:
+            os.close(fd)
+        for f in close_files:
+            f.close()
+        return None
+    else:
+        return p
+
 
 def main():
-
+    signal(SIGINT, sigint_handler)
+    signal(SIGTERM, sigterm_handler)
+    
     this_job = arvados.current_job()
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
@@ -298,43 +364,56 @@ def main():
 #    bash_cmd_pipe = "samtools view -h -u -@ 1 -T %s %s | bcftools mpileup -t AD,INFO/AD -C50 -pm2 -F0.1 -d10000 --gvcf 1,2,3,4,5,10,15 -f %s -Ou - | bcftools view  -Ou | bcftools norm -f %s -Ob -o %s" % (ref_file, cram_file, ref_file, ref_file, out_file)
     regions = []
     print "Preparing region list from chunk file [%s]" % chunk_file
+    n=0
     with open(chunk_file, 'r') as f:
         for line in f.readlines():
+            n += 1
             (chr, start, end) = line.rstrip().split()
             region = "%s:%s-%s" % (chr, start, end)
-            regions.append(region)
+            if n <= 10:
+                regions.append(region)
     total_region_count = len(regions)
 
     print "Preparing fifos for output from %s bcftools mpileup commands (one for each region) to bcftools concat" % total_region_count
 
     concat_fifos = dict()
+    concat_headeronly_tmps = dict()
     current_region_num = 0
+    concat_fifos_fofn = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + ".fifos_fofn")
+    concat_fifos_fofn_f = open(concat_fifos_fofn, 'w')
     for region in regions:
         current_region_num += 1
-        fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.bcf" % (current_region_num, total_region_count)))
+        concat_fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.g.vcf" % (current_region_num, total_region_count)))
         try:
-            os.mkfifo(fifo, 0600)
+            os.mkfifo(concat_fifo, 0600)
         except:
-            print "could not mkfifo %s" % fifo
+            print "ERROR: could not mkfifo %s" % concat_fifo
             raise
-        concat_fifos[region] = fifo
+        fifos_to_delete.append(concat_fifo)
+        concat_fifos[region] = concat_fifo
+        concat_fifos_fofn_f.write("%s\n" % concat_fifo)
+        concat_headeronly_tmp = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.headeronly.g.bcf" % (current_region_num, total_region_count)))
+        concat_headeronly_tmps[region] = concat_headeronly_tmp
+    concat_fifos_fofn_f.close()
 
     index_fifo = final_out_file
-    print "Preparing fifo for final output to bcftools index [%s]" % index_fifo
-    try:
-        os.mkfifo(index_fifo, 0600)
-    except:
-        print "could not mkfifo %s" % index_fifo
-        raise
-
-    final_tee_cmd = ["tee", index_fifo]
+    # print "Preparing fifo for final output to bcftools index [%s]" % index_fifo
+    # try:
+    #     os.mkfifo(index_fifo, 0600)
+    # except:
+    #     print "could not mkfifo %s" % index_fifo
+    #     raise
 
     bcftools_index_cmd = ["bcftools", "index",
                           index_fifo]
 
-    bcftools_concat_cmd = ["bcftools", "concat",
-                           "-Ob"]
+    final_tee_cmd = ["tee", index_fifo]
+
+    bcftools_concat_cmd = ["cat"]
     bcftools_concat_cmd.extend([concat_fifos[region] for region in regions])
+    # bcftools_concat_cmd = ["bcftools", "concat",
+    #                        "-Ov", 
+    #                        "-f", concat_fifos_fofn]
 
     # create OS pipe for "bcftools concat | tee"
     final_tee_stdin_pipe_read, final_tee_stdin_pipe_write = os.pipe()
@@ -342,61 +421,26 @@ def main():
     # open file for output file (temporary name as the fifo is named the final output name)
     final_tee_out_f = open(tmp_out_file, 'wb')
 
-    # list of fds on which to watch for and process output
-    watch_fds = []
-    # dict mapping from fd to the text to tag the output with
-    watch_fd_tags = dict()
+    # bcftools_index_p = run_child_cmd(bcftools_index_cmd,
+    #                            tag="bcftools index (stderr)")
 
-    # run bcftools pipeline
-    print "Running [%s]" % final_tee_cmd
-    try:
-        final_tee_p = subprocess.Popen(final_tee_cmd,
-                                       stdin=final_tee_stdin_pipe_read,
-                                       stdout=final_tee_out_f,
-                                       stderr=subprocess.PIPE,
-                                       close_fds=True,
-                                       shell=False)
-    except Exception as e:
-        print "Could not run tee: [%s] running [%s]" % (e, final_tee_cmd)
-        raise
-    watch_fds.append(final_tee_p.stderr)
-    watch_fd_tags[final_tee_p.stderr] = "tee (stderr)"
-        
-    print "Running [%s]" % bcftools_index_cmd
-    try:
-        bcftools_index_p = subprocess.Popen(bcftools_index_cmd,
-                                             stdin=None,
-                                             stdout=None,
-                                             stderr=subprocess.PIPE,
-                                             close_fds=True,
-                                             shell=False)
-    except Exception as e:
-        print "Could not run bcftools index: [%s] running [%s]" % (e, bcftools_index_cmd)
-        raise
-    watch_fds.append(bcftools_index_p.stderr)
-    watch_fd_tags[bcftools_index_p.stderr] = "bcftools index (stderr)"
+    final_tee_p = run_child_cmd(final_tee_cmd,
+                                stdin=final_tee_stdin_pipe_read,
+                                stdout=final_tee_out_f,
+                                tag="tee (stderr)")
 
-    print "Running [%s]" % bcftools_concat_cmd
-    try:
-        bcftools_concat_p = subprocess.Popen(bcftools_concat_cmd,
-                                             stdin=None,
-                                             stdout=final_tee_stdin_pipe_write,
-                                             stderr=subprocess.PIPE,
-                                             close_fds=True,
-                                             shell=False)
-    except Exception as e:
-        print "Could not run bcftools concat: [%s] running [%s]" % (e, bcftools_concat_cmd)
-        raise
-    watch_fds.append(bcftools_concat_p.stderr)
-    watch_fd_tags[bcftools_concat_p.stderr] = "bcftools concat (stderr)"
-
+    bcftools_concat_p = run_child_cmd(bcftools_concat_cmd,
+                                      stdout=final_tee_stdin_pipe_write,
+                                      tag="bcftools concat (stderr)")
+    
     bcftools_norm_p = None
     bcftools_mpileup_p = None
     current_region_num = 0
+    current_concat_fifo_f = None
     while (
-            (final_tee_p.poll() is None) or
-            (bcftools_index_p.poll() is None) or
-            (bcftools_concat_p.poll() is None)
+            (final_tee_p and final_tee_p.poll() is None) or
+#            (bcftools_index_p and bcftools_index_p.poll() is None) or
+            (bcftools_concat_p and bcftools_concat_p.poll() is None)
     ):
         # at least one of the final aggregation processes is still running
 
@@ -408,28 +452,26 @@ def main():
             if line:
                 print "%s: %s" % (tag, line.rstrip())
             
-        if (
-                (
-                    (bcftools_norm_p is None) and 
-                    (bcftools_mpileup_p is None) 
-                )
-                or
-                (
-                    (bcftools_norm_p and bcftools_norm_p.poll() is not None) and 
-                    (bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None)
-                )
-        ):
+        if (((bcftools_norm_p is None) and (bcftools_mpileup_p is None))
+            or
+            ((bcftools_norm_p and bcftools_norm_p.poll() is not None) and 
+             (bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None))):
             # neither bcftools_norm_p nor bcftools_mpileup_p processes 
             # are running (they have not yet started or have finished)
             if len(regions) > 0:
                 # have more regions to run
                 region = regions.pop(0)
                 current_region_num += 1
+                region_label = "%s/%s [%s]" % (current_region_num, total_region_count, region)
                 concat_fifo = concat_fifos[region]
+                bcftools_view_noheader_input_fifo = os.path.join(arvados.current_task().tmpdir, os.path.basename(cram_file_base) + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
+                part_tee_cmd = ["tee", bcftools_view_noheader_input_fifo]
+                bcftools_view_noheader_cmd = ["bcftools", "view", "-H", bcftools_view_noheader_input_fifo]
+                concat_headeronly_tmp = concat_headeronly_tmps[region]
+                bcftools_view_headeronly_cmd = ["bcftools", "view", "-h", "-o", concat_headeronly_tmp]
                 bcftools_norm_cmd = ["bcftools", "norm", 
                                      "-f", ref_file, 
-                                     "-Ob",
-                                     "-o", concat_fifo]
+                                     "-Ov"]
                 bcftools_mpileup_cmd = ["bcftools", "mpileup",
                                         "-t", "AD,INFO/AD",
                                         "-C50", 
@@ -441,99 +483,108 @@ def main():
                                         "-Ou",
                                         "-r", region,
                                         cram_file]
-                # create OS pipe for "bcftools mpileup | bcftools norm"
-                print "Creating 'bcftools mpileup | bcftools norm' pipe for region %s/%s [%s]" % (current_region_num, total_region_count, region)
+
+                print "Creating 'bcftools mpileup | bcftools norm' pipe for region %s" % (region_label)
                 bcftools_norm_stdin_pipe_read, bcftools_norm_stdin_pipe_write = os.pipe()
 
-                print "Running [%s]" % bcftools_norm_cmd
+                print "Creating 'bcftools norm | tee' pipe for region %s" % (region_label)
+                part_tee_stdin_pipe_read, part_tee_stdin_pipe_write = os.pipe()
+                
+                print "Creating 'tee | bcftools view -h' pipe for region %s" % (region_label)
+                bcftools_view_headeronly_stdin_pipe_read, bcftools_view_headeronly_stdin_pipe_write = os.pipe()
+                
+                print "Creating 'tee | bcftools view' named pipe [%s] for region %s" % (bcftools_view_noheader_input_fifo, region_label)
                 try:
-                    bcftools_norm_p = subprocess.Popen(bcftools_norm_cmd, 
-                                                  stdin=bcftools_norm_stdin_pipe_read,
-                                                  stdout=None,
-                                                  stderr=subprocess.PIPE,
-                                                  close_fds=True,
-                                                  shell=False)
-                except Exception as e:
-                    print "Could not run bcftools norm: [%s] running [%s]" % (e, bcftools_norm_cmd)
+                    os.mkfifo(bcftools_view_noheader_input_fifo, 0600)
+                except:
+                    print "ERROR: could not mkfifo %s" % concat_fifo
                     raise
-                watch_fds.append(bcftools_norm_p.stderr)
-                watch_fd_tags[bcftools_norm_p.stderr] = "bcftools norm %s/%s [%s] (stderr)" % (current_region_num, total_region_count, region)
+                fifos_to_delete.append(bcftools_view_noheader_input_fifo)
 
-                print "Running [%s]" % bcftools_mpileup_cmd
-                try:
-                    bcftools_mpileup_p = subprocess.Popen(bcftools_mpileup_cmd,
-                                                 stdout=bcftools_norm_stdin_pipe_write,
-                                                 stderr=subprocess.PIPE,
-                                                 close_fds=True,
-                                                 shell=False)
-                except Exception as e:
-                    print "Could not run bcftools mpileup: [%s] running [%s]" % (e, bcftools_mpileup_cmd)
-                    raise
-                watch_fds.append(bcftools_mpileup_p.stderr)
-                watch_fd_tags[bcftools_mpileup_p.stderr] = "bcftools mpileup %s/%s [%s] (stderr)" % (current_region_num, total_region_count, region)
+                print "Opening concat fifo %s for writing" % concat_fifo
+                if current_concat_fifo_f is not None:
+                    #print "ERROR: current_concat_fifo_f was not closed properly"
+                    #raise Exception("current_concat_fifo_f was not closed properly")
+                    current_concat_fifo_f.close()
+                current_concat_fifo_f = open(concat_fifo, 'wb')
 
-        if bcftools_mpileup_p and bcftools_mpileup_p.poll() is not None:
-            # an bcftools mpileup process has finished
-            bcftools_mpileup_exit = bcftools_mpileup_p.wait()
-            if bcftools_mpileup_exit != 0:
-                print "WARNING: bcftools mpileup exited with exit code %s" % bcftools_mpileup_exit
-                raise
-            print "bcftools mpileup completed successfully for region %s/%s [%s]" % (current_region_num, total_region_count, region)
-            watch_fds.remove(bcftools_mpileup_p.stderr)
-            del watch_fd_tags[bcftools_mpileup_p.stderr]
-            os.close(bcftools_norm_stdin_pipe_write)
-            bcftools_mpileup_p = None
+                bcftools_mpileup_p = run_child_cmd(bcftools_mpileup_cmd,
+                                                   stdout=bcftools_norm_stdin_pipe_write,
+                                                   tag="bcftools mpileup %s" % (region_label))
+                
+                bcftools_norm_p = run_child_cmd(bcftools_norm_cmd,
+                                                stdin=bcftools_norm_stdin_pipe_read,
+                                                stdout=part_tee_stdin_pipe_write,
+                                                tag="bcftools norm %s" % (region_label))
 
-        if bcftools_norm_p and bcftools_norm_p.poll() is not None:
-            # an bcftools norm process has finished
-            bcftools_norm_exit = bcftools_norm_p.wait()
-            if bcftools_norm_exit != 0:
-                print "WARNING: bcftools norm exited with exit code %s" % bcftools_norm_exit
-                raise
-            print "bcftools norm completed successfully for region %s/%s [%s]" % (current_region_num, total_region_count, region)
-            watch_fds.remove(bcftools_norm_p.stderr)
-            del watch_fd_tags[bcftools_norm_p.stderr]
-            os.close(bcftools_norm_stdin_pipe_read)
-            bcftools_norm_p = None
+                part_tee_p = run_child_cmd(part_tee_cmd,
+                                           stdin=part_tee_stdin_pipe_read,
+                                           stdout=bcftools_view_headeronly_stdin_pipe_write,
+                                           tag="tee %s" % (region_label))
+                
+                bcftools_view_headeronly_p = run_child_cmd(bcftools_view_headeronly_cmd,
+                                                           stdin=bcftools_view_headeronly_stdin_pipe_read,
+                                                           tag="bcftools view -h %s" % (region_label))
 
-        if bcftools_concat_p and bcftools_concat_p.poll() is not None:
-            # the bcftools concat process has finished
-            bcftools_concat_exit = bcftools_concat_p.wait()
-            if bcftools_concat_exit != 0:
-                print "WARNING: bcftools concat exited with exit code %s" % bcftools_concat_exit
-                raise
-            print "bcftools concat completed successfully"
-            watch_fds.remove(bcftools_concat_p.stderr)
-            del watch_fd_tags[bcftools_concat_p.stderr]
-            bcftools_concat_p = None
+                bcftools_view_noheader_p = run_child_cmd(bcftools_view_noheader_cmd,
+                                                         stdout=current_concat_fifo_f,
+                                                         tag="bcftools view %s" % (region_label))
 
-        if bcftools_index_p and bcftools_index_p.poll() is not None:
-            # the bcftools index process has finished
-            bcftools_index_exit = bcftools_index_p.wait()
-            if bcftools_index_exit != 0:
-                print "WARNING: bcftools index exited with exit code %s" % bcftools_index_exit
-                raise
-            print "bcftools index completed successfully"
-            watch_fds.remove(bcftools_index_p.stderr)
-            del watch_fd_tags[bcftools_index_p.stderr]
-            bcftools_index_p = None
+        bcftools_mpileup_p = close_process_if_finished(bcftools_mpileup_p,
+                                                       "bcftools mpileup %s" % (region_label),
+                                                       close_fds=[bcftools_norm_stdin_pipe_write])
 
-        if final_tee_p and final_tee_p.poll() is not None:
-            # the final tee process has finished
-            final_tee_exit = final_tee_p.wait()
-            if final_tee_exit != 0:
-                print "WARNING: tee exited with exit code %s" % final_tee_exit
-                raise
-            print "tee completed successfully"
-            watch_fds.remove(final_tee_p.stderr)
-            del watch_fd_tags[final_tee_p.stderr]
-            final_tee_out_f.close()
-            final_tee_p = None
+        bcftools_norm_p = close_process_if_finished(bcftools_norm_p,
+                                                    "bcftools norm %s" % (region_label),
+                                                    close_fds=[bcftools_norm_stdin_pipe_read, 
+                                                               part_tee_stdin_pipe_write])
+        
+        part_tee_p = close_process_if_finished(part_tee_p,
+                                               "tee %s" % (region_label),
+                                               close_fds=[part_tee_stdin_pipe_read,
+                                                          bcftools_view_headeronly_stdin_pipe_write])
+
+        bcftools_view_headeronly_p = close_process_if_finished(bcftools_view_headeronly_p,
+                                                               "bcftools view -h %s" % (region_label),
+                                                               close_fds=[bcftools_view_headeronly_stdin_pipe_read])
+
+        bcftools_view_noheader_p = close_process_if_finished(bcftools_view_noheader_p,
+                                                             "bcftools view %s" % (region_label),
+                                                             close_files=[current_concat_fifo_f])
+
+        bcftools_concat_p = close_process_if_finished(bcftools_concat_p,
+                                                      "bcftools concat",
+                                                      close_fds=[final_tee_stdin_pipe_write])
+
+        # bcftools_index_p = close_process_if_finished(bcftools_index_p,
+        #                                              "bcftools index")
+
+        final_tee_p = close_process_if_finished(final_tee_p,
+                                                "tee",
+                                                close_fds=[final_tee_stdin_pipe_read],
+                                                close_files=[final_tee_out_f])
+
+    if len(child_pids) > 0:
+        print "WARNING: some children are still alive: [%s]" % (child_pids)
+        for pid in child_pids:
+            print "Attempting to terminate %s forcefully" % (pid)
+            try:
+                os.kill(pid, SIGTERM)
+            except Exception as e:
+                print "Could not kill pid %s: %s" % (pid, e)
+
+    for fifo in fifos_to_delete:
+        try:
+            os.remove(fifo)
+        except:
+            raise
+
+    print "headeronly files ready for concat: %s" % ([concat_headeronly_tmps[region] for region in regions])
 
     print "Complete, removing temporary files and renaming output"
     os.remove(index_fifo)
-    for fifo in [concat_fifos[region] for region in regions]:
-        os.remove(fifo)
+    for concat_fifo in [concat_fifos[region] for region in regions]:
+        os.remove(concat_fifo)
     os.rename(tmp_out_file, final_out_file)
 
     # Write a new collection as output
@@ -552,5 +603,7 @@ def main():
 
     # Done!
 
+
 if __name__ == '__main__':
     main()
+
