@@ -1,5 +1,5 @@
 {
- "name":"bcftools experimental gvcf mpileup (CRAM to GVCF) chunked",
+ "name":"bcftools experimental gvcf mpileup (CRAM to GVCF) chunked (40 core)",
  "components":{
   "bcftools-exp-gvcf-mpileup-cram-chunked":{
    "script":"bcftools-exp-gvcf-mpileup-cram-chunked.py",
@@ -13,14 +13,27 @@
     "inputs_collection":{
      "required":true,
      "dataclass":"Collection"
+    },
+    "skip_sq_sn_regex":{
+     "required":true,
+     "dataclass":"number",
+     "default":"_decoy$",
+     "description":"The number of chunks in which to chunk the genome (must be a positive integer)."
+    },
+    "genome_chunks":{
+     "required":true,
+     "dataclass":"number",
+     "default":200,
+     "description":"The number of chunks in which to chunk the genome (must be a positive integer)."
     }
    },
    "runtime_constraints":{
     "docker_image":"mercury/bcftools-exp-gvcf",
     "min_nodes":10,
-    "max_tasks_per_node":10
+    "max_tasks_per_node":20,
+    "min_cores_per_node":40
    }
   }
  },
- "description":"CRAM to gVCF using experimental bcftools"
+ "description":"CRAM to gVCF using experimental bcftools (for 40 core nodes)"
 }
