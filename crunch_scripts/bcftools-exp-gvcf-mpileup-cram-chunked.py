@@ -9,6 +9,9 @@ from select import select
 from signal import signal, SIGINT, SIGTERM, SIGKILL
 from time import sleep
 
+# the amount to weight each sequence contig
+weight_seq = 6000
+
 # list of process ids of all children
 child_pids = []
 
@@ -122,12 +125,16 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
         total_len += int(ln)
+    total_sequences = len(sns)
 
-    # Chunk the genome into genome_chunks equally sized pieces and create intervals files
-    print "Total genome length is %s" % total_len
-    chunk_len = int(total_len / genome_chunks)
+    # Chunk the genome into genome_chunks pieces
+    # weighted by both number of base pairs and number of seqs
+    print "Total sequences included: %s" % (total_sequences)
+    print "Total genome length: %s" % (total_len)
+    total_points = total_len + (total_sequences * weight_seq)
+    chunk_points = int(total_points / genome_chunks)
     chunk_input_pdh_name = []
-    print "Chunking genome into %s chunks of size ~%s" % (genome_chunks, chunk_len)
+    print "Chunking genome into %s chunks of ~%s points" % (genome_chunks, chunk_points)
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
         chunk_intervals_count = 0
@@ -136,25 +143,29 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         chunk_c = arvados.collection.CollectionWriter(num_retries=3)
         chunk_c.start_new_file(newfilename=chunk_input_name)
         # chunk_c.write(interval_header)
-        remaining_len = chunk_len
+        remaining_points = chunk_points
         while len(sns) > 0:
             sn = sns.pop(0)
+            remaining_points -= weight_seq
+            if remaining_points <= 0:
+                sns.insert(0, sn)
+                break
             if not sn_intervals.has_key(sn):
                 raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
             start, end = sn_intervals[sn]
-            if (end-start+1) > remaining_len:
+            if (end-start+1) > remaining_points:
                 # not enough space for the whole sq, split it
                 real_end = end
-                end = remaining_len + start - 1
-                assert((end-start+1) <= remaining_len)
+                end = remaining_points + start - 1
+                assert((end-start+1) <= remaining_points)
                 sn_intervals[sn] = (end+1, real_end)
                 sns.insert(0, sn)
             #interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
             interval = "%s\t%s\t%s\n" % (sn, start, end)
-            remaining_len -= (end-start+1)
+            remaining_points -= (end-start+1)
             chunk_c.write(interval)
             chunk_intervals_count += 1
-            if remaining_len <= 0:
+            if remaining_points <= 0:
                 break
         if chunk_intervals_count > 0:
             chunk_input_pdh = chunk_c.finish()
