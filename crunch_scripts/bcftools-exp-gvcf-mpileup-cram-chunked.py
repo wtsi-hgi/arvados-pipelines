@@ -17,7 +17,7 @@ seed("arvados")
 shuffle_chunks = False
 
 # the amount to weight each sequence contig
-weight_seq = 6000
+weight_seq = 12000
 
 # list of process ids of all children
 child_pids = []
