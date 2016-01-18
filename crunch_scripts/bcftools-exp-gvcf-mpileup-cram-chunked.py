@@ -460,7 +460,7 @@ def main():
                 region_label = "%s/%s [%s]" % (current_region_num, total_region_count, region)
                 concat_noheader_fifo = concat_noheader_fifos[region]
                 bcftools_view_noheader_input_fifo = os.path.join(tmp_dir, output_basename + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
-                part_tee_cmd = ["tee", bcftools_view_noheader_input_fifo]
+                part_tee_cmd = ["teepot", bcftools_view_noheader_input_fifo, "-"]
                 bcftools_view_noheader_cmd = ["bcftools", "view", "-H", "-Ov", bcftools_view_noheader_input_fifo]
                 concat_headeronly_tmp = concat_headeronly_tmps[region]
                 bcftools_view_headeronly_cmd = ["bcftools", "view", "-h", "-Oz", "-o", concat_headeronly_tmp]
