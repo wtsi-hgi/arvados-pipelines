@@ -187,6 +187,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
             elif re.search(r'\.crai$', f.name()):
                 crai[s.name(), f.name()] = f
     for ((s_name, f_name), cram_f) in cram.items():
+        # Handle this CRAM file
         crai_f = crai.get((s_name, re.sub(r'cram$', 'crai', f_name)), 
                           crai.get((s_name, re.sub(r'cram$', 'cram.crai', f_name)), 
                                    None))
@@ -350,6 +351,7 @@ def main():
     input_dir = arvados.get_task_param_mount('input')
 
     input_cram_files = []
+    stream_name = ""
     for f in arvados.util.listdir_recursive(input_dir):
         if re.search(r'\.cram$', f):
             stream_name, input_file_name = os.path.split(f)
@@ -695,7 +697,7 @@ def main():
     out = arvados.CollectionWriter()
 
     # Write out_dir to keep
-    print "Writing Keep Collection from %s to %s" % (out_dir, stream_name)
+    print "Writing Keep Collection from [%s] to [%s]" % (out_dir, stream_name)
     out.write_directory_tree(out_dir, stream_name)
 
     # Commit the output to Keep.
