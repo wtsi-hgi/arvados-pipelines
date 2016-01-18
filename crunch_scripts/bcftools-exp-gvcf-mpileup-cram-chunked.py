@@ -467,7 +467,7 @@ def main():
                 bcftools_norm_cmd = ["bcftools", "norm", 
                                      "-f", ref_file, 
                                      "-Ou"]
-                bcftools_mpileup_cmd = ["bcftools", "mpileup",
+                bcftools_mpileup_cmd = ["bcftools-gvcf", "mpileup",
                                         "-t", "AD,INFO/AD",
                                         "-C50", 
                                         "-pm2", 
