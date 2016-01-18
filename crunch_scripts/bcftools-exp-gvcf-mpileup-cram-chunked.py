@@ -14,7 +14,7 @@ from random import seed, shuffle
 seed("arvados")
 
 # whether or not to shuffle the chunks (TODO: should this be a parameter?)
-shuffle_chunks = True
+shuffle_chunks = False
 
 # the amount to weight each sequence contig
 weight_seq = 6000
