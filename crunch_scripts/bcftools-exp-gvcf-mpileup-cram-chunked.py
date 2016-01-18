@@ -8,6 +8,13 @@ import jinja2
 from select import select
 from signal import signal, SIGINT, SIGTERM, SIGKILL
 from time import sleep
+from random import seed, shuffle
+
+# don't really need or want random numbers, but do want to be able to shuffle things up
+seed("arvados")
+
+# whether or not to shuffle the chunks (TODO: should this be a parameter?)
+shuffle_chunks = True
 
 # the amount to weight each sequence contig
 weight_seq = 6000
@@ -208,7 +215,10 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
             task_input_pdh = r["portable_data_hash"]
         except:
             raise 
-        
+
+        if shuffle_chunks:
+            shuffle(chunk_input_pdh_name)
+
         for chunk_input_pdh, chunk_input_name in chunk_input_pdh_name:
             # Create task for each CRAM / chunk
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
