@@ -462,14 +462,14 @@ def main():
                 region_label = "%s/%s [%s]" % (current_region_num, total_region_count, region)
                 concat_noheader_fifo = concat_noheader_fifos[region]
                 bcftools_view_noheader_input_fifo = os.path.join(tmp_dir, output_basename + (".part_%s_of_%s.noheader.g.bcf" % (current_region_num, total_region_count)))
-                part_tee_cmd = ["tee", bcftools_view_noheader_input_fifo]
+                part_tee_cmd = ["teepot", bcftools_view_noheader_input_fifo, "-"]
                 bcftools_view_noheader_cmd = ["bcftools", "view", "-H", "-Ov", bcftools_view_noheader_input_fifo]
                 concat_headeronly_tmp = concat_headeronly_tmps[region]
                 bcftools_view_headeronly_cmd = ["bcftools", "view", "-h", "-Oz", "-o", concat_headeronly_tmp]
                 bcftools_norm_cmd = ["bcftools", "norm", 
                                      "-f", ref_file, 
                                      "-Ou"]
-                bcftools_mpileup_cmd = ["bcftools", "mpileup",
+                bcftools_mpileup_cmd = ["bcftools-gvcf", "mpileup",
                                         "-t", "AD,INFO/AD",
                                         "-C50", 
                                         "-pm2", 
@@ -608,7 +608,7 @@ def main():
     grep_headeronly_p = run_child_cmd(grep_headeronly_cmd,
                                       stdin=grep_headeronly_stdin_pipe_read,
                                       stdout=final_headeronly_tmp_f,
-                                      tag="bcftools concat (headeronly)")
+                                      tag="grep (headeronly)")
     bcftools_concat_headeronly_cmd = ["bcftools", "concat", "-Ov", "-f", concat_headeronly_tmp_fofn]
     bcftools_concat_headeronly_p = run_child_cmd(bcftools_concat_headeronly_cmd,
                                                  stdout=grep_headeronly_stdin_pipe_write,
@@ -620,7 +620,7 @@ def main():
                                                                  "bcftools concat (headeronly)",
                                                                  close_fds=[grep_headeronly_stdin_pipe_write])
         grep_headeronly_p = close_process_if_finished(grep_headeronly_p,
-                                                      "bcftools concat (headeronly)",
+                                                      "grep (headeronly)",
                                                       close_fds=[grep_headeronly_stdin_pipe_read],
                                                       close_files=[final_headeronly_tmp_f])
 
@@ -630,50 +630,75 @@ def main():
     if grep_headeronly_p is not None:
         print "ERROR: failed to cleanly terminate grep (headeronly)"
 
-    print "Creating final 'cat | bcftools view -Oz' pipe"
-    final_bcftools_view_stdin_pipe_read, final_bcftools_view_stdin_pipe_write = os.pipe()
-    print "Preparing penultimate output file [%s]" % (penultimate_out_file)
-    final_bcftools_view_cmd = ["bcftools", "view", "-Oz", "-o", penultimate_out_file]
-    final_concat_cmd = ["cat", final_headeronly_tmp, out_file_tmp]
-    final_bcftools_view_p = run_child_cmd(final_bcftools_view_cmd, tag="final bcftools view -Oz", stdin=final_bcftools_view_stdin_pipe_read)
-    final_concat_p = run_child_cmd(final_concat_cmd, tag="final cat (header+data)", stdout=final_bcftools_view_stdin_pipe_write)
-    while True:
-        watch_fds_and_print_output()
-        final_bcftools_view_p = close_process_if_finished(final_bcftools_view_p,
-                                                          "final bcftools view -Oz",
-                                                          close_fds=[final_bcftools_view_stdin_pipe_read])
-        final_concat_p = close_process_if_finished(final_concat_p,
-                                                   "final cat (header+data)",
-                                                   close_fds=[final_bcftools_view_stdin_pipe_write])
-        if not ((final_concat_p and final_concat_p.poll() is None)
-                or (final_bcftools_view_p and final_bcftools_view_p.poll() is None)):
-            # none of the processes are still running, we're done! 
-            break
-        else:
-            sleep(0.01)
-            # continue to next loop iteration
 
-    if final_bcftools_view_p is not None:
-        print "ERROR: failed to cleanly terminate final bcftools view -Oz"
+    # check if there was any data output
+    if os.stat(out_file_tmp)[6] == 0:
+        # 0-byte data file, there is no point in concatenating and 
+        # reheader will reject the file, so we need to bgzip it ourselves
+        print "Handling 0-byte data file - compressing headeronly vcf with bgzip to create [%s]" % (final_out_file)
+        final_out_file_f = open(final_out_file, 'wb')
+        final_bgzip_cmd = ["bgzip", "-c", final_headeronly_tmp]
+        final_bgzip_p = run_child_cmd(final_bgzip_cmd, tag="final bgzip", stdout=final_out_file_f)
+        while True:
+            watch_fds_and_print_output()
+            final_bgzip_p = close_process_if_finished(final_bgzip_p,
+                                                      "final bgzip",
+                                                      close_files=[final_out_file_f])
+            if not (final_bgzip_p and final_bgzip_p.poll() is None):
+                # none of the processes are still running, we're done! 
+                break
+            else:
+                sleep(0.01)
+                # continue to next loop iteration
+        if final_bgzip_p is not None:
+            print "ERROR: failed to cleanly terminate final bgzip (header with no data)"
+    else:
+        # there is some data in the data file
+        print "Creating final 'cat | bcftools view -Oz' pipe"
+        final_bcftools_view_stdin_pipe_read, final_bcftools_view_stdin_pipe_write = os.pipe()
+        print "Preparing penultimate output file [%s]" % (penultimate_out_file)
+        final_bcftools_view_cmd = ["bcftools", "view", "-Oz", "-o", penultimate_out_file]
+        final_concat_cmd = ["cat", final_headeronly_tmp, out_file_tmp]
+        final_bcftools_view_p = run_child_cmd(final_bcftools_view_cmd, tag="final bcftools view -Oz", stdin=final_bcftools_view_stdin_pipe_read)
+        final_concat_p = run_child_cmd(final_concat_cmd, tag="final cat (header+data)", stdout=final_bcftools_view_stdin_pipe_write)
+        while True:
+            watch_fds_and_print_output()
+            final_bcftools_view_p = close_process_if_finished(final_bcftools_view_p,
+                                                              "final bcftools view -Oz",
+                                                              close_fds=[final_bcftools_view_stdin_pipe_read])
+            final_concat_p = close_process_if_finished(final_concat_p,
+                                                       "final cat (header+data)",
+                                                       close_fds=[final_bcftools_view_stdin_pipe_write])
+            if not ((final_concat_p and final_concat_p.poll() is None)
+                    or (final_bcftools_view_p and final_bcftools_view_p.poll() is None)):
+                # none of the processes are still running, we're done! 
+                break
+            else:
+                sleep(0.01)
+                # continue to next loop iteration
 
-    if final_concat_p is not None:
-        print "ERROR: failed to cleanly terminate final cat (header+data)"
+        if final_bcftools_view_p is not None:
+            print "ERROR: failed to cleanly terminate final bcftools view -Oz"
 
-    print "Reheadering penultimate output file into final out file [%s]" % (final_out_file)
-    final_bcftools_reheader_cmd = ["bcftools", "reheader", "-h", final_headeronly_tmp, "-o", final_out_file, penultimate_out_file]
-    final_bcftools_reheader_p = run_child_cmd(final_bcftools_reheader_cmd, tag="final bcftools reheader")
-    while True:
-        watch_fds_and_print_output()
-        final_bcftools_reheader_p = close_process_if_finished(final_bcftools_reheader_p,
-                                                          "final bcftools reheader")
-        if not (final_bcftools_reheader_p and final_bcftools_reheader_p.poll() is None):
-            # none of the processes are still running, we're done! 
-            break
-        else:
-            sleep(0.01)
-            # continue to next loop iteration
-    if final_bcftools_reheader_p is not None:
-        print "ERROR: failed to cleanly terminate final bcftools reheader"
+        if final_concat_p is not None:
+            print "ERROR: failed to cleanly terminate final cat (header+data)"
+
+        print "Reheadering penultimate output file into final out file [%s]" % (final_out_file)
+        final_bcftools_reheader_cmd = ["bcftools", "reheader", "-h", final_headeronly_tmp, "-o", final_out_file, penultimate_out_file]
+        final_bcftools_reheader_p = run_child_cmd(final_bcftools_reheader_cmd, tag="final bcftools reheader")
+        while True:
+            watch_fds_and_print_output()
+            final_bcftools_reheader_p = close_process_if_finished(final_bcftools_reheader_p,
+                                                              "final bcftools reheader")
+            if not (final_bcftools_reheader_p and final_bcftools_reheader_p.poll() is None):
+                # none of the processes are still running, we're done! 
+                break
+            else:
+                sleep(0.01)
+                # continue to next loop iteration
+        if final_bcftools_reheader_p is not None:
+            print "ERROR: failed to cleanly terminate final bcftools reheader"
+        os.remove(penultimate_out_file)
 
     print "Indexing final output file [%s]" % (final_out_file)
     bcftools_index_cmd = ["bcftools", "index", final_out_file]
@@ -687,9 +712,8 @@ def main():
 
     print "Complete, removing temporary files"
     os.remove(concat_headeronly_tmp_fofn)
-    os.remove(final_headeronly_tmp)
-    os.remove(penultimate_out_file)
     os.remove(out_file_tmp)
+    os.remove(final_headeronly_tmp)
     for tmp_file in tmp_files_to_delete:
         os.remove(tmp_file)
 
