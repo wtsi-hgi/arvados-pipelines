@@ -100,6 +100,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
     print "Dict header is %s" % dict_header
     sn_intervals = dict()
     sns = []
+    skip_sns = []
     total_len = 0
     for sq in dict_lines:
         if re.search(r'^@SQ', sq) is None:
@@ -121,11 +122,14 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         if sn_intervals.has_key(sn):
             raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
         if skip_sq_sn_r.search(sn):
+            skip_sns.append(sn)
             next
         sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
         total_len += int(ln)
     total_sequences = len(sns)
+
+    print "Skipped %s SQs with SNs matching regex [%s]" % (len(skip_sns), skip_sq_sn_regex)
 
     # Chunk the genome into genome_chunks pieces
     # weighted by both number of base pairs and number of seqs
