@@ -618,7 +618,7 @@ def main():
     print "Creating 'bcftools concat | grep' pipe" 
     grep_headeronly_stdin_pipe_read, grep_headeronly_stdin_pipe_write = os.pipe()
 
-    grep_headeronly_cmd = ["grep", "-v", "^[#][#]bcftools"]
+    grep_headeronly_cmd = ["egrep", "-v", "^[#][#](bcftools|mpileup|reference)"]
     grep_headeronly_p = run_child_cmd(grep_headeronly_cmd,
                                       stdin=grep_headeronly_stdin_pipe_read,
                                       stdout=final_headeronly_tmp_f,
