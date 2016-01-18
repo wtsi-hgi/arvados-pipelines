@@ -79,5 +79,25 @@ RUN \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
 
+# Install teepot from source
+RUN \
+  apt-get -q=2 update && \
+  apt-get -q=2 -y --no-install-recommends install build-essential autoconf automake && \
+  cd /tmp && \
+  git clone https://github.com/wtsi-npg/teepot.git && \
+  cd teepot && \
+  git checkout 1.1.1 && \
+  autoreconf -fvi && \
+  ./configure && \
+  make && \
+  make install && \
+  cd && \
+  rm -rf /tmp/htslib && \
+  rm -rf /tmp/samtools && \
+  apt-get -q=2 -y purge build-essential autoconf automake && \
+  apt-get -q=2 -y autoremove && \
+  apt-get -q=2 -y clean && \
+  rm -rf /var/lib/apt/lists/*
+
 # Switch back to crunch user
 USER crunch
