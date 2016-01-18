@@ -45,10 +45,9 @@ RUN \
   git clone --branch=exp/gvcf --recursive git://github.com/pd3/bcftools.git && \
   cd bcftools && \
   make && \
-  cp bcftools /usr/local/bin && \
+  cp bcftools /usr/local/bin/bcftools-gvcf && \
   cd htslib && \
   make && \
-  cp htsfile /usr/local/bin && \
   cd && \
   rm -rf /tmp/bcftools && \
   apt-get -q=2 -y purge build-essential zlib1g-dev && \
@@ -56,7 +55,7 @@ RUN \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
 
-# Install htslib + samtools 1.3 from source
+# Install htslib + samtools 1.3 + bcftools 1.3 from source
 RUN \
   apt-get -q=2 update && \
   apt-get -q=2 -y --no-install-recommends install build-essential git zlib1g-dev libncurses5-dev && \
@@ -65,15 +64,25 @@ RUN \
   cd htslib && \
   git checkout 1.3 && \
   make && \
+  cp htsfile /usr/local/bin && \
+  cp bgzip /usr/local/bin && \
+  cp tabix /usr/local/bin && \
   cd .. && \
   git clone https://github.com/samtools/samtools.git && \
   cd samtools && \
   git checkout 1.3 && \
   make && \
   cp samtools /usr/local/bin && \
+  cd .. && \
+  git clone https://github.com/samtools/bcftools.git && \
+  cd bcftools && \
+  git checkout 1.3 && \
+  make && \
+  cp bcftools /usr/local/bin && \
   cd && \
   rm -rf /tmp/htslib && \
   rm -rf /tmp/samtools && \
+  rm -rf /tmp/bcftools && \
   apt-get -q=2 -y purge build-essential zlib1g-dev && \
   apt-get -q=2 -y autoremove && \
   apt-get -q=2 -y clean && \
