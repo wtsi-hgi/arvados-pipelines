@@ -122,10 +122,8 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         if sn_intervals.has_key(sn):
             raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
         if skip_sq_sn_r.search(sn):
-            print "Skipping sequence with SN %s based on regex [%s]" % (sn, skip_sq_sn_regex)
             skip_sns.append(sn)
-            next
-        print "Adding sequence with SN %s" % (sn)
+            continue
         sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
         total_len += int(ln)
