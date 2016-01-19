@@ -8,13 +8,7 @@ import jinja2
 from select import select
 from signal import signal, SIGINT, SIGTERM, SIGKILL
 from time import sleep
-from random import seed, shuffle
-
-# don't really need or want random numbers, but do want to be able to shuffle things up
-seed("arvados")
-
-# whether or not to shuffle the chunks (TODO: should this be a parameter?)
-shuffle_chunks = False
+from multiprocessing import Pool
 
 # the amount to weight each sequence contig
 weight_seq = 120000
@@ -37,6 +31,22 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
+def create_chunk_tasks(chunk_input_pdh_names):
+    for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
+        # Create task for each CRAM / chunk
+        print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
+        new_task_attrs = {
+            'job_uuid': arvados.current_job()['uuid'],
+            'created_by_job_task_uuid': arvados.current_task()['uuid'],
+            'sequence': if_sequence + 1,
+            'parameters': {
+                'input': task_input_pdh,
+                'ref': ref_input_pdh,
+                'chunk': chunk_input_pdh
+                }
+            }
+        arvados.api().job_tasks().create(body=new_task_attrs).execute()
+
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
                            genome_chunks=200):
@@ -52,6 +62,10 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
     """
     if if_sequence != arvados.current_task()['sequence']:
         return
+
+    # setup multiprocessing pool
+    print 'Using %d processes to submit tasks\n' % multiprocessing.cpu_count()
+    pool = Pool(processes=multiprocessing.cpu_count())
 
     skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
@@ -144,7 +158,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
     print "Total genome length: %s" % (total_len)
     total_points = total_len + (total_sequences * weight_seq)
     chunk_points = int(total_points / genome_chunks)
-    chunk_input_pdh_name = []
+    chunk_input_pdh_names = []
     print "Chunking genome into %s chunks of ~%s points" % (genome_chunks, chunk_points)
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
@@ -181,10 +195,10 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         if chunk_intervals_count > 0:
             chunk_input_pdh = chunk_c.finish()
             print "Chunk intervals file %s saved as %s" % (chunk_input_name, chunk_input_pdh)
-            chunk_input_pdh_name.append((chunk_input_pdh, chunk_input_name))
+            chunk_input_pdh_names.append((chunk_input_pdh, chunk_input_name))
         else:
             print "WARNING: skipping empty intervals for %s" % chunk_input_name
-    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh_name), ' '.join([x[0] for x in chunk_input_pdh_name]))
+    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh_names), ' '.join([x[0] for x in chunk_input_pdh_names]))
 
     # prepare CRAM input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
@@ -216,23 +230,11 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         except:
             raise 
 
-        if shuffle_chunks:
-            shuffle(chunk_input_pdh_name)
+        pool.apply_async(create_chunk_tasks, (chunk_input_pdh_names))
 
-        for chunk_input_pdh, chunk_input_name in chunk_input_pdh_name:
-            # Create task for each CRAM / chunk
-            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
-            new_task_attrs = {
-                'job_uuid': arvados.current_job()['uuid'],
-                'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                'sequence': if_sequence + 1,
-                'parameters': {
-                    'input': task_input_pdh,
-                    'ref': ref_input_pdh,
-                    'chunk': chunk_input_pdh
-                    }
-                }
-            arvados.api().job_tasks().create(body=new_task_attrs).execute()
+    print "Waiting for asynchronous requests to complete"
+    pool.close()
+    pool.join()
 
     if and_end_task:
         print "Ending task 0 successfully"
