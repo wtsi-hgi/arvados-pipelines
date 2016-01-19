@@ -31,10 +31,10 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
-def arv_create_task(new_task_attrs):
+def arv_create_task(arvados, new_task_attrs):
     arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
-def create_chunk_tasks(chunk_input_pdh_names, pool=None):
+def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, pool=None):
     for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
         # Create task for each CRAM / chunk
         print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
@@ -49,9 +49,9 @@ def create_chunk_tasks(chunk_input_pdh_names, pool=None):
                 }
             }
         if pool is None:
-            arv_create_task(new_task_attrs)
+            arv_create_task(arvados, new_task_attrs)
         else:
-            pool.apply_async(arv_create_task, (new_task_attrs))
+            pool.apply_async(arv_create_task, (arvados, new_task_attrs))
 
     print "Waiting for asynchronous requests to complete"
     pool.close()
