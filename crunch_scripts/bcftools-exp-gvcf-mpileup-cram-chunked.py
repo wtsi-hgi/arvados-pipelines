@@ -31,7 +31,10 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
-def create_chunk_tasks(chunk_input_pdh_names):
+def arv_create_task(new_task_attrs):
+    arvados.api().job_tasks().create(body=new_task_attrs).execute()
+
+def create_chunk_tasks(chunk_input_pdh_names, pool=None):
     for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
         # Create task for each CRAM / chunk
         print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
@@ -45,7 +48,15 @@ def create_chunk_tasks(chunk_input_pdh_names):
                 'chunk': chunk_input_pdh
                 }
             }
-        arvados.api().job_tasks().create(body=new_task_attrs).execute()
+        if pool is None:
+            arv_create_task(new_task_attrs)
+        else:
+            pool.apply_async(arv_create_task, (new_task_attrs))
+
+    print "Waiting for asynchronous requests to complete"
+    pool.close()
+    pool.join()
+
 
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
@@ -231,11 +242,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         except:
             raise 
 
-        pool.apply_async(create_chunk_tasks, (chunk_input_pdh_names))
-
-    print "Waiting for asynchronous requests to complete"
-    pool.close()
-    pool.join()
+        create_chunk_tasks(chunk_input_pdh_names, pool=pool)
 
     if and_end_task:
         print "Ending task 0 successfully"
