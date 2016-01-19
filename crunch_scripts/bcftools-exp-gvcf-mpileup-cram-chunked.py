@@ -307,6 +307,25 @@ def watch_fds_and_print_output():
         if line:
             print "%s: %s" % (tag, line.rstrip())
 
+def test_and_prime_input_file(test_file, error_exception):
+    # Ensure we can read the file
+    if not os.access(test_file, os.R_OK):
+        if error_exception:
+            raise error_exception
+        else:
+            return False
+    # Read a little from the file to prime it
+    try:
+        with open(test_file, 'r') as f:
+            bytes = f.read(1024)
+            print "Successfully read %s bytes from %s" % (len(bytes), test_file)
+    except:
+        if error_exception:
+            raise error_exception
+        else:
+            return False
+    return True
+
 def main():
     signal(SIGINT, sigint_handler)
     signal(SIGTERM, sigterm_handler)
@@ -340,10 +359,13 @@ def main():
             ref_file = os.path.join(ref_dir, f)
     if ref_file is None:
         raise InvalidArgumentError("No reference fasta found in reference collection.")
-    # Ensure we can read the reference file
-    if not os.access(ref_file, os.R_OK):
-        raise FileAccessError("reference FASTA file not readable: %s" % ref_file)
-    # TODO: could check readability of .fai and .dict as well?
+
+    # Ensure we can read the reference fasta
+    test_and_prime_input_file(ref_file, error_exception=FileAccessError("reference fasta not readable: %s" % ref_file))
+
+    # Ensure we have corresponding .fai, and that it is also readable
+    ref_fai_file = ref_file + ".fai"
+    test_and_prime_input_file(ref_fai_file, error_exception=FileAccessError("reference fai index not readable: %s" % ref_fai_file))
 
     # Get genome chunk intervals file
     chunk_file = None
@@ -356,8 +378,7 @@ def main():
     if chunk_file is None:
         raise InvalidArgumentError("No chunk intervals file found in chunk collection.")
     # Ensure we can read the chunk file
-    if not os.access(chunk_file, os.R_OK):
-        raise FileAccessError("Chunk intervals file not readable: %s" % chunk_file)
+    test_and_prime_input_file(chunk_file, error_exception=FileAccessError("Chunk intervals file not readable: %s" % chunk_file))
 
     # Get single CRAM file for this task 
     input_dir = None
@@ -377,17 +398,17 @@ def main():
     cram_file = input_cram_files[0]
 
     # Ensure we can read the CRAM file
-    if not os.access(cram_file, os.R_OK):
-        raise FileAccessError("CRAM file not readable: %s" % cram_file)
+    test_and_prime_input_file(cram_file, error_exception=FileAccessError("CRAM file not readable: %s" % cram_file))
 
     # Ensure we have corresponding CRAI index and can read it as well
     cram_file_base, cram_file_ext = os.path.splitext(cram_file)
     assert(cram_file_ext == ".cram")
     crai_file = cram_file_base + ".crai"
-    if not os.access(crai_file, os.R_OK):
+    if not test_and_prime_input_file(crai_file, error_exception=None):
         crai_file = cram_file_base + ".cram.crai"
-        if not os.access(crai_file, os.R_OK):
+        if not test_and_prime_input_file(crai_file, error_exception=None):
             raise FileAccessError("No readable CRAM index file for CRAM file: %s" % cram_file)
+
 
     # Will write to out_dir, make sure it is empty
     tmp_dir = arvados.current_task().tmpdir
