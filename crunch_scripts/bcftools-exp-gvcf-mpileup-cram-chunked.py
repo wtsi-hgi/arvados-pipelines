@@ -8,7 +8,7 @@ import jinja2
 from select import select
 from signal import signal, SIGINT, SIGTERM, SIGKILL
 from time import sleep
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 
 # the amount to weight each sequence contig
 weight_seq = 120000
@@ -64,8 +64,9 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         return
 
     # setup multiprocessing pool
-    print 'Using %d processes to submit tasks\n' % multiprocessing.cpu_count()
-    pool = Pool(processes=multiprocessing.cpu_count())
+    pool_processes = cpu_count() - 1
+    print 'Using %d processes to submit tasks\n' % pool_processes
+    pool = Pool(processes=pool_processes)
 
     skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
