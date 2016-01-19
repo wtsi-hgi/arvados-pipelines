@@ -242,7 +242,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         except:
             raise 
 
-        create_chunk_tasks(chunk_input_pdh_names, pool=pool)
+        create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, pool=pool)
 
     if and_end_task:
         print "Ending task 0 successfully"
