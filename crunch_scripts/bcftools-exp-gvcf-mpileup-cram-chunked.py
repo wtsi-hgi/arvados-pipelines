@@ -34,8 +34,10 @@ class FileAccessError(Exception):
 class InternalError(Exception):
     pass
 
-def arv_create_task(new_task_attrs, created_message):
-    return arvados.api().job_tasks().create(body=new_task_attrs).execute()
+def arv_create_task(new_task_attrs, report):
+    res = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+    return {'res': res,
+            'report': report}
 
 def create_chunk_tasks(f_name, chunk_input_pdh_names, 
                        if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
@@ -62,9 +64,11 @@ def create_chunk_tasks(f_name, chunk_input_pdh_names,
 
     for async_result in async_results:
         async_result.wait()
-        res = async_result.get()
-        if (not res) or (not 'items' in res) or len(res['items']) != 1:
+        (res, report) = async_result.get()
+        if (not res) or (not 'qsequence' in res):
             raise InternalError("Could not create job task: %s" % res)
+        else:
+            print report + " qsequence %s" % res['qsequence']
 
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
