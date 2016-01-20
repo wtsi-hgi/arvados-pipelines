@@ -617,14 +617,14 @@ def main():
                                                       close_files=[out_file_tmp_f])
 
         # end loop once all processes have finished
-        if not (
-                (region_concat_p and region_concat_p.poll() is None)
-                or (bcftools_view_noheader_p and bcftools_view_noheader_p.poll() is None)
-                or (bcftools_view_headeronly_p and bcftools_view_headeronly_p.poll() is None)
-                or (part_tee_p and part_tee_p.poll() is None)
-                or (bcftools_norm_p and bcftools_norm_p.poll() is None)
-                or (bcftools_mpileup_p and bcftools_mpileup_p.poll() is None)
-        ):
+        if (
+            (region_concat_p is None)
+            and (bcftools_view_noheader_p is None)
+            and (bcftools_view_headeronly_p is None)
+            and (part_tee_p is None)
+            and (bcftools_norm_p is None)
+            and (bcftools_mpileup_p is None)
+            ):
             print "All region work has completed"
             break
         else:
@@ -675,8 +675,7 @@ def main():
     bcftools_concat_headeronly_p = run_child_cmd(bcftools_concat_headeronly_cmd,
                                                  stdout=grep_headeronly_stdin_pipe_write,
                                                  tag="bcftools concat (headeronly)")
-    while ((bcftools_concat_headeronly_p and bcftools_concat_headeronly_p.poll() is None) 
-           or (grep_headeronly_p and grep_headeronly_p.poll() is None)):
+    while True:
         watch_fds_and_print_output()
         bcftools_concat_headeronly_p = close_process_if_finished(bcftools_concat_headeronly_p,
                                                                  "bcftools concat (headeronly)",
@@ -685,6 +684,13 @@ def main():
                                                       "grep (headeronly)",
                                                       close_fds=[grep_headeronly_stdin_pipe_read],
                                                       close_files=[final_headeronly_tmp_f])
+        if ((bcftools_concat_headeronly_p is None)
+            and (grep_headeronly_p is None)):
+            # none of the processes are still running, we're done! 
+            break
+        else:
+            sleep(0.01)
+            # continue to next loop iteration
 
     if bcftools_concat_headeronly_p is not None:
         print "ERROR: failed to cleanly terminate bcftools concat (headeronly)"
@@ -706,7 +712,7 @@ def main():
             final_bgzip_p = close_process_if_finished(final_bgzip_p,
                                                       "final bgzip",
                                                       close_files=[final_out_file_f])
-            if not (final_bgzip_p and final_bgzip_p.poll() is None):
+            if (final_bgzip_p is None):
                 # none of the processes are still running, we're done! 
                 break
             else:
@@ -731,8 +737,8 @@ def main():
             final_concat_p = close_process_if_finished(final_concat_p,
                                                        "final cat (header+data)",
                                                        close_fds=[final_bcftools_view_stdin_pipe_write])
-            if not ((final_concat_p and final_concat_p.poll() is None)
-                    or (final_bcftools_view_p and final_bcftools_view_p.poll() is None)):
+            if ((final_concat_p is None)
+                and (final_bcftools_view_p is None)):
                 # none of the processes are still running, we're done! 
                 break
             else:
@@ -752,7 +758,7 @@ def main():
             watch_fds_and_print_output()
             final_bcftools_reheader_p = close_process_if_finished(final_bcftools_reheader_p,
                                                               "final bcftools reheader")
-            if not (final_bcftools_reheader_p and final_bcftools_reheader_p.poll() is None):
+            if (final_bcftools_reheader_p is None):
                 # none of the processes are still running, we're done! 
                 break
             else:
@@ -765,10 +771,16 @@ def main():
     print "Indexing final output file [%s]" % (final_out_file)
     bcftools_index_cmd = ["bcftools", "index", final_out_file]
     bcftools_index_p = run_child_cmd(bcftools_index_cmd, tag="bcftools index")
-    while (bcftools_index_p and bcftools_index_p.poll() is None):
+    while True:
         watch_fds_and_print_output()
-    bcftools_index_p = close_process_if_finished(bcftools_index_p,
-                                               "bcftools index")
+        bcftools_index_p = close_process_if_finished(bcftools_index_p,
+                                                     "bcftools index")
+        if (bcftools_index_p is None):
+            break
+        else:
+            sleep(0.01)
+            # continue to next loop iteration
+
     if bcftools_index_p is not None:
         print "ERROR: failed to cleanly terminate bcftools index"
 
