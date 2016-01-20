@@ -36,8 +36,7 @@ class InternalError(Exception):
 
 def arv_create_task(new_task_attrs, report="arv_create_task created"):
     res = arvados.api().job_tasks().create(body=new_task_attrs).execute()
-    return {'res': res,
-            'report': report}
+    return (res, report)
 
 def create_chunk_tasks(f_name, chunk_input_pdh_names, 
                        if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
@@ -64,9 +63,7 @@ def create_chunk_tasks(f_name, chunk_input_pdh_names,
 
     for async_result in async_results:
         async_result.wait()
-        res_report = async_result.get()
-        res = res_report[0]
-        report = res_report[1]
+        (res, report) = async_result.get()
         if (not res) or (not 'qsequence' in res):
             raise InternalError("Could not create job task: %s" % res)
         else:
