@@ -806,7 +806,7 @@ def main():
     this_task.set_output(output_locator)
 
     # Done!
-
+    print "Task complete!"
 
 if __name__ == '__main__':
     main()
