@@ -31,12 +31,11 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
+class InternalError(Exception):
+    pass
+
 def arv_create_task(arvados, new_task_attrs, created_message):
-    job_tasks = arvados.api().job_tasks().create(body=new_task_attrs).execute()
-    if len(job_tasks['items']) == 1:
-        return created_message
-    else:
-        raise Exception("Could not create job task for %s" % new_task_attrs)
+    return arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
 def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
                        if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
@@ -60,8 +59,11 @@ def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names,
                 arvados, new_task_attrs,
                 "Created new task to process %s with chunk interval %s (job_uuid %s)" % (f_name, chunk_input_name, job_uuid)))
         async_results.append(async_result)
+
     for async_result in async_results:
-        async_result.get()
+        res = async_result.get()
+        if len(res['items']) != 1:
+            raise InternalError("Could not create job task: %s" % res)
 
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
