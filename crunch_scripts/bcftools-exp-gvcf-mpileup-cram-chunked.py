@@ -55,11 +55,6 @@ def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names,
         else:
             pool.apply_async(arv_create_task, (arvados, new_task_attrs))
 
-    print "Waiting for asynchronous requests to complete"
-    pool.close()
-    pool.join()
-
-
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
                            genome_chunks=200):
@@ -247,6 +242,10 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
                            if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
                            pool=pool)
+
+    print "Waiting for asynchronous requests to complete"
+    pool.close()
+    pool.join()
 
     if and_end_task:
         print "Ending task 0 successfully"
