@@ -61,8 +61,9 @@ def create_chunk_tasks(f_name, chunk_input_pdh_names,
         async_results.append(async_result)
 
     for async_result in async_results:
+        async_result.wait()
         res = async_result.get()
-        if len(res['items']) != 1:
+        if (not res) or (not 'items' in res) or len(res['items']) != 1:
             raise InternalError("Could not create job task: %s" % res)
 
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
