@@ -34,10 +34,10 @@ class FileAccessError(Exception):
 class InternalError(Exception):
     pass
 
-def arv_create_task(arvados, new_task_attrs, created_message):
+def arv_create_task(new_task_attrs, created_message):
     return arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
-def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
+def create_chunk_tasks(f_name, chunk_input_pdh_names, 
                        if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
                        pool=None):
     async_results = []
@@ -56,7 +56,7 @@ def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names,
                 }
             }
         async_result = pool.apply_async(arv_create_task, (
-                arvados, new_task_attrs,
+                new_task_attrs,
                 "Created new task to process %s with chunk interval %s (job_uuid %s)" % (f_name, chunk_input_name, job_uuid)))
         async_results.append(async_result)
 
@@ -249,7 +249,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         except:
             raise 
 
-        create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
+        create_chunk_tasks(f_name, chunk_input_pdh_names, 
                            if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
                            pool=pool)
 
