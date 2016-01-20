@@ -31,18 +31,24 @@ class InvalidArgumentError(Exception):
 class FileAccessError(Exception):
     pass
 
-def arv_create_task(arvados, new_task_attrs):
-    arvados.api().job_tasks().create(body=new_task_attrs).execute()
+def arv_create_task(arvados, new_task_attrs, created_message):
+    job_tasks = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+    if len(job_tasks['items']) == 1:
+        return created_message
+    else:
+        raise Exception("Could not create job task for %s" % new_task_attrs)
 
 def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
                        if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
                        pool=None):
+    async_results = []
     for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
         # Create task for each CRAM / chunk
-        print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
+        job_uuid = arvados.current_job()['uuid']
+        current_task_uuid = arvados.current_task()['uuid']
         new_task_attrs = {
-            'job_uuid': arvados.current_job()['uuid'],
-            'created_by_job_task_uuid': arvados.current_task()['uuid'],
+            'job_uuid': job_uuid,
+            'created_by_job_task_uuid': current_task_uuid,
             'sequence': if_sequence + 1,
             'parameters': {
                 'input': task_input_pdh,
@@ -50,10 +56,12 @@ def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names,
                 'chunk': chunk_input_pdh
                 }
             }
-        if pool is None:
-            arv_create_task(arvados, new_task_attrs)
-        else:
-            pool.apply_async(arv_create_task, (arvados, new_task_attrs))
+        async_result = pool.apply_async(arv_create_task, (
+                arvados, new_task_attrs,
+                "Created new task to process %s with chunk interval %s (job_uuid %s)" % (f_name, chunk_input_name, job_uuid)))
+        async_results.append(async_result)
+    for async_result in async_results:
+        async_result.get()
 
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
