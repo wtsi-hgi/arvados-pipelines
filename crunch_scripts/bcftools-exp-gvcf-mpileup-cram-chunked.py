@@ -34,7 +34,9 @@ class FileAccessError(Exception):
 def arv_create_task(arvados, new_task_attrs):
     arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
-def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, pool=None):
+def create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
+                       if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
+                       pool=None):
     for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
         # Create task for each CRAM / chunk
         print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
@@ -242,7 +244,9 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True,
         except:
             raise 
 
-        create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, pool=pool)
+        create_chunk_tasks(arvados, f_name, chunk_input_pdh_names, 
+                           if_sequence, task_input_pdh, ref_input_pdh, chunk_input_pdh, 
+                           pool=pool)
 
     if and_end_task:
         print "Ending task 0 successfully"
