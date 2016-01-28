@@ -63,11 +63,14 @@ def create_chunk_tasks(f_name, chunk_input_pdh_names,
 
     for async_result in async_results:
         async_result.wait()
-        (res, report) = async_result.get()
-        if (not res) or (not 'qsequence' in res):
-            raise InternalError("Could not create job task: %s" % res)
-        else:
-            print report + " qsequence %s" % res['qsequence']
+        try:
+            (res, report) = async_result.get()
+            if (not res) or (not 'qsequence' in res):
+                raise InternalError("Could not create job task: %s" % res)
+            else:
+                print report + " qsequence %s" % res['qsequence']
+        except Exception as e:
+            raise InternalError("Exception creating job task: %s" % e)
 
 def one_task_per_cram_file(if_sequence=0, and_end_task=True, 
                            skip_sq_sn_regex='_decoy$', 
