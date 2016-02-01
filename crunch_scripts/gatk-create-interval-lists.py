@@ -5,6 +5,9 @@ import arvados      # Import the Arvados sdk module
 import re
 import subprocess
 
+# the amount to weight each sequence contig
+weight_seq = 120000
+
 class InvalidArgumentError(Exception):
     pass
 
@@ -108,13 +111,16 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
         sn_intervals[sn] = (1, int(ln))
         sns.append(sn)
         total_len += int(ln)
+    total_sequences = len(sns)
 
     # Chunk the genome into genome_chunks equally sized pieces and create intervals files
+    print "Total sequences included: %s" % (total_sequences)
     print "Total genome length is %s" % total_len
-    chunk_len = int(total_len / genome_chunks)
-    chunk_input_pdh_name = []
-    print "Chunking genome into %s chunks of size ~%s" % (genome_chunks, chunk_len)
+    total_points = total_len + (total_sequences * weight_seq)
+    print "Total points to split: %s" % (total_points)
+    chunk_points = int(total_points / genome_chunks)
     chunks_c = arvados.collection.CollectionWriter(num_retries=3)
+    print "Chunking genome into %s chunks of ~%s points" % (genome_chunks, chunk_points)
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
         chunk_intervals_count = 0
@@ -122,24 +128,28 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
         print "Creating interval file for chunk %s" % chunk_num
         chunks_c.start_new_file(newfilename=chunk_input_name)
         chunks_c.write(interval_header)
-        remaining_len = chunk_len
+        remaining_points = chunk_points
         while len(sns) > 0:
             sn = sns.pop(0)
+            remaining_points -= weight_seq
+            if remaining_points <= 0:
+                sns.insert(0, sn)
+                break
             if not sn_intervals.has_key(sn):
                 raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
             start, end = sn_intervals[sn]
-            if (end-start+1) > remaining_len:
+            if (end-start+1) > remaining_points:
                 # not enough space for the whole sq, split it
                 real_end = end
-                end = remaining_len + start - 1
-                assert((end-start+1) <= remaining_len)
+                end = remaining_points + start - 1
+                assert((end-start+1) <= remaining_points)
                 sn_intervals[sn] = (end+1, real_end)
                 sns.insert(0, sn)
             interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
-            remaining_len -= (end-start+1)
+            remaining_points -= (end-start+1)
             chunks_c.write(interval)
             chunk_intervals_count += 1
-            if remaining_len <= 0:
+            if remaining_points <= 0:
                 break
         if chunk_intervals_count > 0:
             print "Chunk intervals file %s saved." % (chunk_input_name)
