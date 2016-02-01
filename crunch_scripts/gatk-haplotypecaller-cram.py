@@ -8,11 +8,6 @@ import subprocess
 copy_ref = False
 copy_chunk = False
 copy_input = False
-# TODO: make genome_chunks a parameter
-genome_chunks = 200
-# TODO: make skip_sq_sn_regex a paramter
-skip_sq_sn_regex = '_decoy$'
-skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
 class InvalidArgumentError(Exception):
     pass
@@ -77,81 +72,23 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     except:
         raise 
 
-    # Load the dict data
-    interval_header = ""
-    dict_lines = dict_reader.readlines()
-    dict_header = dict_lines.pop(0)
-    if re.search(r'^@HD', dict_header) is None:
-        raise InvalidArgumentError("Dict file in reference collection does not have correct header: [%s]" % dict_header)
-    interval_header += dict_header
-    print "Dict header is %s" % dict_header
-    sn_intervals = dict()
-    sns = []
-    total_len = 0
-    for sq in dict_lines:
-        if re.search(r'^@SQ', sq) is None:
-            raise InvalidArgumentError("Dict file contains malformed SQ line: [%s]" % sq)
-        interval_header += sq
-        sn = None
-        ln = None
-        for tagval in sq.split("\t"):
-            tv = tagval.split(":", 1)
-            if tv[0] == "SN":
-                sn = tv[1]
-            if tv[0] == "LN":
-                ln = tv[1]
-            if sn and ln:
-                break
-        if not (sn and ln):
-            raise InvalidArgumentError("Dict file SQ entry missing required SN and/or LN parameters: [%s]" % sq)
-        assert(sn and ln)
-        if sn_intervals.has_key(sn):
-            raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
-        if skip_sq_sn_r.search(sn):
-            next
-        sn_intervals[sn] = (1, int(ln))
-        sns.append(sn)
-        total_len += int(ln)
-
-    # Chunk the genome into genome_chunks equally sized pieces and create intervals files
-    print "Total genome length is %s" % total_len
-    chunk_len = int(total_len / genome_chunks)
-    chunk_input_pdh_name = []
-    print "Chunking genome into %s chunks of size ~%s" % (genome_chunks, chunk_len)
-    for chunk_i in range(0, genome_chunks):
-        chunk_num = chunk_i + 1
-        chunk_intervals_count = 0
-        chunk_input_name = dict_reader.name() + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
-        print "Creating interval file for chunk %s" % chunk_num
-        chunk_c = arvados.collection.CollectionWriter(num_retries=3)
-        chunk_c.start_new_file(newfilename=chunk_input_name)
-        chunk_c.write(interval_header)
-        remaining_len = chunk_len
-        while len(sns) > 0:
-            sn = sns.pop(0)
-            if not sn_intervals.has_key(sn):
-                raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
-            start, end = sn_intervals[sn]
-            if (end-start+1) > remaining_len:
-                # not enough space for the whole sq, split it
-                real_end = end
-                end = remaining_len + start - 1
-                assert((end-start+1) <= remaining_len)
-                sn_intervals[sn] = (end+1, real_end)
-                sns.insert(0, sn)
-            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
-            remaining_len -= (end-start+1)
-            chunk_c.write(interval)
-            chunk_intervals_count += 1
-            if remaining_len <= 0:
-                break
-        if chunk_intervals_count > 0:
-            chunk_input_pdh = chunk_c.finish()
-            print "Chunk intervals file %s saved as %s" % (chunk_input_name, chunk_input_pdh)
-            chunk_input_pdh_name.append((chunk_input_pdh, chunk_input_name))
-        else:
-            print "WARNING: skipping empty intervals for %s" % chunk_input_name
-    print "Have %s chunk collections: [%s]" % (len(chunk_input_pdh_name), ' '.join([x[0] for x in chunk_input_pdh_name]))
+    job_chunks = arvados.current_job()['script_parameters']['chunks_collection']
+    cr = arvados.CollectionReader(job_chunks)
+    chunk_interval_list = {}
+    chunk_input_pdh_names = []
+    for s in cr.all_streams():
+        for f in s.all_files():
+            if re.search(r'\.interval_list$', f.name()):
+                chunk_interval_list[s.name(), f.name()] = f
+    for ((s_name, f_name), chunk_interval_list_f) in sorted(chunk_interval_list.items()):
+        chunk_input = chunk_interval_list_f.as_manifest()
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": chunk_input}).execute()
+            chunk_input_pdh = r["portable_data_hash"]
+            chunk_input_name = os.path.join(s_name, f_name)
+            chunk_input_pdh_names.append((chunk_input_pdh, chunk_input_name))
+        except:
+            raise 
 
     # prepare CRAM input collections
     job_input = arvados.current_job()['script_parameters']['inputs_collection']
@@ -182,7 +119,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         except:
             raise 
         
-        for chunk_input_pdh, chunk_input_name in chunk_input_pdh_name:
+        for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
             # Create task for each CRAM / chunk
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             new_task_attrs = {
