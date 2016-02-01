@@ -160,7 +160,7 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
     return chunk_input_pdh
 
 def main():
-    current_job = current_job
+    current_job = arvados.current_job()
     skip_sq_sn_regex = '_decoy$'
     if 'skip_sq_sn_regex' in current_job['script_parameters']:
         skip_sq_sn_regex = current_job['script_parameters']['skip_sq_sn_regex']
