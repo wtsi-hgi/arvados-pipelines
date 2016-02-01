@@ -160,15 +160,18 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
     return chunk_input_pdh
 
 def main():
-    skip_sq_sn_regex = arvados.current_job()['script_parameters']['skip_sq_sn_regerx'] || '_decoy$'
+    current_job = current_job
+    skip_sq_sn_regex = '_decoy$'
+    if 'skip_sq_sn_regex' in current_job['script_parameters']:
+        skip_sq_sn_regex = current_job['script_parameters']['skip_sq_sn_regex']
     skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
-    genome_chunks = int(arvados.current_job()['script_parameters']['genome_chunks'])
+    genome_chunks = int(current_job['script_parameters']['genome_chunks'])
     if genome_chunks < 1:
         raise InvalidArgumentError("genome_chunks must be a positive integer")
 
     # Limit the scope of the reference collection to only those files relevant to gatk
-    ref_input_pdh = prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
+    ref_input_pdh = prepare_gatk_reference_collection(reference_coll=current_job['script_parameters']['reference_collection'])
 
     # Create an interval_list file for each chunk based on the .dict in the reference collection
     output_locator = create_interval_lists(genome_chunks, ref_input_pdh, skip_sq_sn_r)
