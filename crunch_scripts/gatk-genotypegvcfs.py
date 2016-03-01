@@ -6,7 +6,7 @@ import re
 import subprocess
 
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
-group_by_regex = '(?P<group_by>[0-9]+_of_[0-9]+)[.]'
+group_by_regex = '(?P<group_by>[0-9]+_of_[0-9]+)[^0-9]'
 
 class InvalidArgumentError(Exception):
     pass
@@ -19,8 +19,8 @@ class APIError(Exception):
 
 def prepare_gatk_reference_collection(reference_coll):
     """
-    Checks that the supplied reference_collection has the required 
-    files and only the required files for GATK. 
+    Checks that the supplied reference_collection has the required
+    files and only the required files for GATK.
     Returns: a portable data hash for the reference collection
     """
     # Ensure we have a .fa reference file with corresponding .fai index and .dict
@@ -40,14 +40,14 @@ def prepare_gatk_reference_collection(reference_coll):
             elif re.search(r'\.dict$', rf.name()):
                 ref_dict[rs.name(), rf.name()] = rf
     for ((s_name, f_name), fasta_f) in ref_fasta.items():
-        fai_f = ref_fai.get((s_name, re.sub(r'fa$', 'fai', f_name)), 
-                            ref_fai.get((s_name, re.sub(r'fa$', 'fa.fai', f_name)), 
+        fai_f = ref_fai.get((s_name, re.sub(r'fa$', 'fai', f_name)),
+                            ref_fai.get((s_name, re.sub(r'fa$', 'fa.fai', f_name)),
                                         None))
-        dict_f = ref_dict.get((s_name, re.sub(r'fa$', 'dict', f_name)), 
-                              ref_dict.get((s_name, re.sub(r'fa$', 'fa.dict', f_name)), 
+        dict_f = ref_dict.get((s_name, re.sub(r'fa$', 'dict', f_name)),
+                              ref_dict.get((s_name, re.sub(r'fa$', 'fa.dict', f_name)),
                                            None))
         if fasta_f and fai_f and dict_f:
-            # found a set of all three! 
+            # found a set of all three!
             ref_input = fasta_f.as_manifest()
             ref_input += fai_f.as_manifest()
             ref_input += dict_f.as_manifest()
@@ -62,29 +62,29 @@ def prepare_gatk_reference_collection(reference_coll):
         r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
         ref_input_pdh = r["portable_data_hash"]
     except:
-        raise 
+        raise
     return ref_input_pdh
 
 def process_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh):
     print "Finalising stream %s" % stream_name
 
 
-def one_task_per_group(group_by_regex, ref_input_pdh, 
+def one_task_per_group(group_by_regex, ref_input_pdh,
                        if_sequence=0, and_end_task=True):
     """
     Queue one task for each group of gVCFs and corresponding interval_list
-    in the inputs_collection, with grouping based on the value of the named 
-    capture group "group_by" in the group_by_regex against the filename in 
+    in the inputs_collection, with grouping based on the value of the named
+    capture group "group_by" in the group_by_regex against the filename in
     the inputs_collection.
 
     Each new task will have an "inputs" parameter: a manifest
-    containing a set of one or more gVCF files and its corresponding 
-    index. 
+    containing a set of one or more gVCF files and its corresponding
+    index.
 
-    Each new task will also have a "ref" parameter: a manifest 
-    containing the reference files to use. 
+    Each new task will also have a "ref" parameter: a manifest
+    containing the reference files to use.
 
-    Note that all gVCFs not matching the group_by_regex are ignored. 
+    Note that all gVCFs not matching the group_by_regex are ignored.
 
     if_sequence and and_end_task arguments have the same significance
     as in arvados.job_setup.one_task_per_input_file().
@@ -141,7 +141,7 @@ def one_task_per_group(group_by_regex, ref_input_pdh,
                     if (s.name(), f.name()) in interval_list_by_group[group_name]:
                         if interval_list_by_group[group_name][s.name(), f.name()].as_manifest() != f.as_manifest():
                             raise InvalidArgumentError("Already have interval_list for group %s file %s/%s, but manifests are not identical!" % (group_name, s.name(), f.name()))
-                    else: 
+                    else:
                         interval_list_by_group[group_name][s.name(), f.name()] = f
                     continue
             # if we make it this far, we have files that we are ignoring
@@ -159,8 +159,8 @@ def one_task_per_group(group_by_regex, ref_input_pdh,
         task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
-            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)), 
-                                            gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)), 
+            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)),
+                                            gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)),
                                                              None))
             if gvcf_index_f:
                 task_inputs_manifest += gvcf_index_f.as_manifest()
@@ -174,7 +174,7 @@ def one_task_per_group(group_by_regex, ref_input_pdh,
             r = arvados.api().collections().create(body={"manifest_text": task_inputs_manifest}).execute()
             task_inputs_pdh = r["portable_data_hash"]
         except:
-            raise 
+            raise
 
         # Create task to process this group
         print "Creating new task to process %s" % group_name
@@ -194,8 +194,8 @@ def one_task_per_group(group_by_regex, ref_input_pdh,
     if len(ignored_files) > 0:
         print "WARNING: ignored non-matching files in inputs_collection: %s" % (' '.join(ignored_files))
         # TODO: could use `setmedian` from https://github.com/ztane/python-Levenshtein
-        # to print most representative "median" filename (i.e. skipped 15 files like median), then compare the 
-        # rest of the files to that median (perhaps with `ratio`) 
+        # to print most representative "median" filename (i.e. skipped 15 files like median), then compare the
+        # rest of the files to that median (perhaps with `ratio`)
 
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
@@ -226,7 +226,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     print "Mounting task input collection"
     inputs_dir = arvados.get_task_param_mount('inputs')
 
-    # Sanity check input gVCFs    
+    # Sanity check input gVCFs
     input_gvcf_files = []
     for f in arvados.util.listdir_recursive(inputs_dir):
         if re.search(r'\.g\.vcf\.gz$', f):
@@ -281,7 +281,7 @@ def prepare_out_dir():
     out_dir = os.path.join(arvados.current_task().tmpdir, 'out')
     if os.path.exists(out_dir):
         old_out_dir = out_dir + ".old"
-        print "Moving out_dir %s out of the way (to %s)" % (out_dir, old_out_dir) 
+        print "Moving out_dir %s out of the way (to %s)" % (out_dir, old_out_dir)
         try:
             os.rename(out_dir, old_out_dir)
         except:
@@ -297,8 +297,8 @@ def gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, extr
     print "gatk_combine_gvcfs called with ref_file=[%s] interval_list_file=[%s] gvcf_files=[%s] out_path=[%s]" % (ref_file, interval_list_file, ' '.join(gvcf_files), out_path)
     # Call GATK GenotypeGVCFs
     gatk_args = [
-            "java", "-d64", "-Xmx8g", "-jar", "/gatk/GenomeAnalysisTK.jar", 
-            "-T", "GenotypeGVCFs", 
+            "java", "-d64", "-Xmx8g", "-jar", "/gatk/GenomeAnalysisTK.jar",
+            "-T", "GenotypeGVCFs",
             "-R", ref_file,
             "-L", interval_list_file,
             "-nt", "2"]
@@ -330,13 +330,13 @@ def gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, extr
 
 def main():
     ################################################################################
-    # Phase I: Check inputs and setup sub tasks 1-N to process group(s) based on 
+    # Phase I: Check inputs and setup sub tasks 1-N to process group(s) based on
     #          applying the capturing group named "group_by" in group_by_regex.
-    #          (and terminate if this is task 0) 
+    #          (and terminate if this is task 0)
     ################################################################################
     ref_input_pdh = prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
-    one_task_per_group(group_by_regex, 
-                       ref_input_pdh, 
+    one_task_per_group(group_by_regex,
+                       ref_input_pdh,
                        if_sequence=0, and_end_task=True)
 
     # We will never reach this point if we are in the 0th task sequence
@@ -354,7 +354,7 @@ def main():
         name = "unknown"
     out_file = name + ".vcf.gz"
 
-    # GenotypeGVCFs! 
+    # GenotypeGVCFs!
     gatk_exit = gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, os.path.join(out_dir, out_file))
 
     if gatk_exit != 0:
@@ -362,7 +362,7 @@ def main():
         arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={'success':False}
                                          ).execute()
-    else: 
+    else:
         print "GATK exited successfully, writing output to keep"
 
         # Write a new collection as output
