@@ -3,6 +3,7 @@
 import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
+import sys
 
 from hgi_arvados import errors
 
@@ -158,4 +159,4 @@ def mount_gatk_interval_list_input(inputs_param="inputs"):
 
 if __name__ == '__main__':
     print "This module is not intended to be executed as a script"
-    exit 1
+    sys.exit(1)

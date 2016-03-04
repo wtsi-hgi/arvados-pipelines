@@ -1,3 +1,5 @@
+import sys
+
 class InvalidArgumentError(Exception):
     pass
 
@@ -9,4 +11,4 @@ class APIError(Exception):
 
 if __name__ == '__main__':
     print "This module is not intended to be executed as a script"
-    exit 1
+    sys.exit(1)

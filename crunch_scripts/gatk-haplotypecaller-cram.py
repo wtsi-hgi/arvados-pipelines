@@ -15,7 +15,7 @@ def main():
     #          applying the capturing group named "group_by" in group_by_regex.
     #          (and terminate if this is task 0)
     ################################################################################
-    ref_input_pdh = gatk.prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
+    ref_input_pdh = gatk_helper.prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
     hgi_arvados.one_task_per_cram_file(if_sequence=0, and_end_task=True)
