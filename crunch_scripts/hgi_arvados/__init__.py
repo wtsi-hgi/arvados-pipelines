@@ -28,7 +28,7 @@ import sys
 import errors
 __all__ = ["errors", "gatk", "gatk_helper"]
 
-def one_task_per_cram_file(if_sequence=0, and_end_task=True):
+def one_task_per_cram_file(ref_input, job_input, interval_lists, if_sequence=0, and_end_task=True):
     """
     Queue one task for each cram file in this job's input collection.
     Each new task will have an "input" parameter: a manifest
@@ -42,51 +42,8 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
     if if_sequence != arvados.current_task()['sequence']:
         return
 
-    # Ensure we have a .fa reference file with corresponding .fai index and .dict
-    # see: http://gatkforums.broadinstitute.org/discussion/1601/how-can-i-prepare-a-fasta-file-to-use-as-reference
-    reference_coll = arvados.current_job()['script_parameters']['reference_collection']
-    rcr = arvados.CollectionReader(reference_coll)
-    ref_fasta = {}
-    ref_fai = {}
-    ref_dict = {}
-    ref_input = None
-    dict_reader = None
-    for rs in rcr.all_streams():
-        for rf in rs.all_files():
-            if re.search(r'\.fa$', rf.name()):
-                ref_fasta[rs.name(), rf.name()] = rf
-            elif re.search(r'\.fai$', rf.name()):
-                ref_fai[rs.name(), rf.name()] = rf
-            elif re.search(r'\.dict$', rf.name()):
-                ref_dict[rs.name(), rf.name()] = rf
-    for ((s_name, f_name), fasta_f) in ref_fasta.items():
-        fai_f = ref_fai.get((s_name, re.sub(r'fa$', 'fai', f_name)),
-                            ref_fai.get((s_name, re.sub(r'fa$', 'fa.fai', f_name)),
-                                        None))
-        dict_f = ref_dict.get((s_name, re.sub(r'fa$', 'dict', f_name)),
-                              ref_dict.get((s_name, re.sub(r'fa$', 'fa.dict', f_name)),
-                                           None))
-        if fasta_f and fai_f and dict_f:
-            # found a set of all three!
-            ref_input = fasta_f.as_manifest()
-            ref_input += fai_f.as_manifest()
-            ref_input += dict_f.as_manifest()
-            dict_reader = dict_f
-            break
-    if ref_input is None:
-        raise errors.InvalidArgumentError("Expected a reference fasta with fai and dict in reference_collection. Found [%s]" % ' '.join(rf.name() for rf in rs.all_files()))
-    if dict_reader is None:
-        raise errors.InvalidArgumentError("Could not find .dict file in reference_collection. Found [%s]" % ' '.join(rf.name() for rf in rs.all_files()))
-
-    # Create a portable data hash for the ref_input manifest
-    try:
-        r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
-        ref_input_pdh = r["portable_data_hash"]
-    except:
-        raise
-
-    job_chunks = arvados.current_job()['script_parameters']['chunks_collection']
-    cr = arvados.CollectionReader(job_chunks)
+    # prepare interval lists
+    cr = arvados.CollectionReader(interval_lists)
     chunk_interval_list = {}
     chunk_input_pdh_names = []
     for s in cr.all_streams():
@@ -103,8 +60,10 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
         except:
             raise
 
+    if len(chunk_input_pdh_names) == 0:
+        raise errors.InvalidArgumentError("No interval_list files found in %s" % (interval_lists))
+
     # prepare CRAM input collections
-    job_input = arvados.current_job()['script_parameters']['inputs_collection']
     cr = arvados.CollectionReader(job_input)
     cram = {}
     crai = {}
@@ -141,7 +100,7 @@ def one_task_per_cram_file(if_sequence=0, and_end_task=True):
                 'sequence': if_sequence + 1,
                 'parameters': {
                     'input': task_input_pdh,
-                    'ref': ref_input_pdh,
+                    'ref': ref_input,
                     'chunk': chunk_input_pdh
                     }
                 }

@@ -136,7 +136,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
                 raise errors.FileAccessError("No readable gVCF index file for gVCF file: %s" % gvcf_file)
     return input_gvcf_files
 
-def mount_gatk_interval_list_input(inputs_param="inputs"):
+def mount_single_gatk_interval_list_input(inputs_param="inputs"):
     # Get interval_list for this task
     print "Mounting task input collection to get interval_list"
     inputs_dir = arvados.get_task_param_mount('inputs')

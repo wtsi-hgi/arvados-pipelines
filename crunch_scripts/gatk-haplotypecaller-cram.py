@@ -16,9 +16,12 @@ def main():
     #          (and terminate if this is task 0)
     ################################################################################
     ref_input_pdh = gatk_helper.prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
+    job_input_pdh = arvados.current_job()['script_parameters']['inputs_collection']
+    interval_lists_pdh = arvados.current_job()['script_parameters']['interval_lists_collection']
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
-    hgi_arvados.one_task_per_cram_file(if_sequence=0, and_end_task=True)
+    # TODO: add interval_list
+    hgi_arvados.one_task_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, if_sequence=0, and_end_task=True)
 
     # Get object representing the current task
     this_task = arvados.current_task()
@@ -47,7 +50,7 @@ def main():
     # Phase IIIb: Call Haplotypes!
     ################################################################################
     ref_file = gatk_helper.mount_gatk_reference(ref_param="ref")
-    interval_list_file = gatk_helper.mount_gatk_interval_list_input(inputs_param="chunk")
+    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(inputs_param="chunk")
     cram_file = gatk_helper.mount_gatk_cram_input(input_param="input")
     out_dir = hgi_arvados.prepare_out_dir()
     out_filename = os.path.basename(cram_file_base) + "." + os.path.basename(interval_list_file) + ".g.vcf.gz"
