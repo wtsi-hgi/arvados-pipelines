@@ -24,11 +24,19 @@ import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
 import sys 
+import json
+
+import gatk_helper
 
 import errors
 __all__ = ["errors", "gatk", "gatk_helper"]
 
-def one_task_per_cram_file(ref_input, job_input, interval_lists, if_sequence=0, and_end_task=True):
+def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, 
+                                if_sequence=0, and_end_task=True,
+                                reuse_tasks=True,
+                                interval_list_param="interval_list",
+                                oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
+                                script=arvados.current_job()['script']):
     """
     Queue one task for each cram file in this job's input collection.
     Each new task will have an "input" parameter: a manifest
@@ -91,10 +99,21 @@ def one_task_per_cram_file(ref_input, job_input, interval_lists, if_sequence=0, 
         except:
             raise
 
+        if reuse_task:
+            task_key_params=['name', 'input', 'ref', 'chunk'],
+            # get candidates for task reuse
+            job_filters = [
+                ['script', '=', script],
+                ['repository', '=', arvados.current_job()['repository']], 
+                ['script_version', 'in git', oldest_git_commit_to_reuse], 
+                ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']], 
+            ]
+            reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
+            print "Have %s potentially reusable tasks" % (len(reusable_tasks))
+
         for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
             # Create task for each CRAM / chunk
-            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
-            new_task_attrs = {
+            new_task_params = {
                 'job_uuid': arvados.current_job()['uuid'],
                 'created_by_job_task_uuid': arvados.current_task()['uuid'],
                 'sequence': if_sequence + 1,
@@ -104,7 +123,11 @@ def one_task_per_cram_file(ref_input, job_input, interval_lists, if_sequence=0, 
                     'chunk': chunk_input_pdh
                     }
                 }
-            arvados.api().job_tasks().create(body=new_task_attrs).execute()
+            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
+            if reuse_task:
+                task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params)
+            else:
+                task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
     if and_end_task:
         print "Ending task 0 successfully"
@@ -283,8 +306,12 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequ
         exit(0)
 
 def one_task_per_interval(interval_count,
+                          if_sequence=0, and_end_task=True,
                           reuse_tasks=True,
-                          if_sequence=0, and_end_task=True):
+                          interval_list_param="interval_list",
+                          oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
+                          task_key_params=['name', 'inputs', 'interval', 'ref'],
+                          script=arvados.current_job()['script']):
     """
     Queue one task for each of interval_count intervals, splitting
     the genome chunk (described by the .interval_list file) evenly.
@@ -304,7 +331,7 @@ def one_task_per_interval(interval_count,
     if if_sequence != arvados.current_task()['sequence']:
         return
 
-    interval_list_file = mount_gatk_interval_list_input(inputs_param='inputs')
+    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param=interval_list_param)
 
     interval_reader = open(interval_list_file, mode="r")
 
@@ -360,15 +387,21 @@ def one_task_per_interval(interval_count,
     print "Have %s intervals" % (len(intervals))
 
     # get candidates for task reuse
-    index_params = ['name', 'inputs', 'interval', 'ref']
-    reusable_tasks = get_reusable_tasks(if_sequence + 1, index_params)
+    job_filters = [
+        ['script', '=', script],
+        ['repository', '=', arvados.current_job()['repository']], 
+        ['script_version', 'in git', oldest_git_commit_to_reuse], 
+        ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']], 
+    ]
+    reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
+    print "Have %s potentially reusable tasks" % (len(reusable_tasks))
 
     for interval in intervals:
         interval_str = ' '.join(interval)
         print "Creating task to process interval: [%s]" % interval_str
         new_task_params = arvados.current_task()['parameters']
         new_task_params['interval'] = interval_str
-        task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, index_params)
+        task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params)
 
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
@@ -377,30 +410,71 @@ def one_task_per_interval(interval_count,
                                          ).execute()
         exit(0)
 
-def get_reusable_tasks(sequence, index_params, job_filters):
+def execute_list_all(api_obj, **kwargs):
+    batch_size=kwargs.pop("batch_size", 1000000)
+    offset=kwargs.pop("offset", 0)
+    num_retries=kwargs.pop("num_retries", 3)
+    limit=kwargs.pop("limit", None)
+    if limit and limit < batch_size:
+        batch_size = limit
+    first_batch = api_obj.list(limit=batch_size, offset=offset, **kwargs).execute(num_retries=num_retries)
+    def _gen_items(batch_results, batch_size, offset, num_retries, limit):
+        count = 0
+        cursor = offset
+        items = batch_results['items']
+        while True:
+            for item in items:
+                count += 1
+                yield item
+                if limit and count >= limit:
+                    break
+            print "Batch had %s items, %s items retrieved so far (cursor at %s out of %s)" % (len(items), count, cursor, batch_results['items_available'])
+            cursor = cursor + len(items)
+            print "Updated cursor to %s" % (cursor)
+            batch_results = api_obj.list(limit=batch_size, offset=cursor, **kwargs).execute(num_retries=num_retries)
+            if len(batch_results['items']) > 0:
+                items = batch_results['items']
+            else:
+                if count < batch_results['items_available']:
+                    print "WARNING: received no items in batch but count still less than items_available (batch_size %s, cursor %s): %s" % (batch_size, cursor, batch_results)
+                print "All batches complete, retrieved %s items in total" % (count)
+                break
+    results = first_batch.copy()
+    results['items'] = _gen_items(first_batch, batch_size, offset, num_retries, limit)
+    return results
+
+def get_reusable_tasks(sequence, task_key_params, job_filters):
     reusable_tasks = {}
-    jobs = arvados.api().jobs().list(filters=job_filters).execute()
-    for job in jobs['items']:
-        tasks = arvados.api().job_tasks().list(limit=100000,
-                                               filters=[
-                ['job_uuid', '=', job['uuid']],
-                ['sequence', '=', str(sequence)],
-                ['success', '=', 'True'],
-                ]).execute()
-        if tasks['items_available'] > 0:
-            print "Have %s potential reusable task outputs from job %s" % ( tasks['items_available'], job['uuid'] )
-            for task in tasks['items']:
-                ct_index = tuple([task['parameters'][index_param] for index_param in index_params])
-                if ct_index in reusable_tasks:
-                    # we have already seen a task with these parameters (from another job?) - verify they have the same output
-                    if reusable_tasks[ct_index]['output'] != task['output']:
-                        print "WARNING: found two existing candidate JobTasks for parameters %s and the output does not match! (using JobTask %s from Job %s with output %s, but JobTask %s from Job %s had output %s)" % (ct_index, reusable_tasks[ct_index]['uuid'], reusable_tasks[ct_index]['job_uuid'], reusable_tasks[ct_index]['output'], task['uuid'], task['job_uuid'], task['output'])
-                else:
-                    # store the candidate task in reusable_tasks, indexed on the tuple of params specified in index_params
-                    reusable_tasks[ct_index] = task
+    print "Querying API server for jobs matching filters %s" % (json.dumps(job_filters))
+    jobs = execute_list_all(arvados.api().jobs(), filters=job_filters, distinct=True, select=['uuid'])
+    print "Found %s similar previous jobs, checking them for reusable tasks" % (jobs['items_available'])
+    task_filters = [
+        ['job_uuid', 'in', [job['uuid'] for job in jobs['items']]],
+        ['sequence', '=', str(sequence)],
+        ['success', '=', 'True'],
+    ]
+    #print "Querying API server for tasks matching filters %s" % (json.dumps(task_filters))
+    tasks = execute_list_all(arvados.api().job_tasks(),
+                             distinct=True,
+                             select=['uuid', 'job_uuid', 'output', 
+                                     'parameters', 'success', 
+                                     'progress', 'started_at', 
+                                     'finished_at'],
+                            filters=task_filters)
+    if tasks['items_available'] > 0:
+        print "Have %s potential reusable task outputs" % ( tasks['items_available'] )
+        for task in tasks['items']:
+            ct_index = tuple([task['parameters'][index_param] for index_param in task_key_params])
+            if ct_index in reusable_tasks:
+                # we have already seen a task with these parameters (from another job?) - verify they have the same output
+                if reusable_tasks[ct_index]['output'] != task['output']:
+                    print "WARNING: found two existing candidate JobTasks for parameters %s and the output does not match! (using JobTask %s from Job %s with output %s, but JobTask %s from Job %s had output %s)" % (ct_index, reusable_tasks[ct_index]['uuid'], reusable_tasks[ct_index]['job_uuid'], reusable_tasks[ct_index]['output'], task['uuid'], task['job_uuid'], task['output'])
+            else:
+                # store the candidate task in reusable_tasks, indexed on the tuple of params specified in task_key_params
+                reusable_tasks[ct_index] = task
     return reusable_tasks
 
-def create_or_reuse_task(reusable_tasks, sequence, parameters, index_params):
+def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params):
     new_task_attrs = {
             'job_uuid': arvados.current_job()['uuid'],
             'created_by_job_task_uuid': arvados.current_task()['uuid'],
@@ -408,7 +482,7 @@ def create_or_reuse_task(reusable_tasks, sequence, parameters, index_params):
             'parameters': parameters
             }
     # See if there is a task in reusable_tasks that can be reused
-    ct_index = tuple([parameters[index_param] for index_param in index_params])
+    ct_index = tuple([parameters[index_param] for index_param in task_key_params])
     if ct_index in reusable_tasks:
         # have a task from which to reuse the output, prepare to create a new, but already finished, task with that output
         reuse_task = reusable_tasks[ct_index]
@@ -416,7 +490,7 @@ def create_or_reuse_task(reusable_tasks, sequence, parameters, index_params):
         # remove task from reusable_tasks as it won't be used more than once
         del reusable_tasks[ct_index]
         # copy relevant attrs from reuse_task so that the new tasks start already finished
-        for attr in ['success', 'output', 'progress', 'started_at', 'finished_at', 'parameters', ]:
+        for attr in ['success', 'output', 'progress', 'started_at', 'finished_at', 'parameters']:
             new_task_attrs[attr] = reuse_task[attr]
         # crunch seems to ignore the fact that the job says it is done and queue it anyway
         # signal ourselves to just immediately exit successfully when we are run

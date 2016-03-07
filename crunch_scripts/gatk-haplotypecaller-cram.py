@@ -18,10 +18,16 @@ def main():
     ref_input_pdh = gatk_helper.prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
     job_input_pdh = arvados.current_job()['script_parameters']['inputs_collection']
     interval_lists_pdh = arvados.current_job()['script_parameters']['interval_lists_collection']
+    interval_count = 1
+    if "interval_count" in arvados.current_job()['script_parameters']:
+        interval_count = arvados.current_job()['script_parameters']['interval_count']
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
     # TODO: add interval_list
-    hgi_arvados.one_task_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, if_sequence=0, and_end_task=True)
+    hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, 
+                                            if_sequence=0, and_end_task=True, reuse_tasks=True,
+                                            oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
+                                            script="gatk-haplotypecaller-cram.py")
 
     # Get object representing the current task
     this_task = arvados.current_task()
@@ -30,32 +36,23 @@ def main():
     assert(this_task['sequence'] != 0)
 
     ################################################################################
-    # Phase II: Read interval_list and split into additional intervals
-    ################################################################################
-    hgi_arvados.one_task_per_interval(interval_count,
-                                      reuse_tasks=True,
-                                      if_sequence=1, and_end_task=True)
-
-    # We will never reach this point if we are in the 1st task sequence
-    assert(this_task['sequence'] > 1)
-
-    ################################################################################
-    # Phase IIIa: If we are a "reuse" task, just set our output and be done with it
+    # Phase IIa: If we are a "reuse" task, just set our output and be done with it
     ################################################################################
     if 'reuse_job_task' in this_task['parameters']:
         print "This task's work was already done by JobTask %s" % this_task['parameters']['reuse_job_task']
         exit(0)
 
     ################################################################################
-    # Phase IIIb: Call Haplotypes!
+    # Phase IIb: Call Haplotypes!
     ################################################################################
     ref_file = gatk_helper.mount_gatk_reference(ref_param="ref")
-    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(inputs_param="chunk")
+    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="chunk")
     cram_file = gatk_helper.mount_gatk_cram_input(input_param="input")
+    cram_file_base, cram_file_ext = os.path.splitext(cram_file)
     out_dir = hgi_arvados.prepare_out_dir()
     out_filename = os.path.basename(cram_file_base) + "." + os.path.basename(interval_list_file) + ".g.vcf.gz"
     # HaplotypeCaller!
-    gatk_exit = gatk.haplotypecaller(ref_file, cram_file, interval_list_file, os.path.join(out_dir, out_filename))
+    gatk_exit = gatk.haplotype_caller(ref_file, cram_file, interval_list_file, os.path.join(out_dir, out_filename))
 
     if gatk_exit != 0:
         print "ERROR: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit

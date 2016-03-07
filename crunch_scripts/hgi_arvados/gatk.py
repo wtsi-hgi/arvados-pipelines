@@ -3,10 +3,11 @@
 import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
+import subprocess
 
 from hgi_arvados import errors
 
-def _execute(gatk_args, *args, **kwargs):
+def _execute(gatk_args, **kwargs):
     gatk_jar = kwargs.pop("gatk_jar", "/gatk/GenomeAnalysisTK.jar")
     java_mem = kwargs.pop("java_mem", "1g")
     print_first_n_lines = kwargs.pop("print_first_n_lines", 300)
@@ -47,9 +48,9 @@ def _execute(gatk_args, *args, **kwargs):
     return gatk_exit
 
 
-def combine_gvcfs(ref_file, gvcf_files, out_path, *args, **kwargs):
+def combine_gvcfs(ref_file, gvcf_files, out_path, **kwargs):
     java_mem = kwargs.pop("java_mem", "5g")
-    print "combine_gvcfs called with ref_file=[%s] gvcf_files=[%s] out_path=[%s] *args=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, ' '.join(gvcf_files), out_path, ' '.join(*args), java_mem, ' '.join(**kwargs))
+    print "combine_gvcfs called with ref_file=[%s] gvcf_files=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, ' '.join(gvcf_files), out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call GATK CombineGVCFs
     gatk_args = [
             "-T", "CombineGVCFs",
@@ -59,12 +60,12 @@ def combine_gvcfs(ref_file, gvcf_files, out_path, *args, **kwargs):
     gatk_args.extend([
         "-o", out_path
     ])
-    return _execute(gatk_args, *args, java_mem=java_mem, **kwargs)
+    return _execute(gatk_args, java_mem=java_mem, **kwargs)
 
 
-def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, *args, **kwargs):
+def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs):
     java_mem = kwargs.pop("java_mem", "20g") 
-    print "haplotype_caller called with ref_file=[%s] cram_file=[%s] interval_list_file=[%s] out_path=[%s], *args=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, cram_file, interval_list_file, out_file, ' '.join(*args), java_mem, ' '.join(**kwargs))
+    print "haplotype_caller called with ref_file=[%s] cram_file=[%s] interval_list_file=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, cram_file, interval_list_file, out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call GATK HaplotypeCaller
     gatk_args = [
         "-T", "HaplotypeCaller",
@@ -78,4 +79,4 @@ def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, *args, *
         "-o", out_path,
         "-l", "INFO"
         ]
-    return _execute(gatk_args, *args, java_mem=java_mem, **kwargs)
+    return _execute(gatk_args, java_mem=java_mem, **kwargs)

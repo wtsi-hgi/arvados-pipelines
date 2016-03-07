@@ -105,7 +105,7 @@ def mount_gatk_cram_input(input_param="input"):
 def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Get input gVCFs for this task
     print "Mounting task input collection"
-    inputs_dir = arvados.get_task_param_mount('inputs')
+    input_dir = arvados.get_task_param_mount(inputs_param)
 
     # Sanity check input gVCFs
     input_gvcf_files = []
@@ -136,18 +136,19 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
                 raise errors.FileAccessError("No readable gVCF index file for gVCF file: %s" % gvcf_file)
     return input_gvcf_files
 
-def mount_single_gatk_interval_list_input(inputs_param="inputs"):
+def mount_single_gatk_interval_list_input(interval_list_param="interval_list"):
     # Get interval_list for this task
     print "Mounting task input collection to get interval_list"
-    inputs_dir = arvados.get_task_param_mount('inputs')
+    interval_list_dir = arvados.get_task_param_mount(interval_list_param)
+    print "Interval_List collection mounted at %s" % (interval_list_dir)
 
     # Sanity check input interval_list (there can be only one)
     input_interval_lists = []
-    for f in arvados.util.listdir_recursive(inputs_dir):
+    for f in arvados.util.listdir_recursive(interval_list_dir):
         if re.search(r'\.interval_list$', f):
-            input_interval_lists.append(os.path.join(inputs_dir, f))
+            input_interval_lists.append(os.path.join(interval_list_dir, f))
     if len(input_interval_lists) != 1:
-        raise errors.InvalidArgumentError("Expected exactly one interval_list in inputs collection (found %s)" % len(input_interval_lists))
+        raise errors.InvalidArgumentError("Expected exactly one interval_list in input collection (found %s)" % len(input_interval_lists))
 
     assert(len(input_interval_lists) == 1)
     interval_list_file = input_interval_lists[0]
