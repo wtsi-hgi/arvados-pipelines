@@ -108,24 +108,20 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists,
                 ['script_version', 'in git', oldest_git_commit_to_reuse], 
                 ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']], 
             ]
-            reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
-            print "Have %s potentially reusable tasks" % (len(reusable_tasks))
+            reusable_task_jobs = get_jobs_for_task_reuse(job_filters)
+            print "Have %s jobs for potential task reuse" % (len(reusable_task_jobs))
+            reusable_task_uuids = [job['uuid'] for job in reusable_task_jobs['items']]
 
         for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
             # Create task for each CRAM / chunk
             new_task_params = {
-                'job_uuid': arvados.current_job()['uuid'],
-                'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                'sequence': if_sequence + 1,
-                'parameters': {
-                    'input': task_input_pdh,
-                    'ref': ref_input,
-                    'chunk': chunk_input_pdh
-                    }
-                }
+                'input': task_input_pdh,
+                'ref': ref_input,
+                'chunk': chunk_input_pdh
+            }
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             if reuse_tasks:
-                task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params)
+                task = create_or_reuse_task_from_jobs(reusable_task_uuids, if_sequence + 1, new_task_params, task_key_params)
             else:
                 task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
@@ -420,7 +416,7 @@ def execute_list_all(api_obj, **kwargs):
     first_batch = api_obj.list(limit=batch_size, offset=offset, **kwargs).execute(num_retries=num_retries)
     def _gen_items(batch_results, batch_size, offset, num_retries, limit):
         count = 0
-        cursor = offset
+        batch_offset = offset
         items = batch_results['items']
         while True:
             for item in items:
@@ -428,25 +424,70 @@ def execute_list_all(api_obj, **kwargs):
                 yield item
                 if limit and count >= limit:
                     break
-            print "Batch had %s items, %s items retrieved so far (cursor at %s out of %s)" % (len(items), count, cursor, batch_results['items_available'])
-            cursor = cursor + len(items)
-            print "Updated cursor to %s" % (cursor)
-            batch_results = api_obj.list(limit=batch_size, offset=cursor, **kwargs).execute(num_retries=num_retries)
+            print "Batch had %s items, %s items retrieved so far (batch_offset at %s out of %s)" % (len(items), count, batch_offset, batch_results['items_available'])
+            batch_offset = batch_offset + len(items)
+            print "Updated batch_offset to %s" % (batch_offset)
+            batch_results = api_obj.list(limit=batch_size, offset=batch_offset, **kwargs).execute(num_retries=num_retries)
             if len(batch_results['items']) > 0:
                 items = batch_results['items']
             else:
                 if count < batch_results['items_available']:
-                    print "WARNING: received no items in batch but count still less than items_available (batch_size %s, cursor %s): %s" % (batch_size, cursor, batch_results)
+                    print "WARNING: received no items in batch but count still less than items_available (batch_size %s, batch_offset %s): %s" % (batch_size, batch_offset, batch_results)
                 print "All batches complete, retrieved %s items in total" % (count)
                 break
     results = first_batch.copy()
     results['items'] = _gen_items(first_batch, batch_size, offset, num_retries, limit)
     return results
 
-def get_reusable_tasks(sequence, task_key_params, job_filters):
-    reusable_tasks = {}
+def get_jobs_for_task_reuse(job_filters):
     print "Querying API server for jobs matching filters %s" % (json.dumps(job_filters))
     jobs = execute_list_all(arvados.api().jobs(), filters=job_filters, distinct=True, select=['uuid'])
+    return jobs
+
+
+def create_or_reuse_task_from_jobs(reusable_task_uuids, sequence, parameters, task_key_params):
+    reusable_tasks = {}
+    task_filters = [
+        ['sequence', '=', str(sequence)],
+        ['success', '=', 'True'],
+    ]
+    # create horrible 'like' filters to match each task parameter (assumes they are stored as YAML)
+    for param in task_key_params:
+        param_value = parameters[param]
+        param_value = param_value.replace('%','\%')
+        param_value = param_value.replace('_','\_')
+        param_like = "%s%s: %s%s" % ('%', param, param_value, '%')
+        task_filters.append(["parameters","like",param_like])
+
+    print "Querying API server for tasks matching filters %s" % (json.dumps(task_filters))
+    tasks = execute_list_all(arvados.api().job_tasks(),
+                             distinct=True,
+                             select=['uuid', 'job_uuid', 'output', 
+                                     'parameters', 'success', 
+                                     'progress', 'started_at', 
+                                     'finished_at'],
+                            filters=task_filters)
+    if tasks['items_available'] > 0:
+        print "Have %s potential reusable task outputs" % ( tasks['items_available'] )
+        for task in tasks['items']:
+            # verify that this task belonged to one of the reusable_task_uuids
+            ct_index = tuple([task['parameters'][index_param] for index_param in task_key_params])
+            if task['job_uuid'] not in reusable_task_uuids:
+                print "Have task with task key %s but it does not belong to one of the %s reusable_task_uuids" % (list(ct_index), len(reusable_task_uuids))
+            if ct_index in reusable_tasks:
+                # we have already seen a task with these parameters (from another job?) - verify they have the same output
+                if reusable_tasks[ct_index]['output'] != task['output']:
+                    print "WARNING: found two existing candidate JobTasks for parameters %s and the output does not match! (using JobTask %s from Job %s with output %s, but JobTask %s from Job %s had output %s)" % (ct_index, reusable_tasks[ct_index]['uuid'], reusable_tasks[ct_index]['job_uuid'], reusable_tasks[ct_index]['output'], task['uuid'], task['job_uuid'], task['output'])
+            else:
+                # store the candidate task in reusable_tasks, indexed on the tuple of params specified in task_key_params
+                reusable_tasks[ct_index] = task
+    else:
+        print "No potential reusable task outputs found"
+    return create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params)
+
+def get_reusable_tasks(sequence, task_key_params, job_filters):
+    reusable_tasks = {}
+    jobs = get_jobs_for_task_reuse(job_filters)
     print "Found %s similar previous jobs, checking them for reusable tasks" % (jobs['items_available'])
     task_filters = [
         ['job_uuid', 'in', [job['uuid'] for job in jobs['items']]],
@@ -483,7 +524,9 @@ def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params):
             }
     # See if there is a task in reusable_tasks that can be reused
     ct_index = tuple([parameters[index_param] for index_param in task_key_params])
-    if ct_index in reusable_tasks:
+    if len(reusable_tasks) == 0:
+        print "No reusable tasks were available"
+    elif ct_index in reusable_tasks:
         # have a task from which to reuse the output, prepare to create a new, but already finished, task with that output
         reuse_task = reusable_tasks[ct_index]
         print "Found existing JobTask %s from Job %s. Will use output %s from that JobTask instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'], reuse_task['output'])
@@ -495,6 +538,9 @@ def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params):
         # crunch seems to ignore the fact that the job says it is done and queue it anyway
         # signal ourselves to just immediately exit successfully when we are run
         new_task_attrs['parameters']['reuse_job_task'] = reuse_task['uuid']
+    else:
+        print "No reusable JobTask matched key parameters %s" % (list(ct_index))
+
     # Create the "new" task (may be new work or may be already finished work)
     new_task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
     if not new_task:
