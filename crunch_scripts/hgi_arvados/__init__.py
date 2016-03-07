@@ -99,8 +99,8 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists,
         except:
             raise
 
-        if reuse_task:
-            task_key_params=['name', 'input', 'ref', 'chunk'],
+        if reuse_tasks:
+            task_key_params=['input', 'ref', 'chunk']
             # get candidates for task reuse
             job_filters = [
                 ['script', '=', script],
@@ -124,7 +124,7 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists,
                     }
                 }
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
-            if reuse_task:
+            if reuse_tasks:
                 task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params)
             else:
                 task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
