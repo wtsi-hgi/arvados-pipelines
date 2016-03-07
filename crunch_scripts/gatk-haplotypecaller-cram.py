@@ -46,7 +46,7 @@ def validate_task_output(output_locator):
             return False
 
         # verify index exists
-        tbi = vcf_indices.get((stream_name, re.sub(r'gz$', 'gz.tbi', file_name)), 
+        tbi = vcf_indices.get((stream_name, re.sub(r'gz$', 'gz.tbi', file_name)),
                               None)
         if tbi is None:
             print "ERROR: could not find index .tbi for VCF: %s" % (vcf_path)
@@ -116,7 +116,7 @@ def main():
         out = arvados.CollectionWriter()
 
         # Write out_dir to keep
-        out.write_directory_tree(out_dir, stream_name)
+        out.write_directory_tree(out_dir)
 
         # Commit the output to Keep.
         output_locator = out.finish()
