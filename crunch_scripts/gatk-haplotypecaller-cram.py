@@ -9,6 +9,31 @@ import hgi_arvados
 from hgi_arvados import gatk
 from hgi_arvados import gatk_helper
 
+def validate_task_output(output_locator):
+    print "Validating task output %s" % (output_locator)
+    #os.path.join(os.environ['TASK_KEEPMOUNT'], output_locator)
+    output_reader = arvados.collection.CollectionReader(output_locator)
+    vcf_files = []
+    vcf_indices = {}
+    for of in output_reader.all_files():
+        if re.search(r'\.vcf\.gz$', of.name()):
+            vcf_files.append(of)
+        elif re.search(r'\.tbi$', of.name()):
+            vcf_indices[of.name()] = of
+        else:
+            print "WARNING: unexpected file in task output - ignoring %s" % (of.name())
+    print "Have %s VCF files to validate" % (len(vcf_files))
+    for vcf in vcf_files:
+        if vcf.size() < 128:
+            print "Small VCF file %s - INVALID!" % (vcf.name())
+            return False
+        print "Have VCF file %s of %s bytes" % (vcf.name(), vcf.size())
+        # verify that BGZF EOF block is intact
+        eof_block = vcf.readfrom(vcf.size()-28, 28, num_retries=10)
+        print "Got EOF block: %s" % (eof_block)
+        exit(1)
+    return True
+
 def main():
     ################################################################################
     # Phase I: Check inputs and setup sub tasks 1-N to process group(s) based on
@@ -24,7 +49,7 @@ def main():
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
     # TODO: add interval_list
-    hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, 
+    hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, validate_task_output,
                                             if_sequence=0, and_end_task=True, reuse_tasks=True,
                                             oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
                                             script="gatk-haplotypecaller-cram.py")
@@ -71,8 +96,18 @@ def main():
         # Commit the output to Keep.
         output_locator = out.finish()
 
-        # Use the resulting locator as the output for this task.
-        this_task.set_output(output_locator)
+        print "Task output written to keep, validating it"
+        if validate_task_output(output_locator):
+            print "Task output validated, setting output to %s" % (output_locator)
+
+            # Use the resulting locator as the output for this task.
+            this_task.set_output(output_locator)
+        else:
+            print "ERROR: Failed to validate task output (%s)" % (output_locator)
+            arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                             body={'success':False}
+                                             ).execute()
+
 
     # Done!
 

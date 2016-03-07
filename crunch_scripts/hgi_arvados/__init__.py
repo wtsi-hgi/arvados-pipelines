@@ -23,7 +23,7 @@
 import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
-import sys 
+import sys
 import json
 
 import gatk_helper
@@ -31,7 +31,7 @@ import gatk_helper
 import errors
 __all__ = ["errors", "gatk", "gatk_helper"]
 
-def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, 
+def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_task_output,
                                 if_sequence=0, and_end_task=True,
                                 reuse_tasks=True,
                                 interval_list_param="interval_list",
@@ -104,9 +104,9 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists,
             # get candidates for task reuse
             job_filters = [
                 ['script', '=', script],
-                ['repository', '=', arvados.current_job()['repository']], 
-                ['script_version', 'in git', oldest_git_commit_to_reuse], 
-                ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']], 
+                ['repository', '=', arvados.current_job()['repository']],
+                ['script_version', 'in git', oldest_git_commit_to_reuse],
+                ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
             ]
             reusable_task_jobs = get_jobs_for_task_reuse(job_filters)
             print "Have %s jobs for potential task reuse" % (len(reusable_task_jobs))
@@ -121,7 +121,7 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists,
             }
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             if reuse_tasks:
-                task = create_or_reuse_task_from_jobs(reusable_task_uuids, if_sequence + 1, new_task_params, task_key_params)
+                task = create_or_reuse_task_from_jobs(reusable_task_uuids, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
             else:
                 task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
@@ -301,7 +301,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequ
                                          ).execute()
         exit(0)
 
-def one_task_per_interval(interval_count,
+def one_task_per_interval(interval_count, validate_task_output,
                           if_sequence=0, and_end_task=True,
                           reuse_tasks=True,
                           interval_list_param="interval_list",
@@ -385,9 +385,9 @@ def one_task_per_interval(interval_count,
     # get candidates for task reuse
     job_filters = [
         ['script', '=', script],
-        ['repository', '=', arvados.current_job()['repository']], 
-        ['script_version', 'in git', oldest_git_commit_to_reuse], 
-        ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']], 
+        ['repository', '=', arvados.current_job()['repository']],
+        ['script_version', 'in git', oldest_git_commit_to_reuse],
+        ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
     ]
     reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
     print "Have %s potentially reusable tasks" % (len(reusable_tasks))
@@ -397,7 +397,7 @@ def one_task_per_interval(interval_count,
         print "Creating task to process interval: [%s]" % interval_str
         new_task_params = arvados.current_task()['parameters']
         new_task_params['interval'] = interval_str
-        task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params)
+        task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
 
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
@@ -445,7 +445,7 @@ def get_jobs_for_task_reuse(job_filters):
     return jobs
 
 
-def create_or_reuse_task_from_jobs(reusable_task_uuids, sequence, parameters, task_key_params):
+def create_or_reuse_task_from_jobs(reusable_task_uuids, sequence, parameters, task_key_params, validate_task_output):
     reusable_tasks = {}
     task_filters = [
         ['sequence', '=', str(sequence)],
@@ -462,9 +462,9 @@ def create_or_reuse_task_from_jobs(reusable_task_uuids, sequence, parameters, ta
     print "Querying API server for tasks matching filters %s" % (json.dumps(task_filters))
     tasks = execute_list_all(arvados.api().job_tasks(),
                              distinct=True,
-                             select=['uuid', 'job_uuid', 'output', 
-                                     'parameters', 'success', 
-                                     'progress', 'started_at', 
+                             select=['uuid', 'job_uuid', 'output',
+                                     'parameters', 'success',
+                                     'progress', 'started_at',
                                      'finished_at'],
                             filters=task_filters)
     if tasks['items_available'] > 0:
@@ -483,7 +483,7 @@ def create_or_reuse_task_from_jobs(reusable_task_uuids, sequence, parameters, ta
                 reusable_tasks[ct_index] = task
     else:
         print "No potential reusable task outputs found"
-    return create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params)
+    return create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params, validate_task_output)
 
 def get_reusable_tasks(sequence, task_key_params, job_filters):
     reusable_tasks = {}
@@ -497,9 +497,9 @@ def get_reusable_tasks(sequence, task_key_params, job_filters):
     #print "Querying API server for tasks matching filters %s" % (json.dumps(task_filters))
     tasks = execute_list_all(arvados.api().job_tasks(),
                              distinct=True,
-                             select=['uuid', 'job_uuid', 'output', 
-                                     'parameters', 'success', 
-                                     'progress', 'started_at', 
+                             select=['uuid', 'job_uuid', 'output',
+                                     'parameters', 'success',
+                                     'progress', 'started_at',
                                      'finished_at'],
                             filters=task_filters)
     if tasks['items_available'] > 0:
@@ -515,7 +515,7 @@ def get_reusable_tasks(sequence, task_key_params, job_filters):
                 reusable_tasks[ct_index] = task
     return reusable_tasks
 
-def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params):
+def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params, validate_task_output):
     new_task_attrs = {
             'job_uuid': arvados.current_job()['uuid'],
             'created_by_job_task_uuid': arvados.current_task()['uuid'],
@@ -529,15 +529,18 @@ def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params):
     elif ct_index in reusable_tasks:
         # have a task from which to reuse the output, prepare to create a new, but already finished, task with that output
         reuse_task = reusable_tasks[ct_index]
-        print "Found existing JobTask %s from Job %s. Will use output %s from that JobTask instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'], reuse_task['output'])
-        # remove task from reusable_tasks as it won't be used more than once
-        del reusable_tasks[ct_index]
-        # copy relevant attrs from reuse_task so that the new tasks start already finished
-        for attr in ['success', 'output', 'progress', 'started_at', 'finished_at', 'parameters']:
-            new_task_attrs[attr] = reuse_task[attr]
-        # crunch seems to ignore the fact that the job says it is done and queue it anyway
-        # signal ourselves to just immediately exit successfully when we are run
-        new_task_attrs['parameters']['reuse_job_task'] = reuse_task['uuid']
+        if validate_task_output(reuse_task['output']):
+            print "Found existing JobTask %s from Job %s. Will use output %s from that JobTask instead of re-running it." % (reuse_task['uuid'], reuse_task['job_uuid'], reuse_task['output'])
+            # remove task from reusable_tasks as it won't be used more than once
+            del reusable_tasks[ct_index]
+            # copy relevant attrs from reuse_task so that the new tasks start already finished
+            for attr in ['success', 'output', 'progress', 'started_at', 'finished_at', 'parameters']:
+                new_task_attrs[attr] = reuse_task[attr]
+            # crunch seems to ignore the fact that the job says it is done and queue it anyway
+            # signal ourselves to just immediately exit successfully when we are run
+            new_task_attrs['parameters']['reuse_job_task'] = reuse_task['uuid']
+        else:
+            print "Output %s for potential task reuse did not validate" % (reuse_task['output'])
     else:
         print "No reusable JobTask matched key parameters %s" % (list(ct_index))
 
