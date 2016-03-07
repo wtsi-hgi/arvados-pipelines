@@ -9,29 +9,54 @@ import hgi_arvados
 from hgi_arvados import gatk
 from hgi_arvados import gatk_helper
 
+BGZF_EOF="\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00\x42\x43\x02\x00\x1b\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+
 def validate_task_output(output_locator):
     print "Validating task output %s" % (output_locator)
-    #os.path.join(os.environ['TASK_KEEPMOUNT'], output_locator)
     output_reader = arvados.collection.CollectionReader(output_locator)
-    vcf_files = []
+    vcf_files = {}
     vcf_indices = {}
-    for of in output_reader.all_files():
-        if re.search(r'\.vcf\.gz$', of.name()):
-            vcf_files.append(of)
-        elif re.search(r'\.tbi$', of.name()):
-            vcf_indices[of.name()] = of
-        else:
-            print "WARNING: unexpected file in task output - ignoring %s" % (of.name())
+    for output_stream in output_reader.all_streams():
+        for output_file in output_stream.all_files():
+            if re.search(r'\.vcf\.gz$', output_file.name()):
+                vcf_files[(output_stream.name(), output_file.name())] = output_file
+            elif re.search(r'\.tbi$', output_file.name()):
+                vcf_indices[(output_stream.name(), output_file.name())] = output_file
+            else:
+                print "WARNING: unexpected file in task output - ignoring %s" % (output_file.name())
+
+    # verify that we got some VCFs
+    if len(vcf_files) <= 0:
+        print "ERROR: found no VCF files in collection"
+        return False
+
     print "Have %s VCF files to validate" % (len(vcf_files))
-    for vcf in vcf_files:
+    for ((stream_name, file_name), vcf) in vcf_files.items():
+        vcf_path = os.path.join(stream_name, file_name)
+        # verify that VCF is sizeable
         if vcf.size() < 128:
-            print "Small VCF file %s - INVALID!" % (vcf.name())
+            print "ERROR: Small VCF file %s - INVALID!" % (vcf_path)
             return False
-        print "Have VCF file %s of %s bytes" % (vcf.name(), vcf.size())
+        print "Have VCF file %s of %s bytes" % (vcf_path, vcf.size())
+
         # verify that BGZF EOF block is intact
         eof_block = vcf.readfrom(vcf.size()-28, 28, num_retries=10)
-        print "Got EOF block: %s" % (eof_block)
-        exit(1)
+        if eof_block != BGZF_EOF:
+            print "ERROR: VCF BGZF EOF block was missing or incorrect: %s" % (':'.join("{:02x}".format(ord(c)) for c in eof_block))
+            return False
+
+        # verify index exists
+        tbi = vcf_indices.get((stream_name, re.sub(r'gz$', 'gz.tbi', file_name)), 
+                              None)
+        if tbi is None:
+            print "ERROR: could not find index .tbi for VCF: %s" % (vcf_path)
+            return False
+
+        # verify index is sizeable
+        if tbi.size() < 128:
+            print "ERROR: .tbi index was too small for VCF %s (%s): %s bytes" % (vcf_path, tbi.name(), tbi.size())
+            return False
+
     return True
 
 def main():
