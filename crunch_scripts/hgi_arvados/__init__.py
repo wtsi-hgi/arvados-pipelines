@@ -33,7 +33,7 @@ __all__ = ["errors", "gatk", "gatk_helper"]
 
 def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_task_output,
                                 if_sequence=0, and_end_task=True,
-                                reuse_tasks=True,
+                                reuse_tasks=True, reuse_tasks_retrieve_all=True,
                                 interval_list_param="interval_list",
                                 oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
                                 script=arvados.current_job()['script']):
@@ -108,9 +108,14 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
                 ['script_version', 'in git', oldest_git_commit_to_reuse],
                 ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
             ]
-            reusable_task_jobs = get_jobs_for_task_reuse(job_filters)
-            print "Have %s jobs for potential task reuse" % (len(reusable_task_jobs))
-            reusable_task_job_uuids = [job['uuid'] for job in reusable_task_jobs['items']]
+            if reuse_tasks_retrieve_all:
+                # retrieve a full set of all possible reusable tasks
+                reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
+                print "Have %s tasks for potential reuse" % (len(reusable_tasks))
+            else:
+                reusable_task_jobs = get_jobs_for_task_reuse(job_filters)
+                print "Have %s jobs for potential task reuse" % (len(reusable_task_jobs))
+                reusable_task_job_uuids = [job['uuid'] for job in reusable_task_jobs['items']]
 
         for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
             # Create task for each CRAM / chunk
@@ -121,7 +126,10 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
             }
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             if reuse_tasks:
-                task = create_or_reuse_task_from_jobs(reusable_task_job_uuids, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+                if reuse_tasks_retrieve_all:
+                    task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+                else:
+                    task = create_or_reuse_task_from_jobs(reusable_task_job_uuids, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
             else:
                 task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
