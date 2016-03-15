@@ -75,7 +75,7 @@ def main():
     # Setup sub tasks 1-N (and terminate if this is task 0)
     # TODO: add interval_list
     hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, validate_task_output,
-                                            if_sequence=0, and_end_task=True, reuse_tasks=True,
+                                            if_sequence=0, and_end_task=True, reuse_tasks=False,
                                             oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
                                             script="gatk-haplotypecaller-cram.py")
 
