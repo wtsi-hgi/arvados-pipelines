@@ -415,7 +415,7 @@ def one_task_per_interval(interval_count, validate_task_output,
         exit(0)
 
 def execute_list_all(api_obj, **kwargs):
-    batch_size=kwargs.pop("batch_size", 1000000)
+    batch_size=kwargs.pop("batch_size", 25000)
     offset=kwargs.pop("offset", 0)
     num_retries=kwargs.pop("num_retries", 3)
     limit=kwargs.pop("limit", None)
