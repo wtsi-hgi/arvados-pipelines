@@ -131,7 +131,7 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
                 else:
                     task = create_or_reuse_task_from_jobs(reusable_task_job_uuids, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
             else:
-                task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+                task = arvados.api().job_tasks().create(body=new_task_params).execute()
 
     if and_end_task:
         print "Ending task 0 successfully"
