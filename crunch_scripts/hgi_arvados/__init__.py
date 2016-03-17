@@ -159,7 +159,15 @@ def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, 
         interval_lists = interval_list_by_group[group_name].keys()
         if len(interval_lists) > 1:
             raise errors.InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
-        task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
+        interval_list_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
+        # Create a portable data hash for the task's interval_list
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": interval_list_manifest}).execute()
+            interval_list_pdh = r["portable_data_hash"]
+        except:
+            raise
+        
+        task_inputs_manifest = ""
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
             gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)),
@@ -197,6 +205,7 @@ def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, 
                 'parameters': {
                     'inputs': task_inputs_pdh,
                     'ref': ref_input_pdh,
+                    'interval_list': interval_list_pdh,
                     'name': name
                     }
                 }
