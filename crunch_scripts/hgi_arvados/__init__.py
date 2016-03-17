@@ -265,10 +265,10 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
                 one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input)
                 # now that we are done with last_stream_name, reinitialise dicts to
                 # process data from new stream
-                last_stream_name = stream_name
                 print "Processing files in stream %s" % stream_name
                 gvcf_by_group = {}
                 gvcf_indices = {}
+            last_stream_name = stream_name
 
         # loop over all the files in this stream (there may be only one)
         for f in s.all_files():
