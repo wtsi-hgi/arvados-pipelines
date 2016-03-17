@@ -47,7 +47,7 @@ def main():
     ################################################################################
     # Phase II: Read interval_list and split into additional intervals
     ################################################################################
-    hgi_arvados.one_task_per_interval(interval_count,
+    hgi_arvados.one_task_per_interval(interval_count, validate_task_output,
                                       reuse_tasks=False, #TODO: temporarily disabled
                                       if_sequence=1, and_end_task=True)
 
