@@ -2,6 +2,8 @@ import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
 
+BGZF_EOF="\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00\x42\x43\x02\x00\x1b\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+
 def validate_compressed_indexed_vcf_collection(pdh):
     reader = arvados.collection.CollectionReader(pdh)
     vcf_files = {}

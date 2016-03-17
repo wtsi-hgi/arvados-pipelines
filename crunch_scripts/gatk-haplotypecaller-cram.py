@@ -10,8 +10,6 @@ from hgi_arvados import gatk
 from hgi_arvados import gatk_helper
 from hgi_arvados import validators
 
-BGZF_EOF="\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00\x42\x43\x02\x00\x1b\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-
 def validate_task_output(output_locator):
     print "Validating task output %s" % (output_locator)
     return validators.validate_compressed_indexed_vcf_collection(output_locator)
