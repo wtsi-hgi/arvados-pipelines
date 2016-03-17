@@ -34,8 +34,8 @@ def main():
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
-    hgi_arvados.one_task_per_group_and_per_n_gvcfs(group_by_regex, max_gvcfs_to_combine,
-                                                   ref_input_pdh,
+    hgi_arvados.one_task_per_group_and_per_n_gvcfs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
+                                                   group_by_regex, max_gvcfs_to_combine,
                                                    if_sequence=0, and_end_task=True)
 
     # Get object representing the current task
