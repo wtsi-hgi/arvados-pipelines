@@ -1,3 +1,6 @@
+import os           # Import the os module for basic path manipulation
+import arvados      # Import the Arvados sdk module
+import re
 
 def validate_compressed_indexed_vcf_collection(pdh):
     reader = arvados.collection.CollectionReader(pdh)
