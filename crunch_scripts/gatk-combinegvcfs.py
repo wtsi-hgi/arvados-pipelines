@@ -6,8 +6,9 @@ import re
 import subprocess
 
 import hgi_arvados
-from hgi_arvados import errors
 from hgi_arvados import gatk
+from hgi_arvados import gatk_helper
+from hgi_arvados import errors
 from hgi_arvados import validators
 
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
