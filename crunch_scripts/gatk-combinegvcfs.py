@@ -8,11 +8,16 @@ import subprocess
 import hgi_arvados
 from hgi_arvados import errors
 from hgi_arvados import gatk
+from hgi_arvados import validators
 
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
 group_by_regex = '[.](?P<group_by>[0-9]+_of_[0-9]+)[.]'
 max_gvcfs_to_combine = 200
 interval_count = 1
+
+def validate_task_output(output_locator):
+    print "Validating task output %s" % (output_locator)
+    return validators.validate_compressed_indexed_vcf_collection(output_locator)
 
 def main():
     ################################################################################
@@ -20,29 +25,39 @@ def main():
     #          applying the capturing group named "group_by" in group_by_regex.
     #          (and terminate if this is task 0)
     ################################################################################
-    ref_input_pdh = gatk.prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
+    ref_input_pdh = gatk_helper.prepare_gatk_reference_collection(reference_coll=arvados.current_job()['script_parameters']['reference_collection'])
+    job_input_pdh = arvados.current_job()['script_parameters']['inputs_collection']
+    interval_lists_pdh = arvados.current_job()['script_parameters']['interval_lists_collection']
+    interval_count = 1
+    if "interval_count" in arvados.current_job()['script_parameters']:
+        interval_count = arvados.current_job()['script_parameters']['interval_count']
+
+    # Setup sub tasks 1-N (and terminate if this is task 0)
     hgi_arvados.one_task_per_group_and_per_n_gvcfs(group_by_regex, max_gvcfs_to_combine,
                                                    ref_input_pdh,
                                                    if_sequence=0, and_end_task=True)
 
+    # Get object representing the current task
+    this_task = arvados.current_task()
+
     # We will never reach this point if we are in the 0th task sequence
-    assert(arvados.current_task()['sequence'] > 0)
+    assert(this_task['sequence'] > 0)
 
     ################################################################################
     # Phase II: Read interval_list and split into additional intervals
     ################################################################################
     hgi_arvados.one_task_per_interval(interval_count,
-                                      reuse_tasks=True,
+                                      reuse_tasks=False, #TODO: temporarily disabled
                                       if_sequence=1, and_end_task=True)
 
     # We will never reach this point if we are in the 1st task sequence
-    assert(arvados.current_task()['sequence'] > 1)
+    assert(this_task['sequence'] > 1)
 
     ################################################################################
     # Phase IIIa: If we are a "reuse" task, just set our output and be done with it
     ################################################################################
-    if 'reuse_job_task' in arvados.current_task()['parameters']:
-        print "This task's work was already done by JobTask %s" % arvados.current_task()['parameters']['reuse_job_task']
+    if 'reuse_job_task' in this_task['parameters']:
+        print "This task's work was already done by JobTask %s" % this_task['parameters']['reuse_job_task']
         exit(0)
 
     ################################################################################
@@ -51,10 +66,10 @@ def main():
     ref_file = gatk_helper.mount_gatk_reference(ref_param="ref")
     gvcf_files = gatk_helper.mount_gatk_gvcf_inputs(inputs_param="inputs")
     out_dir = hgi_arvados.prepare_out_dir()
-    name = arvados.current_task()['parameters'].get('name')
+    name = this_task['parameters'].get('name')
     if not name:
         name = "unknown"
-    interval_str = arvados.current_task()['parameters'].get('interval')
+    interval_str = this_task['parameters'].get('interval')
     if not interval_str:
         interval_str = ""
     interval_strs = interval_str.split()
@@ -75,7 +90,7 @@ def main():
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
-        arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
+        arvados.api().job_tasks().update(uuid=this_task['uuid'],
                                          body={'success':False}
                                          ).execute()
     else:
@@ -90,8 +105,16 @@ def main():
         # Commit the output to Keep.
         output_locator = out.finish()
 
-        # Use the resulting locator as the output for this task.
-        arvados.current_task().set_output(output_locator)
+        if validate_task_output(output_locator):
+            print "Task output validated, setting output to %s" % (output_locator)
+
+            # Use the resulting locator as the output for this task.
+            this_task.set_output(output_locator)
+        else:
+            print "ERROR: Failed to validate task output (%s)" % (output_locator)
+            arvados.api().job_tasks().update(uuid=this_task['uuid'],
+                                             body={'success':False}
+                                             ).execute()
 
     # Done!
 

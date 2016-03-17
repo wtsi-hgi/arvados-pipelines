@@ -29,7 +29,7 @@ import json
 import gatk_helper
 
 import errors
-__all__ = ["errors", "gatk", "gatk_helper"]
+__all__ = ["errors", "gatk", "gatk_helper", "validators"]
 
 def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_task_output,
                                 if_sequence=0, and_end_task=True,
@@ -202,7 +202,7 @@ def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, 
                 }
         arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
-def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequence=0, and_end_task=True):
+def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, group_by_regex, n, if_sequence=0, and_end_task=True):
     """
     Queue one task for each group of gVCFs and corresponding interval_list
     in the inputs_collection, with grouping based on three things:
@@ -233,8 +233,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequ
     group_by_r = re.compile(group_by_regex)
 
     # prepare interval_lists
-    il_coll = arvados.current_job()['script_parameters']['interval_lists_collection']
-    il_cr = arvados.CollectionReader(il_coll)
+    il_cr = arvados.CollectionReader(interval_lists)
     il_ignored_files = []
     interval_list_by_group = {}
     for s in il_cr.all_streams():
@@ -252,7 +251,6 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequ
             il_ignored_files.append("%s/%s" % (s.name(), f.name()))
 
     # prepare gVCF input collections
-    job_input = arvados.current_job()['script_parameters']['inputs_collection']
     cr = arvados.CollectionReader(job_input)
     ignored_files = []
     last_stream_name = ""
@@ -264,7 +262,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequ
         if stream_name != last_stream_name:
             if last_stream_name != "":
                 print "Done processing files in stream %s" % last_stream_name
-                one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh)
+                one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input)
                 # now that we are done with last_stream_name, reinitialise dicts to
                 # process data from new stream
                 last_stream_name = stream_name
@@ -299,7 +297,7 @@ def one_task_per_group_and_per_n_gvcfs(group_by_regex, n, ref_input_pdh, if_sequ
             # if we make it this far, we have files that we are ignoring
             ignored_files.append("%s/%s" % (s.name(), f.name()))
     # finally, process the last stream
-    one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh)
+    one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input)
 
     # report on any ignored files
     if len(ignored_files) > 0:

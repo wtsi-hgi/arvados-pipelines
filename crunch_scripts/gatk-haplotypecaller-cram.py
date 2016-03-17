@@ -13,51 +13,7 @@ BGZF_EOF="\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00\x42\x43\x02\x00\x1b\x
 
 def validate_task_output(output_locator):
     print "Validating task output %s" % (output_locator)
-    output_reader = arvados.collection.CollectionReader(output_locator)
-    vcf_files = {}
-    vcf_indices = {}
-    for output_stream in output_reader.all_streams():
-        for output_file in output_stream.all_files():
-            if re.search(r'\.vcf\.gz$', output_file.name()):
-                vcf_files[(output_stream.name(), output_file.name())] = output_file
-            elif re.search(r'\.tbi$', output_file.name()):
-                vcf_indices[(output_stream.name(), output_file.name())] = output_file
-            else:
-                print "WARNING: unexpected file in task output - ignoring %s" % (output_file.name())
-
-    # verify that we got some VCFs
-    if len(vcf_files) <= 0:
-        print "ERROR: found no VCF files in collection"
-        return False
-
-    print "Have %s VCF files to validate" % (len(vcf_files))
-    for ((stream_name, file_name), vcf) in vcf_files.items():
-        vcf_path = os.path.join(stream_name, file_name)
-        # verify that VCF is sizeable
-        if vcf.size() < 128:
-            print "ERROR: Small VCF file %s - INVALID!" % (vcf_path)
-            return False
-        print "Have VCF file %s of %s bytes" % (vcf_path, vcf.size())
-
-        # verify that BGZF EOF block is intact
-        eof_block = vcf.readfrom(vcf.size()-28, 28, num_retries=10)
-        if eof_block != BGZF_EOF:
-            print "ERROR: VCF BGZF EOF block was missing or incorrect: %s" % (':'.join("{:02x}".format(ord(c)) for c in eof_block))
-            return False
-
-        # verify index exists
-        tbi = vcf_indices.get((stream_name, re.sub(r'gz$', 'gz.tbi', file_name)),
-                              None)
-        if tbi is None:
-            print "ERROR: could not find index .tbi for VCF: %s" % (vcf_path)
-            return False
-
-        # verify index is sizeable
-        if tbi.size() < 128:
-            print "ERROR: .tbi index was too small for VCF %s (%s): %s bytes" % (vcf_path, tbi.name(), tbi.size())
-            return False
-
-    return True
+    return validators.validate_compressed_indexed_vcf_collection(output_locator)
 
 def main():
     ################################################################################
@@ -73,7 +29,6 @@ def main():
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
-    # TODO: add interval_list
     hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, validate_task_output,
                                             if_sequence=0, and_end_task=True, reuse_tasks=False,
                                             oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
