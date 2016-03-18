@@ -10,7 +10,7 @@ def validate_compressed_indexed_vcf_collection(pdh):
     vcf_indices = {}
     for s in reader.all_streams():
         for f in s.all_files():
-            if re.search(r'\.vcf\.gz$', f.name()):
+            if re.search(r'\.vcf(\.gz)?$', f.name()):
                 vcf_files[(s.name(), f.name())] = f
             elif re.search(r'\.tbi$', f.name()):
                 vcf_indices[(s.name(), f.name())] = f
@@ -38,10 +38,11 @@ def validate_compressed_indexed_vcf_collection(pdh):
             return False
 
         # verify index exists
-        tbi = vcf_indices.get((stream_name, re.sub(r'gz$', 'gz.tbi', file_name)),
+        tbi_name = re.sub(r'(vcf(\.gz)?)$', '\1.tbi', file_name)
+        tbi = vcf_indices.get((stream_name, tbi_name),
                               None)
         if tbi is None:
-            print "ERROR: could not find index .tbi for VCF: %s" % (vcf_path)
+            print "ERROR: could not find index .tbi %s for VCF: %s" % (tbi_name, vcf_path)
             return False
 
         # verify index is sizeable
