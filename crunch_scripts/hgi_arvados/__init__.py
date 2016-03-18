@@ -166,12 +166,12 @@ def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, 
             interval_list_pdh = r["portable_data_hash"]
         except:
             raise
-        
+
         task_inputs_manifest = ""
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
-            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)),
-                                            gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)),
+            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'vcf.gz$', 'vcf.tbi', gvcf_name)),
+                                            gvcf_indices.get((s_name, re.sub(r'vcf.gz$', 'vcf.gz.tbi', gvcf_name)),
                                                              None))
             if gvcf_index_f:
                 task_inputs_manifest += gvcf_index_f.as_manifest()

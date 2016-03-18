@@ -119,7 +119,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
         else:
             print "WARNING: collection contains unexpected file %s" % f
     if len(input_gvcf_files) == 0:
-        raise errors.InvalidArgumentError("Expected one or more .g.vcf.gz files in collection (found 0 while recursively searching %s)" % inputs_dir)
+        raise errors.InvalidArgumentError("Expected one or more .vcf.gz files in collection (found 0 while recursively searching %s)" % inputs_dir)
 
     # Ensure we can read the gVCF files and that they each have an index
     for gvcf_file in input_gvcf_files:

@@ -159,8 +159,8 @@ def one_task_per_group(group_by_regex, ref_input_pdh,
         task_inputs_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
         for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
             task_inputs_manifest += gvcf_f.as_manifest()
-            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.tbi', gvcf_name)),
-                                            gvcf_indices.get((s_name, re.sub(r'g.vcf.gz$', 'g.vcf.gz.tbi', gvcf_name)),
+            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'vcf.gz$', 'vcf.tbi', gvcf_name)),
+                                            gvcf_indices.get((s_name, re.sub(r'vcf.gz$', 'vcf.gz.tbi', gvcf_name)),
                                                              None))
             if gvcf_index_f:
                 task_inputs_manifest += gvcf_index_f.as_manifest()
@@ -238,7 +238,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
         else:
             print "WARNING: collection contains unexpected file %s" % f
     if len(input_gvcf_files) == 0:
-        raise InvalidArgumentError("Expected one or more .g.vcf.gz files in collection (found 0 while recursively searching %s)" % inputs_dir)
+        raise InvalidArgumentError("Expected one or more .vcf.gz files in collection (found 0 while recursively searching %s)" % inputs_dir)
 
     # Ensure we can read the gVCF files and that they each have an index
     for gvcf_file in input_gvcf_files:

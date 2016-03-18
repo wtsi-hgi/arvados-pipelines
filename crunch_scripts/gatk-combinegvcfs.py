@@ -77,11 +77,11 @@ def main():
     intervals = []
     for interval in interval_strs:
         intervals.extend(["--intervals", interval])
-    out_file = name + ".g.vcf.gz"
+    out_file = name + ".vcf.gz"
     if interval_count > 1:
-        out_file = name + "." + '_'.join(interval_strs) + ".g.vcf.gz"
+        out_file = name + "." + '_'.join(interval_strs) + ".vcf.gz"
         if len(out_file) > 255:
-            out_file = name + "." + '_'.join([interval_strs[0], interval_strs[-1]]) + ".g.vcf.gz"
+            out_file = name + "." + '_'.join([interval_strs[0], interval_strs[-1]]) + ".vcf.gz"
             print "Output file name was too long with full interval list, shortened it to: %s" % out_file
         if len(out_file) > 255:
             raise errors.InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
