@@ -10,9 +10,9 @@ def validate_compressed_indexed_vcf_collection(pdh):
     vcf_indices = {}
     for s in reader.all_streams():
         for f in s.all_files():
-            if re.search(r'\.vcf(\.gz)?$', f.name()):
+            if re.search(r'\.vcf\.gz$', f.name()):
                 vcf_files[(s.name(), f.name())] = f
-            elif re.search(r'\.(tbi|idx)$', f.name()):
+            elif re.search(r'\.tbi$', f.name()):
                 vcf_indices[(s.name(), f.name())] = f
             else:
                 print "WARNING: unexpected file in task output - ignoring %s" % (f.name())
@@ -38,23 +38,15 @@ def validate_compressed_indexed_vcf_collection(pdh):
             return False
 
         # verify index exists
-        tbi_name = re.sub(r'(vcf(\.gz)?)$', '\1.tbi', file_name)
-        tbi = vcf_indices.get((stream_name, tbi_name), None)
+        tbi = vcf_indices.get((stream_name, re.sub(r'gz$', 'gz.tbi', file_name)),
+                              None)
         if tbi is None:
-            idx_name = re.sub(r'(vcf(\.gz)?)$', '\1.idx', file_name)
-            idx = vcf_indices.get((stream_name, idx_name), None)
-            if idx is None:
-                print "ERROR: could not find index .tbi %s or .idx %s for VCF: %s" % (tbi_name, idx_name, vcf_path)
-                return False
-            else:
-                # verify index is sizeable
-                if idx.size() < 128:
-                    print "ERROR: .idx index was too small for VCF %s (%s): %s bytes" % (vcf_path, idx.name(), idx.size())
-                    return False
-        else:
-            # verify index is sizeable
-            if tbi.size() < 128:
-                print "ERROR: .tbi index was too small for VCF %s (%s): %s bytes" % (vcf_path, tbi.name(), tbi.size())
-                return False
+            print "ERROR: could not find index .tbi for VCF: %s" % (vcf_path)
+            return False
+
+        # verify index is sizeable
+        if tbi.size() < 128:
+            print "ERROR: .tbi index was too small for VCF %s (%s): %s bytes" % (vcf_path, tbi.name(), tbi.size())
+            return False
 
     return True
