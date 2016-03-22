@@ -86,6 +86,9 @@ def main():
         if len(out_file) > 255:
             raise errors.InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
 
+    # because of a GATK bug, name cannot contain the string '.bcf' anywhere within it or we will get BCF output
+    out_file = out_file.replace(".bcf", "._cf")
+
     # CombineGVCFs!
     gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_gatk_args=intervals)
 
