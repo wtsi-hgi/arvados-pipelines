@@ -87,7 +87,7 @@ def main():
             raise errors.InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
 
     # CombineGVCFs!
-    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_args=intervals)
+    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_gatk_args=intervals)
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
