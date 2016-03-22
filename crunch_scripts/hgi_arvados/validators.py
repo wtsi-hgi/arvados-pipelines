@@ -1,6 +1,7 @@
 import os           # Import the os module for basic path manipulation
 import arvados      # Import the Arvados sdk module
 import re
+import gzip
 
 BGZF_EOF="\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00\x42\x43\x02\x00\x1b\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
@@ -47,6 +48,18 @@ def validate_compressed_indexed_vcf_collection(pdh):
         # verify index is sizeable
         if tbi.size() < 128:
             print "ERROR: .tbi index was too small for VCF %s (%s): %s bytes" % (vcf_path, tbi.name(), tbi.size())
+            return False
+
+        # verify first compressed block starts with ##fileformat=VCF
+        vcf.seek(0)
+        try:
+            g = gzip.GzipFile(fileobj=vcf)
+            header = g.read(16)
+            if header != "##fileformat=VCF":
+                print "ERROR: first 16 bytes of decompressed block was '%s' instead of '##fileformat=VCF'" % (header)
+                return False
+        except Exception as e:
+            print "ERROR: could not read from compressed VCF: %s" % (e)
             return False
 
     return True
