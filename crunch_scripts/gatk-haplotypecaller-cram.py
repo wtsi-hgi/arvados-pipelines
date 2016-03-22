@@ -57,7 +57,7 @@ def main():
     out_filename = os.path.basename(cram_file_base) + "." + os.path.basename(interval_list_file) + ".vcf.gz"
 
     # because of a GATK bug, name cannot contain the string '.bcf' anywhere within it or we will get BCF output
-    out_file = out_file.replace(".bcf", "._cf")
+    out_filename = out_filename.replace(".bcf", "._cf")
 
     # HaplotypeCaller!
     gatk_exit = gatk.haplotype_caller(ref_file, cram_file, interval_list_file, os.path.join(out_dir, out_filename))
