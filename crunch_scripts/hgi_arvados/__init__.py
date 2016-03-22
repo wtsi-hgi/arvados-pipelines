@@ -404,22 +404,32 @@ def one_task_per_interval(interval_count, validate_task_output,
             print "WARNING: skipping empty intervals for %s" % interval_input_name
     print "Have %s intervals" % (len(intervals))
 
-    # get candidates for task reuse
-    job_filters = [
-        ['script', '=', script],
-        ['repository', '=', arvados.current_job()['repository']],
-        ['script_version', 'in git', oldest_git_commit_to_reuse],
-        ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
-    ]
-    reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
-    print "Have %s potentially reusable tasks" % (len(reusable_tasks))
+    if reuse_tasks:
+        # get candidates for task reuse
+        job_filters = [
+            ['script', '=', script],
+            ['repository', '=', arvados.current_job()['repository']],
+            ['script_version', 'in git', oldest_git_commit_to_reuse],
+            ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
+        ]
+        reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
+        print "Have %s potentially reusable tasks" % (len(reusable_tasks))
 
     for interval in intervals:
         interval_str = ' '.join(interval)
         print "Creating task to process interval: [%s]" % interval_str
         new_task_params = arvados.current_task()['parameters']
         new_task_params['interval'] = interval_str
-        task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+        if reuse_tasks:
+            task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+        else:
+            new_task_attrs = {
+                'job_uuid': arvados.current_job()['uuid'],
+                'created_by_job_task_uuid': arvados.current_task()['uuid'],
+                'sequence': if_sequence + 1,
+                'parameters': new_task_params
+            }
+            task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
 
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
