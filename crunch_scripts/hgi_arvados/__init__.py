@@ -287,7 +287,7 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
             m = re.search(group_by_r, f.name())
             if m:
                 group_name = m.group('group_by')
-                gvcf_m = re.search(r'\.g\.vcf\.gz$', f.name())
+                gvcf_m = re.search(r'\.vcf\.gz$', f.name())
                 if gvcf_m:
                     if group_name not in gvcf_by_group:
                         gvcf_by_group[group_name] = dict()
@@ -306,6 +306,7 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
             # if we make it this far, we have files that we are ignoring
             ignored_files.append("%s/%s" % (s.name(), f.name()))
     # finally, process the last stream
+    print "Processing last stream"
     one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input)
 
     # report on any ignored files
