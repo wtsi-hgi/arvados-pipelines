@@ -110,7 +110,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Sanity check input gVCFs
     input_gvcf_files = []
     for f in arvados.util.listdir_recursive(inputs_dir):
-        if re.search(r'\.g\.vcf\.gz$', f):
+        if re.search(r'\.vcf\.gz$', f):
             input_gvcf_files.append(os.path.join(inputs_dir, f))
         elif re.search(r'\.tbi$', f):
             pass
