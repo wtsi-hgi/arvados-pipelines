@@ -128,7 +128,7 @@ def one_task_per_group(group_by_regex, ref_input_pdh,
             m = re.search(group_by_r, f.name())
             if m:
                 group_name = m.group('group_by')
-                gvcf_m = re.search(r'\.g\.vcf\.gz$', f.name())
+                gvcf_m = re.search(r'\.vcf\.gz$', f.name())
                 if gvcf_m:
                     if group_name not in gvcf_by_group:
                         gvcf_by_group[group_name] = dict()
@@ -229,7 +229,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Sanity check input gVCFs
     input_gvcf_files = []
     for f in arvados.util.listdir_recursive(inputs_dir):
-        if re.search(r'\.g\.vcf\.gz$', f):
+        if re.search(r'\.vcf\.gz$', f):
             input_gvcf_files.append(os.path.join(inputs_dir, f))
         elif re.search(r'\.tbi$', f):
             pass
@@ -299,6 +299,7 @@ def gatk_genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, extr
     gatk_args = [
             "java", "-d64", "-Xmx8g", "-jar", "/gatk/GenomeAnalysisTK.jar",
             "-T", "GenotypeGVCFs",
+            "--no_cmdline_in_header",
             "-R", ref_file,
             "-L", interval_list_file,
             "-nt", "2"]
