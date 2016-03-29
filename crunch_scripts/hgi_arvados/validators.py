@@ -46,7 +46,7 @@ def validate_compressed_indexed_vcf_collection(pdh):
             return False
 
         # verify index is sizeable
-        if tbi.size() < 128:
+        if tbi.size() < 32:
             print "ERROR: .tbi index was too small for VCF %s (%s): %s bytes" % (vcf_path, tbi.name(), tbi.size())
             return False
 
