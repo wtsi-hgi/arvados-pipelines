@@ -638,14 +638,20 @@ def get_reusable_tasks(sequence, task_key_params, job_filters):
     if tasks['items_available'] > 0:
         print "Have %s potential reusable task outputs" % ( tasks['items_available'] )
         for task in tasks['items']:
-            ct_index = tuple([task['parameters'][index_param] for index_param in task_key_params])
-            if ct_index in reusable_tasks:
-                # we have already seen a task with these parameters (from another job?) - verify they have the same output
-                if reusable_tasks[ct_index]['output'] != task['output']:
-                    print "WARNING: found two existing candidate JobTasks for parameters %s and the output does not match! (using JobTask %s from Job %s with output %s, but JobTask %s from Job %s had output %s)" % (ct_index, reusable_tasks[ct_index]['uuid'], reusable_tasks[ct_index]['job_uuid'], reusable_tasks[ct_index]['output'], task['uuid'], task['job_uuid'], task['output'])
-            else:
-                # store the candidate task in reusable_tasks, indexed on the tuple of params specified in task_key_params
-                reusable_tasks[ct_index] = task
+            have_all_params=True
+            for index_param in task_key_params:
+                if index_param not in task['parameters']:
+                    print "WARNING: missing task key param %s in JobTask %s from Job %s (have parameters: %s)" % (index_param, task['uuid'], task['job_uuid'], ', '.join(task['parameters'].keys()))
+                    have_all_params=False
+            if have_all_params:
+                ct_index = tuple([task['parameters'][index_param] for index_param in task_key_params])
+                if ct_index in reusable_tasks:
+                    # we have already seen a task with these parameters (from another job?) - verify they have the same output
+                    if reusable_tasks[ct_index]['output'] != task['output']:
+                        print "WARNING: found two existing candidate JobTasks for parameters %s and the output does not match! (using JobTask %s from Job %s with output %s, but JobTask %s from Job %s had output %s)" % (ct_index, reusable_tasks[ct_index]['uuid'], reusable_tasks[ct_index]['job_uuid'], reusable_tasks[ct_index]['output'], task['uuid'], task['job_uuid'], task['output'])
+                else:
+                    # store the candidate task in reusable_tasks, indexed on the tuple of params specified in task_key_params
+                    reusable_tasks[ct_index] = task
     return reusable_tasks
 
 
