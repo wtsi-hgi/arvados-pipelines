@@ -31,6 +31,16 @@ import gatk_helper
 import errors
 __all__ = ["errors", "gatk", "gatk_helper", "validators"]
 
+def create_task(sequence, params):
+    new_task_attrs = {
+        'job_uuid': arvados.current_job()['uuid'],
+        'created_by_job_task_uuid': arvados.current_task()['uuid'],
+        'sequence': sequence,
+        'parameters': params
+    }
+    task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+    return task
+
 def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_task_output,
                                 if_sequence=0, and_end_task=True,
                                 reuse_tasks=True, reuse_tasks_retrieve_all=True,
@@ -638,16 +648,6 @@ def get_reusable_tasks(sequence, task_key_params, job_filters):
                 reusable_tasks[ct_index] = task
     return reusable_tasks
 
-
-def create_task(sequence, params):
-    new_task_attrs = {
-        'job_uuid': arvados.current_job()['uuid'],
-        'created_by_job_task_uuid': arvados.current_task()['uuid'],
-        'sequence': sequence,
-        'parameters': params
-    }
-    task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
-    return task
 
 def create_or_reuse_task(sequence, parameters, reusable_tasks, task_key_params, validate_task_output):
     new_task_attrs = {
