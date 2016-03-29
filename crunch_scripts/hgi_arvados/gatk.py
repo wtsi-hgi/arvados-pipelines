@@ -54,6 +54,7 @@ def combine_gvcfs(ref_file, gvcf_files, out_path, **kwargs):
     # Call GATK CombineGVCFs
     gatk_args = [
             "-T", "CombineGVCFs",
+            "--no_cmdline_in_header",
             "-R", ref_file]
     for gvcf_file in gvcf_files:
         gatk_args.extend(["--variant", gvcf_file])
@@ -64,11 +65,12 @@ def combine_gvcfs(ref_file, gvcf_files, out_path, **kwargs):
 
 
 def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs):
-    java_mem = kwargs.pop("java_mem", "20g") 
+    java_mem = kwargs.pop("java_mem", "20g")
     print "haplotype_caller called with ref_file=[%s] cram_file=[%s] interval_list_file=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, cram_file, interval_list_file, out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call GATK HaplotypeCaller
     gatk_args = [
         "-T", "HaplotypeCaller",
+        "--no_cmdline_in_header",
         "-R", ref_file,
         "-I", cram_file,
         "-L", interval_list_file,
@@ -79,4 +81,22 @@ def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs
         "-o", out_path,
         "-l", "INFO"
         ]
+    return _execute(gatk_args, java_mem=java_mem, **kwargs)
+
+
+def genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, **kwargs):
+    java_mem= kwargs.pop("java_mem", "8g")
+    print "combine_gvcfs called with ref_file=[%s] interval_list_file=[%s] gvcf_files=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, interval_list_file, ' '.join(gvcf_files), out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
+    # Call GATK GenotypeGVCFs
+    gatk_args = [
+            "-T", "GenotypeGVCFs",
+            "--no_cmdline_in_header",
+            "-R", ref_file,
+            "-L", interval_list_file,
+            "-nt", "2"]
+    for gvcf_file in gvcf_files:
+        gatk_args.extend(["--variant", gvcf_file])
+    gatk_args.extend([
+        "-o", out_path
+    ])
     return _execute(gatk_args, java_mem=java_mem, **kwargs)

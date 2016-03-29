@@ -127,17 +127,11 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             if reuse_tasks:
                 if reuse_tasks_retrieve_all:
-                    task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+                    task = create_or_reuse_task(if_sequence + 1, new_task_params, reusable_tasks, task_key_params, validate_task_output)
                 else:
-                    task = create_or_reuse_task_from_jobs(reusable_task_job_uuids, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+                    task = create_or_reuse_task_from_jobs(if_sequence + 1, new_task_params, reusable_task_job_uuids, task_key_params, validate_task_output)
             else:
-                new_task_attrs = {
-                    'job_uuid': arvados.current_job()['uuid'],
-                    'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                    'sequence': if_sequence + 1,
-                    'parameters': new_task_params
-                }
-                task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+                task = create_task(if_sequence + 1, new_task_params)
 
     if and_end_task:
         print "Ending task 0 successfully"
@@ -146,7 +140,7 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
                                          ).execute()
         exit(0)
 
-def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh):
+def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh, create_task_func=create_task):
     """
     Process one stream of data and launch a subtask for handling it
     """
@@ -197,21 +191,17 @@ def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, 
             name = "all"
         else:
             name = '::'.join(name_components)
-        print "Creating new task to process %s" % name
-        new_task_attrs = {
-                'job_uuid': arvados.current_job()['uuid'],
-                'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                'sequence': if_sequence + 1,
-                'parameters': {
+
+        print "Creating task to process %s" % name
+        new_task_params = {
                     'inputs': task_inputs_pdh,
                     'ref': ref_input_pdh,
                     'interval_list': interval_list_pdh,
                     'name': name
                     }
-                }
-        arvados.api().job_tasks().create(body=new_task_attrs).execute()
+        task = create_task_func(if_sequence + 1, new_task_params)
 
-def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, group_by_regex, n, if_sequence=0, and_end_task=True):
+def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, group_by_regex, n, if_sequence=0, and_end_task=True, create_task_func=create_task):
     """
     Queue one task for each group of gVCFs and corresponding interval_list
     in the inputs_collection, with grouping based on three things:
@@ -222,7 +212,7 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
         splitting based on the above two groupings and there are more
         than n gVCFs in the resulting group, split it into as many
         groups as necessary to ensure there are <= n gVCFs in each
-        group.
+        group. If n<=0, don't perform this splitting.
 
     Each new task will have an "inputs" parameter: a manifest
     containing a set of one or more gVCF files and its corresponding
@@ -271,7 +261,7 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
         if stream_name != last_stream_name:
             if last_stream_name != "":
                 print "Done processing files in stream %s" % last_stream_name
-                one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input)
+                one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
                 # now that we are done with last_stream_name, reinitialise dicts to
                 # process data from new stream
                 print "Processing files in stream %s" % stream_name
@@ -307,7 +297,114 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
             ignored_files.append("%s/%s" % (s.name(), f.name()))
     # finally, process the last stream
     print "Processing last stream"
-    one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input)
+    one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
+
+    # report on any ignored files
+    if len(ignored_files) > 0:
+        print "WARNING: ignored non-matching files in inputs_collection: %s" % (' '.join(ignored_files))
+        # TODO: could use `setmedian` from https://github.com/ztane/python-Levenshtein
+        # to print most representative "median" filename (i.e. skipped 15 files like median), then compare the
+        # rest of the files to that median (perhaps with `ratio`)
+
+    if and_end_task:
+        print "Ending task %s successfully" % if_sequence
+        arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                         body={'success':True}
+                                         ).execute()
+        exit(0)
+
+def one_task_per_group(ref_input, job_input, interval_lists, group_by_regex, if_sequence=0, and_end_task=True, create_task_func=create_task):
+    """
+    Queue one task for each group of gVCFs and corresponding interval_list
+    in the inputs_collection, with grouping based on three things:
+      - the stream in which the gVCFs are held within the collection
+      - the value of the named capture group "group_by" in the
+        group_by_regex against the filename in the inputs_collection
+
+    Each new task will have an "inputs" parameter: a manifest
+    containing a set of one or more gVCF files and its corresponding
+    index.
+
+    Each new task will also have a "ref" parameter: a manifest
+    containing the reference files to use.
+
+    Note that all gVCFs not matching the group_by_regex are ignored.
+
+    if_sequence and and_end_task arguments have the same significance
+    as in arvados.job_setup.one_task_per_input_file().
+    """
+    if if_sequence != arvados.current_task()['sequence']:
+        return
+
+    group_by_r = re.compile(group_by_regex)
+
+    # prepare interval_lists
+    il_cr = arvados.CollectionReader(interval_lists)
+    il_ignored_files = []
+    interval_list_by_group = {}
+    for s in il_cr.all_streams():
+        for f in s.all_files():
+            m = re.search(group_by_r, f.name())
+            if m:
+                group_name = m.group('group_by')
+                interval_list_m = re.search(r'\.interval_list', f.name())
+                if interval_list_m:
+                    if group_name not in interval_list_by_group:
+                        interval_list_by_group[group_name] = dict()
+                    interval_list_by_group[group_name][s.name(), f.name()] = f
+                    continue
+            # if we make it this far, we have files that we are ignoring
+            il_ignored_files.append("%s/%s" % (s.name(), f.name()))
+
+    # prepare gVCF input collections
+    cr = arvados.CollectionReader(job_input)
+    ignored_files = []
+    last_stream_name = ""
+    gvcf_by_group = {}
+    gvcf_indices = {}
+    for s in sorted(cr.all_streams(), key=lambda stream: stream.name()):
+        stream_name = s.name()
+        # handle each stream name separately
+        if stream_name != last_stream_name:
+            if last_stream_name != "":
+                print "Done processing files in stream %s" % last_stream_name
+                one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
+                # now that we are done with last_stream_name, reinitialise dicts to
+                # process data from new stream
+                print "Processing files in stream %s" % stream_name
+                gvcf_by_group = {}
+                gvcf_indices = {}
+            last_stream_name = stream_name
+
+        # loop over all the files in this stream (there may be only one)
+        for f in s.all_files():
+            if re.search(r'\.tbi$', f.name()):
+                gvcf_indices[s.name(), f.name()] = f
+                continue
+            m = re.search(group_by_r, f.name())
+            if m:
+                group_name = m.group('group_by')
+                gvcf_m = re.search(r'\.vcf\.gz$', f.name())
+                if gvcf_m:
+                    if group_name not in gvcf_by_group:
+                        gvcf_by_group[group_name] = dict()
+                    gvcf_by_group[group_name][s.name(), f.name()] = f
+                    continue
+                interval_list_m = re.search(r'\.interval_list', f.name())
+                if interval_list_m:
+                    if group_name not in interval_list_by_group:
+                        interval_list_by_group[group_name] = dict()
+                    if (s.name(), f.name()) in interval_list_by_group[group_name]:
+                        if interval_list_by_group[group_name][s.name(), f.name()].as_manifest() != f.as_manifest():
+                            raise errors.InvalidArgumentError("Already have interval_list for group %s file %s/%s, but manifests are not identical!" % (group_name, s.name(), f.name()))
+                    else:
+                        interval_list_by_group[group_name][s.name(), f.name()] = f
+                    continue
+            # if we make it this far, we have files that we are ignoring
+            ignored_files.append("%s/%s" % (s.name(), f.name()))
+    # finally, process the last stream
+    print "Processing last stream"
+    one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
 
     # report on any ignored files
     if len(ignored_files) > 0:
@@ -421,15 +518,9 @@ def one_task_per_interval(interval_count, validate_task_output,
         new_task_params = arvados.current_task()['parameters']
         new_task_params['interval'] = interval_str
         if reuse_tasks:
-            task = create_or_reuse_task(reusable_tasks, if_sequence + 1, new_task_params, task_key_params, validate_task_output)
+            task = create_or_reuse_task(if_sequence + 1, new_task_params, reusable_tasks, task_key_params, validate_task_output)
         else:
-            new_task_attrs = {
-                'job_uuid': arvados.current_job()['uuid'],
-                'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                'sequence': if_sequence + 1,
-                'parameters': new_task_params
-            }
-            task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+            task = create_task(if_sequence + 1, new_task_params)
 
     if and_end_task:
         print "Ending task %s successfully" % if_sequence
@@ -476,7 +567,7 @@ def get_jobs_for_task_reuse(job_filters):
     return jobs
 
 
-def create_or_reuse_task_from_jobs(reusable_task_job_uuids, sequence, parameters, task_key_params, validate_task_output):
+def create_or_reuse_task_from_jobs(sequence, parameters, reusable_task_job_uuids, task_key_params, validate_task_output):
     reusable_tasks = {}
     task_filters = [
         ['sequence', '=', str(sequence)],
@@ -515,7 +606,7 @@ def create_or_reuse_task_from_jobs(reusable_task_job_uuids, sequence, parameters
                 reusable_tasks[ct_index] = task
     else:
         print "No potential reusable task outputs found"
-    return create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params, validate_task_output)
+    return create_or_reuse_task(sequence, parameters, reusable_tasks, task_key_params, validate_task_output)
 
 def get_reusable_tasks(sequence, task_key_params, job_filters):
     reusable_tasks = {}
@@ -547,7 +638,18 @@ def get_reusable_tasks(sequence, task_key_params, job_filters):
                 reusable_tasks[ct_index] = task
     return reusable_tasks
 
-def create_or_reuse_task(reusable_tasks, sequence, parameters, task_key_params, validate_task_output):
+
+def create_task(sequence, params):
+    new_task_attrs = {
+        'job_uuid': arvados.current_job()['uuid'],
+        'created_by_job_task_uuid': arvados.current_task()['uuid'],
+        'sequence': sequence,
+        'parameters': params
+    }
+    task = arvados.api().job_tasks().create(body=new_task_attrs).execute()
+    return task
+
+def create_or_reuse_task(sequence, parameters, reusable_tasks, task_key_params, validate_task_output):
     new_task_attrs = {
             'job_uuid': arvados.current_job()['uuid'],
             'created_by_job_task_uuid': arvados.current_task()['uuid'],
