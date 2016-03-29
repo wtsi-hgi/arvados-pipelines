@@ -7,7 +7,9 @@ import subprocess
 
 import hgi_arvados
 from hgi_arvados import gatk
+from hgi_arvados import gatk_helper
 from hgi_arvados import errors
+from hgi_arvados import validators
 
 # TODO: make group_by_regex a parameter
 group_by_regex = '(?P<group_by>[0-9]+_of_[0-9]+)[^0-9]'
