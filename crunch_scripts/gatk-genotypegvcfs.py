@@ -44,7 +44,7 @@ def main():
 
     # retrieve a full set of all possible reusable tasks at sequence 1
     print "Retrieving all potentially reusable tasks"
-    reusable_tasks = get_reusable_tasks(1, task_key_params, job_filters)
+    reusable_tasks = hgi_arvados.get_reusable_tasks(1, task_key_params, job_filters)
     print "Have %s tasks for potential reuse" % (len(reusable_tasks))
 
     def create_task_with_validated_reuse(sequence, params):
