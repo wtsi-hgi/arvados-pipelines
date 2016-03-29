@@ -31,7 +31,7 @@ def main():
     if "interval_count" in arvados.current_job()['script_parameters']:
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
-    if if_sequence == 0:
+    if arvados.current_task()['sequence'] == 0:
         # get candidates for task reuse
         task_key_params=['inputs', 'ref', 'name'] # N.B. inputs collection includes input vcfs and corresponding interval_list
         script="gatk-genotypegvcfs.py"
