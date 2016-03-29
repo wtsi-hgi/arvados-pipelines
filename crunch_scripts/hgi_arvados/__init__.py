@@ -211,6 +211,61 @@ def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, 
                     }
         task = create_task_func(if_sequence + 1, new_task_params)
 
+def one_task_per_gvcf_group_in_stream_combined_inputs(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh, create_task_func=create_task):
+    """
+    Process one stream of data and launch a subtask for handling it
+    """
+    print "Finalising stream %s" % stream_name
+    for group_name in sorted(gvcf_by_group.keys()):
+        print "Have %s gVCFs in group %s" % (len(gvcf_by_group[group_name]), group_name)
+        # require interval_list for this group
+        if group_name not in interval_list_by_group:
+            raise errors.InvalidArgumentError("Inputs collection did not contain interval_list for group %s" % group_name)
+        interval_lists = interval_list_by_group[group_name].keys()
+        if len(interval_lists) > 1:
+            raise errors.InvalidArgumentError("Inputs collection contained more than one interval_list for group %s: %s" % (group_name, ' '.join(interval_lists)))
+        interval_list_manifest = interval_list_by_group[group_name].get(interval_lists[0]).as_manifest()
+
+        # "combined_inputs" style is to have interval_list and inputs in same collection
+        task_inputs_manifest = interval_list_manifest
+        for ((s_name, gvcf_name), gvcf_f) in gvcf_by_group[group_name].items():
+            task_inputs_manifest += gvcf_f.as_manifest()
+            gvcf_index_f = gvcf_indices.get((s_name, re.sub(r'vcf.gz$', 'vcf.tbi', gvcf_name)),
+                                            gvcf_indices.get((s_name, re.sub(r'vcf.gz$', 'vcf.gz.tbi', gvcf_name)),
+                                                             None))
+            if gvcf_index_f:
+                task_inputs_manifest += gvcf_index_f.as_manifest()
+            else:
+                # no index for gVCF - TODO: should this be an error or warning?
+                print "WARNING: No correponding .tbi index file found for gVCF file %s" % gvcf_name
+                #raise errors.InvalidArgumentError("No correponding .tbi index file found for gVCF file %s" % gvcf_name)
+
+        # Create a portable data hash for the task's subcollection
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": task_inputs_manifest}).execute()
+            task_inputs_pdh = r["portable_data_hash"]
+        except:
+            raise
+
+        # Create task to process this group
+        name_components = []
+        if len(stream_name) > 0 and stream_name != ".":
+            name_components.append(stream_name)
+        if len(group_name) > 0:
+            name_components.append(group_name)
+        if len(name_components) == 0:
+            name = "all"
+        else:
+            name = '::'.join(name_components)
+
+        print "Creating task to process %s" % name
+        new_task_params = {
+                    'inputs': task_inputs_pdh,
+                    'ref': ref_input_pdh,
+                    'name': name
+                    }
+        task = create_task_func(if_sequence + 1, new_task_params)
+
 def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, group_by_regex, n, if_sequence=0, and_end_task=True, create_task_func=create_task):
     """
     Queue one task for each group of gVCFs and corresponding interval_list
@@ -323,7 +378,7 @@ def one_task_per_group_and_per_n_gvcfs(ref_input, job_input, interval_lists, gro
                                          ).execute()
         exit(0)
 
-def one_task_per_group(ref_input, job_input, interval_lists, group_by_regex, if_sequence=0, and_end_task=True, create_task_func=create_task):
+def one_task_per_group_combined_inputs(ref_input, job_input, interval_lists, group_by_regex, if_sequence=0, and_end_task=True, create_task_func=create_task):
     """
     Queue one task for each group of gVCFs and corresponding interval_list
     in the inputs_collection, with grouping based on three things:
@@ -378,7 +433,7 @@ def one_task_per_group(ref_input, job_input, interval_lists, group_by_regex, if_
         if stream_name != last_stream_name:
             if last_stream_name != "":
                 print "Done processing files in stream %s" % last_stream_name
-                one_task_per_gvcf_group_in_stream(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
+                one_task_per_gvcf_group_in_stream_combined_inputs(last_stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
                 # now that we are done with last_stream_name, reinitialise dicts to
                 # process data from new stream
                 print "Processing files in stream %s" % stream_name
@@ -414,7 +469,7 @@ def one_task_per_group(ref_input, job_input, interval_lists, group_by_regex, if_
             ignored_files.append("%s/%s" % (s.name(), f.name()))
     # finally, process the last stream
     print "Processing last stream"
-    one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
+    one_task_per_gvcf_group_in_stream_combined_inputs(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input, create_task_func=create_task_func)
 
     # report on any ignored files
     if len(ignored_files) > 0:

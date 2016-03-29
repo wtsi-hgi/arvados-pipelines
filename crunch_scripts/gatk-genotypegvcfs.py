@@ -32,7 +32,7 @@ def main():
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
     # get candidates for task reuse
-    task_key_params=['inputs', 'ref', 'interval_list', 'name']
+    task_key_params=['inputs', 'ref', 'name'] # N.B. inputs collection includes input vcfs and corresponding interval_list
     script="gatk-genotypegvcfs.py"
     oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2'
     job_filters = [
@@ -51,10 +51,10 @@ def main():
         return hgi_arvados.create_or_reuse_task(sequence, params, reusable_tasks, task_key_params, validate_task_output)
 
     # Setup sub tasks (and terminate if this is task 0)
-    hgi_arvados.one_task_per_group(ref_input_pdh, job_input_pdh, interval_lists_pdh,
-                                   group_by_regex,
-                                   if_sequence=0, and_end_task=True,
-                                   create_task_func=create_task_with_validated_reuse)
+    hgi_arvados.one_task_per_group_combined_inputs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
+                                                   group_by_regex,
+                                                   if_sequence=0, and_end_task=True,
+                                                   create_task_func=create_task_with_validated_reuse)
 
     # Get object representing the current task
     this_task = arvados.current_task()
