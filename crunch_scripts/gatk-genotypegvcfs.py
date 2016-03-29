@@ -31,30 +31,31 @@ def main():
     if "interval_count" in arvados.current_job()['script_parameters']:
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
-    # get candidates for task reuse
-    task_key_params=['inputs', 'ref', 'name'] # N.B. inputs collection includes input vcfs and corresponding interval_list
-    script="gatk-genotypegvcfs.py"
-    oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2'
-    job_filters = [
-        ['script', '=', script],
-        ['repository', '=', arvados.current_job()['repository']],
-        ['script_version', 'in git', oldest_git_commit_to_reuse],
-        ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
-    ]
+    if if_sequence == 0:
+        # get candidates for task reuse
+        task_key_params=['inputs', 'ref', 'name'] # N.B. inputs collection includes input vcfs and corresponding interval_list
+        script="gatk-genotypegvcfs.py"
+        oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2'
+        job_filters = [
+            ['script', '=', script],
+            ['repository', '=', arvados.current_job()['repository']],
+            ['script_version', 'in git', oldest_git_commit_to_reuse],
+            ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
+        ]
 
-    # retrieve a full set of all possible reusable tasks at sequence 1
-    print "Retrieving all potentially reusable tasks"
-    reusable_tasks = hgi_arvados.get_reusable_tasks(1, task_key_params, job_filters)
-    print "Have %s tasks for potential reuse" % (len(reusable_tasks))
+        # retrieve a full set of all possible reusable tasks at sequence 1
+        print "Retrieving all potentially reusable tasks"
+        reusable_tasks = hgi_arvados.get_reusable_tasks(1, task_key_params, job_filters)
+        print "Have %s tasks for potential reuse" % (len(reusable_tasks))
 
-    def create_task_with_validated_reuse(sequence, params):
-        return hgi_arvados.create_or_reuse_task(sequence, params, reusable_tasks, task_key_params, validate_task_output)
+        def create_task_with_validated_reuse(sequence, params):
+            return hgi_arvados.create_or_reuse_task(sequence, params, reusable_tasks, task_key_params, validate_task_output)
 
-    # Setup sub tasks (and terminate if this is task 0)
-    hgi_arvados.one_task_per_group_combined_inputs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
-                                                   group_by_regex,
-                                                   if_sequence=0, and_end_task=True,
-                                                   create_task_func=create_task_with_validated_reuse)
+        # Setup sub tasks (and terminate if this is task 0)
+        hgi_arvados.one_task_per_group_combined_inputs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
+                                                       group_by_regex,
+                                                       if_sequence=0, and_end_task=True,
+                                                       create_task_func=create_task_with_validated_reuse)
 
     # Get object representing the current task
     this_task = arvados.current_task()
