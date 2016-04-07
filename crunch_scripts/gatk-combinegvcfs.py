@@ -12,7 +12,7 @@ from hgi_arvados import errors
 from hgi_arvados import validators
 
 # TODO: make group_by_regex and max_gvcfs_to_combine parameters
-group_by_regex = '[.](?P<group_by>[0-9]+_of_[0-9]+)[.]'
+group_by_regex = '[._](?P<group_by>[0-9]+_of_[0-9]+)[._]'
 max_gvcfs_to_combine = 200
 interval_count = 1
 
