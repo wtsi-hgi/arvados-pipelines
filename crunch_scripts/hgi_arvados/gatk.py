@@ -86,8 +86,8 @@ def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs
 
 def genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, **kwargs):
     java_mem = kwargs.pop("java_mem", "8g")
-    cores = kwargs.pop("cores", 2)
-    print "combine_gvcfs called with ref_file=[%s] interval_list_file=[%s] gvcf_files=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, interval_list_file, ' '.join(gvcf_files), out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
+    cores = kwargs.pop("cores", "2")
+    print "combine_gvcfs called with ref_file=[%s] interval_list_file=[%s] gvcf_files=[%s] out_path=[%s] java_mem=[%s] cores=[%s] **kwargs=[%s]" % (ref_file, interval_list_file, ' '.join(gvcf_files), out_path, java_mem, cores, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call GATK GenotypeGVCFs
     gatk_args = [
             "-T", "GenotypeGVCFs",
