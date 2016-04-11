@@ -90,7 +90,9 @@ def main():
     out_file = out_file.replace(".bcf", "._cf")
 
     # CombineGVCFs!
-    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_gatk_args=intervals)
+    extra_args = intervals
+    extra_args.extend(["--breakBandsAtMultiplesOf", "1000000"])
+    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_gatk_args=extra_args)
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
