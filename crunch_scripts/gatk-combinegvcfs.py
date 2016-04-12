@@ -48,7 +48,8 @@ def main():
     # Phase II: Read interval_list and split into additional intervals
     ################################################################################
     hgi_arvados.one_task_per_interval(interval_count, validate_task_output,
-                                      reuse_tasks=False,
+                                      reuse_tasks=True,
+                                      oldest_git_commit_to_reuse="064a0e90ab8fe3c8d9cff7b09ac136a99e813f0b",
                                       if_sequence=1, and_end_task=True)
 
     # We will never reach this point if we are in the 1st task sequence
