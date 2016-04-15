@@ -93,7 +93,8 @@ def genotype_gvcfs(ref_file, interval_list_file, gvcf_files, out_path, **kwargs)
             "-T", "GenotypeGVCFs",
             "--no_cmdline_in_header",
             "-R", ref_file,
-            "--max_alternate_alleles", "4",
+            "-L", interval_list_file,
+            "--max_alternate_alleles", "6",
             "--annotateNDA",
             "-nt", cores]
     for gvcf_file in gvcf_files:
