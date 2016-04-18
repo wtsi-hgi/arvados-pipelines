@@ -37,24 +37,6 @@ RUN \
   chmod 0440 /etc/sudoers.d/crunch && \
   install --directory --owner=crunch --group=arvados --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job 
 
-# Install experimental bcftools (with gVCF support) and htsfile from source
-RUN \
-  apt-get -q=2 update && \
-  apt-get -q=2 -y --no-install-recommends install build-essential git zlib1g-dev && \
-  cd /tmp && \
-  git clone --branch=exp/gvcf --recursive git://github.com/pd3/bcftools.git && \
-  cd bcftools && \
-  make && \
-  cp bcftools /usr/local/bin/bcftools-gvcf && \
-  cd htslib && \
-  make && \
-  cd && \
-  rm -rf /tmp/bcftools && \
-  apt-get -q=2 -y purge build-essential zlib1g-dev && \
-  apt-get -q=2 -y autoremove && \
-  apt-get -q=2 -y clean && \
-  rm -rf /var/lib/apt/lists/*
-
 # Install htslib + samtools 1.3 + bcftools 1.3 from source
 RUN \
   apt-get -q=2 update && \
