@@ -35,7 +35,7 @@ def main():
         # get candidates for task reuse
         task_key_params=['inputs', 'ref', 'name'] # N.B. inputs collection includes input vcfs and corresponding interval_list
         script="gatk-genotypegvcfs.py"
-        oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2'
+        oldest_git_commit_to_reuse='65de5b763a4bce925405495ae966e9e537569455'
         job_filters = [
             ['script', '=', script],
             ['repository', '=', arvados.current_job()['repository']],
