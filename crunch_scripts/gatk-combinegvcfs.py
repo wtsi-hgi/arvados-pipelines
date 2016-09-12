@@ -49,7 +49,7 @@ def main():
     ################################################################################
     hgi_arvados.one_task_per_interval(interval_count, validate_task_output,
                                       reuse_tasks=True,
-                                      oldest_git_commit_to_reuse="064a0e90ab8fe3c8d9cff7b09ac136a99e813f0b",
+                                      oldest_git_commit_to_reuse="1f6e1e0b8bb12c573dd253d7900ef55305d55aa1",
                                       if_sequence=1, and_end_task=True)
 
     # We will never reach this point if we are in the 1st task sequence
