@@ -74,6 +74,8 @@ def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs
         "-R", ref_file,
         "-I", cram_file,
         "-L", interval_list_file,
+        "-A", "StrandAlleleCountsBySample",
+        "-A", "StrandBiasBySample",
         "-nct", "4",
         "--emitRefConfidence", "GVCF",
         "--variant_index_type", "LINEAR",
