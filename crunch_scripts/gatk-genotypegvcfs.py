@@ -86,7 +86,7 @@ def main():
     out_file = out_file.replace(".bcf", "._cf")
 
     # GenotypeGVCFs!
-    gatk_exit = gatk.genotype_gvcfs(ref_file, interval_list_file, gvcf_files, os.path.join(out_dir, out_file), cores="4", java_mem="16g")
+    gatk_exit = gatk.genotype_gvcfs(ref_file, interval_list_file, gvcf_files, os.path.join(out_dir, out_file), cores="4", java_mem="19g")
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
