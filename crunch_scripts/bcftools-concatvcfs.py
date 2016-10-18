@@ -6,7 +6,7 @@ import re
 import subprocess
 
 import hgi_arvados
-from hgi_arvados import gatk
+from hgi_arvados import bcftools
 from hgi_arvados import gatk_helper
 from hgi_arvados import errors
 from hgi_arvados import validators
@@ -19,6 +19,9 @@ def validate_task_output(output_locator):
     return validators.validate_compressed_indexed_vcf_collection(output_locator)
 
 def main():
+    # Get object representing the current task
+    this_task = arvados.current_task()
+
     ################################################################################
     # Concatentate VCFs in numerically sorted order of sort_by_regex
     ################################################################################
