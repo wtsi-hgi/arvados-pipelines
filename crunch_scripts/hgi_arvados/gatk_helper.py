@@ -105,8 +105,10 @@ def mount_gatk_cram_input(input_param="input"):
 def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Get input gVCFs for this task
     print "Mounting task input collection"
-    inputs_dir = arvados.get_task_param_mount(inputs_param)
-    if inputs_dir == "":
+    inputs_dir = ""
+    if 'TASK_UUID' in os.environ:
+        inputs_dir = arvados.get_task_param_mount(inputs_param)
+    else:
         inputs_dir = arvados.get_job_param_mount(inputs_param)
 
     # Sanity check input gVCFs
