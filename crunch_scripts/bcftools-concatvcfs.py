@@ -31,7 +31,7 @@ def main():
     out_file = output_prefix + ".vcf.gz"
 
     # Concatenate VCFs
-    bcftools_exit = bcftools.concat(ref_file, vcf_files, os.path.join(out_dir, out_file))
+    bcftools_exit = bcftools.concat(vcf_files, os.path.join(out_dir, out_file))
 
     if bcftools_exit != 0:
         print "WARNING: bcftools exited with exit code %s (NOT WRITING OUTPUT)" % bcftools_exit
