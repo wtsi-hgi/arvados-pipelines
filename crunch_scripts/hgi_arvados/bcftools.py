@@ -29,7 +29,7 @@ def _execute(bcftools_args, **kwargs):
 
 
 def concat(vcf_files, out_path, **kwargs):
-    print "bcftools concat called with vcf_files=[%s] out_path=[%s] **kwargs=[%s]" % (' '.join(gvcf_files), out_path, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
+    print "bcftools concat called with vcf_files=[%s] out_path=[%s] **kwargs=[%s]" % (' '.join(vcf_files), out_path, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call bcftools concat
     bcftools_args = [
             "bcftools", "concat",
