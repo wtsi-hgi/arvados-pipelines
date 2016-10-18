@@ -36,5 +36,5 @@ def concat(vcf_files, out_path, **kwargs):
             "-Oz",
             "-o", out_path,
     ]
-    bcftools_args.extend([vcf_files])
+    bcftools_args.extend(vcf_files)
     return _execute(bcftools_args, **kwargs)
