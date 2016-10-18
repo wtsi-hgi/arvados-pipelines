@@ -106,7 +106,7 @@ def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Get input gVCFs for this task
     print "Mounting task input collection"
     inputs_dir = ""
-    if 'TASK_UUID' in os.environ:
+    if inputs_param in arvados.current_task():
         inputs_dir = arvados.get_task_param_mount(inputs_param)
     else:
         inputs_dir = arvados.get_job_param_mount(inputs_param)
