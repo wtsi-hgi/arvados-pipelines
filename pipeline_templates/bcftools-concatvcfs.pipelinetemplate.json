@@ -6,7 +6,7 @@
    "script_version":"master",
    "repository":"jr17/hgi",
    "script_parameters":{
-    "inputs_collection":{
+    "inputs":{
      "required":true,
      "dataclass":"Collection"
     }
