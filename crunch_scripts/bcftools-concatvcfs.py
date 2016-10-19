@@ -33,7 +33,7 @@ def main():
     out_file = output_prefix + ".vcf.gz"
 
     # Concatenate VCFs
-    bcftools_exit = bcftools.concat(sorted(vcf_files, key=lambda fn: int(re.search(group_by_r, f.name()).group('sort_by'))),
+    bcftools_exit = bcftools.concat(sorted(vcf_files, key=lambda fn: int(re.search(sort_by_r, f.name()).group('sort_by'))),
                                     os.path.join(out_dir, out_file))
 
     if bcftools_exit != 0:
