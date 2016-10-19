@@ -12,7 +12,7 @@ from hgi_arvados import errors
 from hgi_arvados import validators
 
 # TODO: make sort_by_regex a parameter
-sort_by_regex = '(?P<sort_by>[0-9]+_of_[0-9]+)[^0-9]'
+sort_by_regex = '(?P<sort_by>[0-9]+)_of_[0-9]+[^0-9]'
 
 def validate_task_output(output_locator):
     print "Validating task output %s" % (output_locator)
@@ -21,6 +21,8 @@ def validate_task_output(output_locator):
 def main():
     # Get object representing the current task
     this_task = arvados.current_task()
+
+    sort_by_r = re.compile(sort_by_regex)
 
     ################################################################################
     # Concatentate VCFs in numerically sorted order of sort_by_regex
@@ -31,7 +33,8 @@ def main():
     out_file = output_prefix + ".vcf.gz"
 
     # Concatenate VCFs
-    bcftools_exit = bcftools.concat(vcf_files, os.path.join(out_dir, out_file))
+    bcftools_exit = bcftools.concat(sorted(vcf_files, key=lambda fn: int(re.search(group_by_r, f.name()).group('sort_by'))),
+                                    os.path.join(out_dir, out_file))
 
     if bcftools_exit != 0:
         print "WARNING: bcftools exited with exit code %s (NOT WRITING OUTPUT)" % bcftools_exit
