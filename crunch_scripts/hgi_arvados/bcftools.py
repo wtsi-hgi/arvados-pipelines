@@ -38,3 +38,12 @@ def concat(vcf_files, out_path, **kwargs):
     ]
     bcftools_args.extend(vcf_files)
     return _execute(bcftools_args, **kwargs)
+
+def index(vcf_file, **kwargs):
+    print "bcftools index called with vcf_file=[%s] **kwargs=[%s]" % (vcf_file, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
+    # Call bcftools index
+    bcftools_args = [
+        "bcftools", "index",
+        vcf_file
+    ]
+    return _execute(bcftools_args, **kwargs)

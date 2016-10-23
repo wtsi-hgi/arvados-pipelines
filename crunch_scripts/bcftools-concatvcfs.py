@@ -33,35 +33,46 @@ def main():
     out_file = output_prefix + ".vcf.gz"
 
     # Concatenate VCFs
-    bcftools_exit = bcftools.concat(sorted(vcf_files, key=lambda fn: int(re.search(sort_by_r, fn).group('sort_by'))),
+    bcftools_concat_exit = bcftools.concat(sorted(vcf_files, key=lambda fn: int(re.search(sort_by_r, fn).group('sort_by'))),
                                     os.path.join(out_dir, out_file))
 
-    if bcftools_exit != 0:
-        print "WARNING: bcftools exited with exit code %s (NOT WRITING OUTPUT)" % bcftools_exit
+    if bcftools_concat_exit != 0:
+        print "WARNING: bcftools concat exited with exit code %s (NOT WRITING OUTPUT)" % bcftools_concat_exit
         arvados.api().job_tasks().update(uuid=this_task['uuid'],
                                          body={'success':False}
                                          ).execute()
     else:
-        print "bcftools exited successfully, writing output to keep"
+        print "bcftools concat exited successfully, indexing"
 
-        # Write a new collection as output
-        out = arvados.CollectionWriter()
+        bcftools_index_exit = bcftools.index(os.path.join(out_dir, out_file))
 
-        # Write out_dir to keep
-        out.write_directory_tree(out_dir)
-
-        # Commit the output to Keep.
-        output_locator = out.finish()
-
-        if validate_task_output(output_locator):
-            print "Task output validated, setting output to %s" % (output_locator)
-
-            # Use the resulting locator as the output for this task.
-            this_task.set_output(output_locator)
-        else:
-            print "ERROR: Failed to validate task output (%s)" % (output_locator)
+        if bcftools_index_exit != 0:
+            print "WARNING: bcftools index exited with exit code %s (NOT WRITING OUTPUT)" % bcftools_index_exit
             arvados.api().job_tasks().update(uuid=this_task['uuid'],
                                              body={'success':False}
+                                         ).execute()
+        else:
+            print "bcftools index exited successfully, writing output to keep"
+
+
+            # Write a new collection as output
+            out = arvados.CollectionWriter()
+
+            # Write out_dir to keep
+            out.write_directory_tree(out_dir)
+
+            # Commit the output to Keep.
+            output_locator = out.finish()
+
+            if validate_task_output(output_locator):
+                print "Task output validated, setting output to %s" % (output_locator)
+
+                # Use the resulting locator as the output for this task.
+                this_task.set_output(output_locator)
+            else:
+                print "ERROR: Failed to validate task output (%s)" % (output_locator)
+                arvados.api().job_tasks().update(uuid=this_task['uuid'],
+                                                 body={'success':False}
                                              ).execute()
 
     # Done!
