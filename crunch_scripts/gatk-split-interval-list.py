@@ -67,13 +67,13 @@ def create_interval_lists(genome_chunks, interval_list_coll):
     targets = []
     total_len = 0
     # consume header
-    for h in interval_list_lines:
+    while len(interval_list_lines) > 0:
+        h = interval_list_lines.pop(0)
         if re.search(r'^[@]', h) is None:
             print "Finished with header"
             interval_list_lines.insert(0, h)
             break
         else:
-            print "Adding header [%s]" % h
             interval_header += h
     # process interval lines
     for interval_line in interval_list_lines:
