@@ -139,6 +139,7 @@ def create_interval_lists(genome_chunks, interval_list_coll):
             print "Chunk intervals file %s saved." % (chunk_input_name)
         else:
             print "WARNING: skipping empty intervals for %s" % chunk_input_name
+    print "Finished, writing output collection!"
     chunk_input_pdh = chunks_c.finish()
     print "Chunk intervals collection saved as: %s" % (chunk_input_pdh)
     return chunk_input_pdh
