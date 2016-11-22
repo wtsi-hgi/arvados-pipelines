@@ -71,10 +71,10 @@ def create_interval_lists(genome_chunks, interval_list_coll):
         if re.search(r'^@', h) is None:
             break
         else:
-            interval_header += sq
+            interval_header += h
     # process interval lines
     for interval_line in interval_list_lines:
-        sn, start, stop, plus, target = sq.split("\t")
+        sn, start, stop, plus, target = interval_line.split("\t")
         ln = stop - start + 1
         target_intervals[target] = (sn, start, stop)
         targets.append(target)
