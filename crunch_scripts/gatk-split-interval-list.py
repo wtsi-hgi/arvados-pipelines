@@ -23,20 +23,20 @@ def prepare_gatk_interval_list_collection(interval_list_coll):
     files and only the required files for GATK. 
     Returns: a portable data hash for the interval_list collection
     """
-    # Ensure we have a .fa interval_list file with corresponding .fai index and .dict
+    # Ensure we have a .fa interval_list file with corresponding .fai index and .interval_list
     # see: http://gatkforums.broadinstitute.org/discussion/1601/how-can-i-prepare-a-fasta-file-to-use-as-interval_list
     ilcr = arvados.CollectionReader(interval_list_coll)
-    ref_dict = {}
+    interval_list = {}
     for ils in ilcr.all_streams():
         for ilf in ils.all_files():
-            if re.search(r'\.dict$', ilf.name()):
-                ref_dict[ils.name(), ilf.name()] = ilf
-    if len(ref_dict) < 1:
+            if re.search(r'\.interval_list$', ilf.name()):
+                interval_list[ils.name(), ilf.name()] = ilf
+    if len(interval_list) < 1:
         raise InvalidArgumentError("Expected an interval_list dict in interval_list_collection, but found none. Found [%s]" % ' '.join(ilf.name() for ilf in ils.all_files()))
-    if len(ref_dict) > 1:
+    if len(interval_list) > 1:
         raise InvalidArgumentError("Expected a single interval_list dict in interval_list_collection, but found multuple. Found [%s]" % ' '.join(ilf.name() for ilf in ils.all_files()))
-    for ((s_name, f_name), dict_f) in ref_dict.items():
-            ref_input = dict_f.as_manifest()
+    for ((s_name, f_name), interval_list_f) in interval_list.items():
+            ref_input = interval_list_f.as_manifest()
             break
     # Create and return a portable data hash for the ref_input manifest
     try:
@@ -48,32 +48,32 @@ def prepare_gatk_interval_list_collection(interval_list_coll):
 
 def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
     rcr = arvados.CollectionReader(interval_list_coll)
-    ref_dict = []
-    dict_reader = None
+    interval_list = []
+    interval_list_reader = None
     for rs in rcr.all_streams():
         for rf in rs.all_files():
-            if re.search(r'\.dict$', rf.name()):
-                ref_dict.append(rf)
-    if len(ref_dict) < 1:
-        raise InvalidArgumentError("Interval_List collection does not contain any .dict files but one is required.")
-    if len(ref_dict) > 1:
-        raise InvalidArgumentError("Interval_List collection contains multiple .dict files but only one is allowed.")
-    dict_reader = ref_dict[0]
+            if re.search(r'\.interval_list$', rf.name()):
+                interval_list.append(rf)
+    if len(interval_list) < 1:
+        raise InvalidArgumentError("Interval_List collection does not contain any .interval_list files but one is required.")
+    if len(interval_list) > 1:
+        raise InvalidArgumentError("Interval_List collection contains multiple .interval_list files but only one is allowed.")
+    interval_list_reader = interval_list[0]
 
-    # Load the dict data
+    # Load the interval_list data
     interval_header = ""
-    dict_lines = dict_reader.readlines()
-    dict_header = dict_lines.pop(0)
-    if re.search(r'^@HD', dict_header) is None:
-        raise InvalidArgumentError("Dict file in interval_list collection does not have correct header: [%s]" % dict_header)
-    interval_header += dict_header
-    print "Dict header is %s" % dict_header
+    interval_list_lines = interval_list_reader.readlines()
+    interval_list_header = interval_list_lines.pop(0)
+    if re.search(r'^@HD', interval_list_header) is None:
+        raise InvalidArgumentError("Interval_List file in interval_list collection does not have correct header: [%s]" % interval_list_header)
+    interval_header += interval_list_header
+    print "Interval_List header is %s" % interval_list_header
     sn_intervals = dict()
     sns = []
     total_len = 0
-    for sq in dict_lines:
+    for sq in interval_list_lines:
         if re.search(r'^@SQ', sq) is None:
-            raise InvalidArgumentError("Dict file contains malformed SQ line: [%s]" % sq)
+            raise InvalidArgumentError("Interval_List file contains malformed SQ line: [%s]" % sq)
         interval_header += sq
         sn = None
         ln = None
@@ -86,10 +86,10 @@ def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
             if sn and ln:
                 break
         if not (sn and ln):
-            raise InvalidArgumentError("Dict file SQ entry missing required SN and/or LN parameters: [%s]" % sq)
+            raise InvalidArgumentError("Interval_List file SQ entry missing required SN and/or LN parameters: [%s]" % sq)
         assert(sn and ln)
         if sn_intervals.has_key(sn):
-            raise InvalidArgumentError("Dict file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
+            raise InvalidArgumentError("Interval_List file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
         if skip_sq_sn_r.search(sn):
             next
         sn_intervals[sn] = (1, int(ln))
@@ -108,7 +108,7 @@ def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
         chunk_intervals_count = 0
-        chunk_input_name = dict_reader.name() + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
+        chunk_input_name = interval_list_reader.name() + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
         print "Creating interval file for chunk %s" % chunk_num
         chunks_c.start_new_file(newfilename=chunk_input_name)
         chunks_c.write(interval_header)
@@ -157,7 +157,7 @@ def main():
     # Limit the scope of the interval_list collection to only those files relevant to gatk
     il_input_pdh = prepare_gatk_interval_list_collection(interval_list_coll=current_job['script_parameters']['interval_list_collection'])
 
-    # Create an interval_list file for each chunk based on the .dict in the interval_list collection
+    # Create an interval_list file for each chunk based on the .interval_list in the interval_list collection
     output_locator = create_interval_lists(genome_chunks, il_input_pdh, skip_sq_sn_r)
 
     # Use the resulting locator as the output for this task.
