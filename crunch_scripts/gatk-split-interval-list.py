@@ -82,10 +82,10 @@ def create_interval_lists(genome_chunks, interval_list_coll):
         start = sn_start_stop_plus_target[1]
         stop = sn_start_stop_plus_target[2]
         target = sn_start_stop_plus_target[4]
-        ln = stop - start + 1
-        target_intervals[target] = (sn, start, stop)
+        ln = int(stop) - int(start) + 1
+        target_intervals[target] = (sn, int(start), int(stop))
         targets.append(target)
-        total_len += int(ln)
+        total_len += ln
     total_targets = len(targets)
 
     # Chunk the genome into genome_chunks equally sized pieces and create intervals files
