@@ -69,12 +69,19 @@ def create_interval_lists(genome_chunks, interval_list_coll):
     # consume header
     for h in interval_list_lines:
         if re.search(r'^@', h) is None:
+            interval_list_lines.insert(0, h)
             break
         else:
             interval_header += h
     # process interval lines
     for interval_line in interval_list_lines:
-        sn, start, stop, plus, target = interval_line.split("\t")
+        sn_start_stop_plus_target = interval_line.split("\t")
+        if len(sn_start_stop_plus_target) != 5:
+            raise InvalidArgumentError("interval_List file had line with unexpected number of columns: [%s]" % interval_line)
+        sn = sn_start_stop_plus_target[0]
+        start = sn_start_stop_plus_target[1]
+        stop = sn_start_stop_plus_target[2]
+        target = sn_start_stop_plus_target[4]
         ln = stop - start + 1
         target_intervals[target] = (sn, start, stop)
         targets.append(target)
