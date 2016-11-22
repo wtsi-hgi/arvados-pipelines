@@ -125,7 +125,7 @@ def create_interval_lists(genome_chunks, interval_list_coll):
                 target_intervals[target] = (sn, end+1, real_end)
                 # put target back on the list
                 targets.insert(0, target)
-            interval = "%s\t%s\t%s\t+\t%s" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, target))
+            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, target))
             remaining_points -= (end-start+1)
             chunks_c.write(interval)
             chunk_intervals_count += 1
