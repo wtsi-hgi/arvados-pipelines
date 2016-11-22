@@ -74,11 +74,7 @@ def create_interval_lists(genome_chunks, interval_list_coll):
             interval_header += sq
     # process interval lines
     for interval_line in interval_list_lines:
-        sn_start_stop_plus_target = sq.split("\t"):
-        sn = sn_start_stop_plus_target[0]
-        start = sn_start_stop_plus_target[1]
-        stop = sn_start_stop_plus_target[2]
-        target = sn_start_stop_plus_target[4]
+        sn, start, stop, plus, target = sq.split("\t")
         ln = stop - start + 1
         target_intervals[target] = (sn, start, stop)
         targets.append(target)
