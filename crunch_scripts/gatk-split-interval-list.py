@@ -46,7 +46,7 @@ def prepare_gatk_interval_list_collection(interval_list_coll):
         raise 
     return ref_input_pdh
 
-def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
+def create_interval_lists(genome_chunks, interval_list_coll):
     rcr = arvados.CollectionReader(interval_list_coll)
     interval_list = []
     interval_list_reader = None
@@ -63,39 +63,32 @@ def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
     # Load the interval_list data
     interval_header = ""
     interval_list_lines = interval_list_reader.readlines()
-    sn_intervals = dict()
-    sns = []
+    target_intervals = dict()
+    targets = []
     total_len = 0
-    for sq in interval_list_lines:
-        if re.search(r'^@SQ', sq) is None:
-            raise InvalidArgumentError("Interval_List file contains malformed SQ line: [%s]" % sq)
-        interval_header += sq
-        sn = None
-        ln = None
-        for tagval in sq.split("\t"):
-            tv = tagval.split(":", 1)
-            if tv[0] == "SN":
-                sn = tv[1]
-            if tv[0] == "LN":
-                ln = tv[1]
-            if sn and ln:
-                break
-        if not (sn and ln):
-            raise InvalidArgumentError("Interval_List file SQ entry missing required SN and/or LN parameters: [%s]" % sq)
-        assert(sn and ln)
-        if sn_intervals.has_key(sn):
-            raise InvalidArgumentError("Interval_List file has duplicate SQ entry for SN %s: [%s]" % (sn, sq))
-        if skip_sq_sn_r.search(sn):
-            next
-        sn_intervals[sn] = (1, int(ln))
-        sns.append(sn)
+    # consume header
+    for h in interval_list_lines:
+        if re.search(r'^@', h) is None:
+            break
+        else:
+            interval_header += sq
+    # process interval lines
+    for interval_line in interval_list_lines:
+        sn_start_stop_plus_target = sq.split("\t"):
+        sn = sn_start_stop_plus_target[0]
+        start = sn_start_stop_plus_target[1]
+        stop = sn_start_stop_plus_target[2]
+        target = sn_start_stop_plus_target[4]
+        ln = stop - start + 1
+        target_intervals[target] = (sn, start, stop)
+        targets.append(target)
         total_len += int(ln)
-    total_sequences = len(sns)
+    total_targets = len(targets)
 
     # Chunk the genome into genome_chunks equally sized pieces and create intervals files
-    print "Total sequences included: %s" % (total_sequences)
+    print "Total targets included: %s" % (total_targets)
     print "Total genome length is %s" % total_len
-    total_points = total_len + (total_sequences * weight_seq)
+    total_points = total_len + (total_targets * weight_seq)
     print "Total points to split: %s" % (total_points)
     chunk_points = int(total_points / genome_chunks)
     chunks_c = arvados.collection.CollectionWriter(num_retries=3)
@@ -108,23 +101,25 @@ def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
         chunks_c.start_new_file(newfilename=chunk_input_name)
         chunks_c.write(interval_header)
         remaining_points = chunk_points
-        while len(sns) > 0:
-            sn = sns.pop(0)
+        while len(targets) > 0:
+            target = targets.pop(0)
             remaining_points -= weight_seq
             if remaining_points <= 0:
-                sns.insert(0, sn)
+                # no space for this target, put it back on the list and close this file
+                targets.insert(0, target)
                 break
-            if not sn_intervals.has_key(sn):
-                raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
-            start, end = sn_intervals[sn]
+            if not target_intervals.has_key(target):
+                raise ValueError("target_intervals missing entry for target [%s]" % target)
+            sn, start, end = target_intervals[target]
             if (end-start+1) > remaining_points:
                 # not enough space for the whole sq, split it
                 real_end = end
                 end = remaining_points + start - 1
                 assert((end-start+1) <= remaining_points)
-                sn_intervals[sn] = (end+1, real_end)
-                sns.insert(0, sn)
-            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
+                target_intervals[target] = (sn, end+1, real_end)
+                # put target back on the list
+                targets.insert(0, target)
+            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, target))
             remaining_points -= (end-start+1)
             chunks_c.write(interval)
             chunk_intervals_count += 1
@@ -140,10 +135,6 @@ def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
 
 def main():
     current_job = arvados.current_job()
-    skip_sq_sn_regex = '_decoy$'
-    if 'skip_sq_sn_regex' in current_job['script_parameters']:
-        skip_sq_sn_regex = current_job['script_parameters']['skip_sq_sn_regex']
-    skip_sq_sn_r = re.compile(skip_sq_sn_regex)
 
     genome_chunks = int(current_job['script_parameters']['genome_chunks'])
     if genome_chunks < 1:
@@ -153,7 +144,7 @@ def main():
     il_input_pdh = prepare_gatk_interval_list_collection(interval_list_coll=current_job['script_parameters']['interval_list_collection'])
 
     # Create an interval_list file for each chunk based on the .interval_list in the interval_list collection
-    output_locator = create_interval_lists(genome_chunks, il_input_pdh, skip_sq_sn_r)
+    output_locator = create_interval_lists(genome_chunks, il_input_pdh)
 
     # Use the resulting locator as the output for this task.
     arvados.current_task().set_output(output_locator)
