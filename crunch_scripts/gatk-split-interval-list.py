@@ -63,11 +63,6 @@ def create_interval_lists(genome_chunks, interval_list_coll, skip_sq_sn_r):
     # Load the interval_list data
     interval_header = ""
     interval_list_lines = interval_list_reader.readlines()
-    interval_list_header = interval_list_lines.pop(0)
-    if re.search(r'^@HD', interval_list_header) is None:
-        raise InvalidArgumentError("Interval_List file in interval_list collection does not have correct header: [%s]" % interval_list_header)
-    interval_header += interval_list_header
-    print "Interval_List header is %s" % interval_list_header
     sn_intervals = dict()
     sns = []
     total_len = 0
