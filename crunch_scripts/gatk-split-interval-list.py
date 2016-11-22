@@ -109,8 +109,10 @@ def create_interval_lists(genome_chunks, interval_list_coll):
         remaining_points = chunk_points
         while len(targets) > 0:
             target = targets.pop(0)
-            remaining_points -= weight_seq
-            if remaining_points <= 0 and chunk_num != genome_chunks:
+            if chunk_num != genome_chunks:
+                # don't enforce points on the last chunk
+                remaining_points -= weight_seq
+            if remaining_points <= 0:
                 # no space for this target, put it back on the list and close this file unless it is the last chunk
                 targets.insert(0, target)
                 break
@@ -126,10 +128,12 @@ def create_interval_lists(genome_chunks, interval_list_coll):
                 # put target back on the list
                 targets.insert(0, target)
             interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, target))
-            remaining_points -= (end-start+1)
+            if chunk_num != genome_chunks:
+                # don't enforce points on the last chunk
+                remaining_points -= (end-start+1)
             chunks_c.write(interval)
             chunk_intervals_count += 1
-            if remaining_points <= 0 and chunk_num != genome_chunks:
+            if remaining_points <= 0:
                 break
         if chunk_intervals_count > 0:
             print "Chunk intervals file %s saved." % (chunk_input_name)
