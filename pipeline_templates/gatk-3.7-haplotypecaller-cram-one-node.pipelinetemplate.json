@@ -1,0 +1,31 @@
+{
+ "name":"GATK 3.7 HaplotypeCaller (CRAM to GVCF) single node",
+ "components":{
+  "gatk-haplotypecaller-cram-gvcf":{
+   "script":"gatk-haplotypecaller-cram.py",
+   "script_version":"master",
+   "repository":"jr17/hgi",
+   "script_parameters":{
+    "reference_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    },
+    "inputs_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    },
+    "interval_lists_collection":{
+     "required":true,
+     "dataclass":"Collection"
+    }
+   },
+   "runtime_constraints":{
+    "docker_image":"mercury/gatk-3.7",
+    "min_nodes":1,
+    "max_tasks_per_node":10,
+    "keep_cache_mb_per_task":1280
+   }
+  }
+ },
+ "description":"GATK 3.7 HaplotypeCaller (CRAM to gVCF) on a single node"
+}
