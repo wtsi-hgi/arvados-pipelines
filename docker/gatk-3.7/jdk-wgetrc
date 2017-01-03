@@ -1,0 +1,6 @@
+noclobber = off
+dir_prefix = .
+dirstruct = off
+verbose = on
+progress = dot:mega
+tries = 2
