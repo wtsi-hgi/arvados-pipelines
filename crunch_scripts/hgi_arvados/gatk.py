@@ -65,7 +65,7 @@ def combine_gvcfs(ref_file, gvcf_files, out_path, **kwargs):
 
 
 def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs):
-    java_mem = kwargs.pop("java_mem", "10g")
+    java_mem = kwargs.pop("java_mem", "8.5g")
     print "haplotype_caller called with ref_file=[%s] cram_file=[%s] interval_list_file=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, cram_file, interval_list_file, out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call GATK HaplotypeCaller
     gatk_args = [
