@@ -84,7 +84,7 @@ def create_interval_lists(genome_chunks, interval_list_coll):
         sn = sn_start_stop_plus_target[0]
         start = sn_start_stop_plus_target[1]
         stop = sn_start_stop_plus_target[2]
-        target = "%s (%s:%s-%s)" % (sn_start_stop_plus_target[4].rstrip('\n'), sn, start, stop)
+        target = "%s_%s_%s_%s" % (sn_start_stop_plus_target[4].rstrip('\n').replace(' ','_'), sn, start, stop)
         ln = int(stop) - int(start) + 1
         target_intervals[target] = (sn, int(start), int(stop))
         targets.append(target)
