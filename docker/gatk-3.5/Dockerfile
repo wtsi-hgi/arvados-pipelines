@@ -99,8 +99,8 @@ RUN \
 RUN \ 
   mkdir /jsonfiles && \
   cd /jsonfiles && \
-  wget -O CommandLineGATK https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json && \
-  wget -O HaplotypeCaller https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json
+  wget -O CommandLineGATK.json https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json && \
+  wget -O HaplotypeCaller.json https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json
  
 # Switch to crunch user and change to crunch-job work dir
 USER crunch
