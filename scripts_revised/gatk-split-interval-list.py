@@ -118,17 +118,19 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
     # os.makedirs(directory)
 
     directory = os.path.join(todir, 'split_interval_list')
-    chunks_c = os.chdir(directory)
+    os.makedirs(directory)
 
     print "Chunking genome into %s chunks of ~%s points" % (genome_chunks, chunk_points)
     for chunk_i in range(0, genome_chunks):
         chunk_num = chunk_i + 1
         chunk_intervals_count = 0
-        chunk_input_name = interval_list_reader.name + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
+        chunk_input_name = os.path.basename(interval_list_reader.name) + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
         print "Creating interval file for chunk %s" % chunk_num
 
         # chunks_c.start_new_file(newfilename=chunk_input_name)
         # chunks_c.write(interval_header)
+
+        os.chdir(directory)
 
         f = open(chunk_input_name, 'w+')
         f.write(interval_header)
