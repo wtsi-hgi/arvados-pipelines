@@ -93,6 +93,15 @@ RUN \
   rm -rf /tmp/apache-maven-3.3.9 && \
   rm -rf /tmp/gatk-protected
 
+# Download GATK tool documentation as json
+# To access the documentation from outside use the following command:
+# docker cp CONTAINER:SRC_PATH DEST_PATH
+RUN \ 
+  mkdir /jsonfiles && \
+  cd /jsonfiles && \
+  wget -O CommandLineGATK.json https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json && \
+  wget -O HaplotypeCaller.json https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json
+ 
 # Switch to crunch user and change to crunch-job work dir
 USER crunch
 WORKDIR /tmp/crunch-job
