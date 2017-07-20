@@ -1,0 +1,14 @@
+#python_script: /path/to/python/file
+python_script: /home/yejinyou/arvados-pipelines/scripts_revised/split_interval_list/gatk-split-interval-list.py
+#number_of_intervals: integer
+number_of_intervals: 50
+interval_list:
+  class: File
+  #path: /path/to/txt
+  path: chr22.interval_list
+#output_directory: /path/to/desired/output/directory
+output_directory: /home/yejinyou/arvados-pipelines/scripts_revised/split_interval_list
+
+
+
+
