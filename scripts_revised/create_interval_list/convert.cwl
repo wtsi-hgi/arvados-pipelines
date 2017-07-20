@@ -6,7 +6,7 @@ inputs:
   type: string
   inputBinding:
     position: 1
-- id: intervals
+- id: genome_chunks 
   type: int
   inputBinding:
     position: 2
