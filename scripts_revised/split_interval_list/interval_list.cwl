@@ -21,6 +21,6 @@ inputs:
 outputs: []
 
 
-#arguments:
-#  shellQuote: false
-#  valueFrom: [$(inputs.genome_chunks), $(inputs.inp), $(inputs.path)]
+arguments:
+  shellQuote: false
+  valueFrom: [$(inputs.genome_chunks), $(inputs.inp), $(inputs.path)]
