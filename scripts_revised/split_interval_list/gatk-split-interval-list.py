@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os           # Import the os module for basic path manipulation
-# import arvados      # Import the Arvados sdk module
 import re
 import subprocess
 import sys
@@ -18,56 +17,7 @@ class FileAccessError(Exception):
 class APIError(Exception):
     pass
 
-# def prepare_gatk_interval_list_collection(interval_list_coll):
-#     """
-#     Checks that the supplied interval_list_collection has the required
-#     files and only the required files for GATK.
-#     Returns: a portable data hash for the interval_list collection
-#     """
-#     # Ensure we have a .fa interval_list file with corresponding .fai index and .interval_list
-#     # see: http://gatkforums.broadinstitute.org/discussion/1601/how-can-i-prepare-a-fasta-file-to-use-as-interval_list
-
-#     # ilcr = arvados.CollectionReader(interval_list_coll)
-#     # interval_list = {}
-
-#     ilcr = open(interval_list_coll)
-
-#     for ils in ilcr.all_streams():
-#         for ilf in ils.all_files():
-#             if re.search(r'\.interval_list$', ilf.name()):
-#                 interval_list[ils.name(), ilf.name()] = ilf
-#     if len(interval_list) < 1:
-#         raise InvalidArgumentError("Expected an interval_list dict in interval_list_collection, but found none. Found [%s]" % ' '.join(ilf.name() for ilf in ils.all_files()))
-#     if len(interval_list) > 1:
-#         raise InvalidArgumentError("Expected a single interval_list dict in interval_list_collection, but found multuple. Found [%s]" % ' '.join(ilf.name() for ilf in ils.all_files()))
-#     for ((s_name, f_name), interval_list_f) in interval_list.items():
-#             ref_input = interval_list_f.as_manifest()
-#             break
-#     # Create and return a portable data hash for the ref_input manifest
-#     try:
-#         r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
-#         ref_input_pdh = r["portable_data_hash"]
-#     except:
-#         raise
-#     return ref_input_pdh
-
 def create_interval_lists(genome_chunks, interval_list_coll, todir):
-    # rcr = arvados.CollectionReader(interval_list_coll)
-
-    # rcr = open(interval_list_coll)
-    
-    
-    # interval_list = []
-    # interval_list_reader = None
-    # for rs in rcr.all_streams():
-    #     for rf in rs.all_files():
-    #         if re.search(r'\.interval_list$', rf.name()):
-    #             interval_list.append(rf)
-    # if len(interval_list) < 1:
-    #     raise InvalidArgumentError("Interval_List collection does not contain any .interval_list files but one is required.")
-    # if len(interval_list) > 1:
-    #     raise InvalidArgumentError("Interval_List collection contains multiple .interval_list files but only one is allowed.")
-    # interval_list_reader = interval_list[0]
 
     # Load the interval_list data
 
@@ -110,12 +60,6 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
     print "Total points to split: %s" % (total_points)
     chunk_points = int(total_points / genome_chunks)
 
-    
-    # chunks_c = arvados.collection.CollectionWriter(num_retries=3)
-
-    # cwd = os.getcwd()
-    # directory = os.path.join(cwd, 'split_interval_list')
-    # os.makedirs(directory)
 
     directory = os.path.join(todir, 'split_interval_list')
     os.makedirs(directory)
@@ -126,9 +70,6 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
         chunk_intervals_count = 0
         chunk_input_name = os.path.basename(interval_list_reader.name) + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
         print "Creating interval file for chunk %s" % chunk_num
-
-        # chunks_c.start_new_file(newfilename=chunk_input_name)
-        # chunks_c.write(interval_header)
 
         os.chdir(directory)
 
@@ -161,9 +102,6 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
                 # don't enforce points on the last chunk
                 remaining_points -= (end-start+1)
 
-
-            # chunks_c.write(interval)
-
             f.write(interval)
 
             chunk_intervals_count += 1
@@ -177,7 +115,6 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
         f.close()
         
     print "Finished, writing output collection!"
-    # chunk_input_pdh = chunks_c.finish()
 
     chunk_input_pdh = directory
 
@@ -194,26 +131,11 @@ def main():
 
     il_input = open(path_to_ilp, 'r')
     
-    # current_job = arvados.current_job()
-    
-    # genome_chunks = int(current_job['script_parameters']['genome_chunks'])
-
     if genome_chunks < 1:
         raise InvalidArgumentError("genome_chunks must be a positive integer")
-
-    # # Limit the scope of the interval_list collection to only those files relevant to gatk
-    # il_input_pdh = prepare_gatk_interval_list_collection(interval_list_coll=current_job['script_parameters']['interval_list_collection'])
-    
-
     
     # Create an interval_list file for each chunk based on the .interval_list in the interval_list collection
     output_locator = create_interval_lists(genome_chunks, il_input, todir)
-
-    
-    # # Use the resulting locator as the output for this task.
-    # arvados.current_task().set_output(output_locator)
-
-    # Done!
 
 
 if __name__ == '__main__':
