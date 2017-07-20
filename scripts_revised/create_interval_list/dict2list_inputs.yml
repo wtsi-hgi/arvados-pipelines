@@ -1,0 +1,7 @@
+python_script: /home/yejinyou/arvados-pipelines/scripts_revised/create_interval_list/gatk-create-interval-lists.py
+intervals: 200
+dictionary:
+  class: File
+  path: /home/yejinyou/interval_list/wgs-split-dict-200/hs37d5.dict
+directory: /home/yejinyou/arvados-pipelines/scripts_revised/create_interval_list
+                                                                                                                                     
