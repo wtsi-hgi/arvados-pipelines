@@ -61,7 +61,7 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
     chunk_points = int(total_points / genome_chunks)
 
     # create new directory to store the split_interval_lists
-    directory = os.path.join(todir, 'split_interval_list')
+    directory = os.path.join(todir, 'split_intervals')
     os.makedirs(directory)
 
     print "Chunking genome into %s chunks of ~%s points" % (genome_chunks, chunk_points)
@@ -128,10 +128,15 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
 def main():
 
     #parse the arguments from command line
+   
     genome_chunks = int(sys.argv[1])
     path_to_ilp = sys.argv[2]
-    todir = sys.argv[3]
-
+    
+    try: 
+     todir = sys.argv[3]
+    except:
+     todir = os.getcwd()
+  
     #change to working directory
     os.chdir(todir)
 
