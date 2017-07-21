@@ -1,3 +1,5 @@
+## Interval List Scripts
+
 To split intervals run the command
 ```
 cwl-runner split_interval.cwl <interval_list_inputs.yml>
