@@ -18,4 +18,7 @@ inputs:
    type: string
    inputBinding:
      position: 4
+hints:
+  DockerRequirement:
+    dockerPull: interval_list:latest
 outputs: []
