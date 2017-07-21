@@ -67,7 +67,8 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
     chunk_points = int(total_points / genome_chunks)
 
     # create directory to save the created interval lists
-    directory = os.path.join(os.getcwd(), 'create_interval_list')
+    basename = os.path.basename(dict_reader.name)+'.interval_list'
+    directory = os.path.join(os.getcwd(), basename)
     os.makedirs(directory)
     os.chdir(directory)
     
