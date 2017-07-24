@@ -1,13 +1,13 @@
 #python_script: /path/to/python/file
-python_script: /home/yejinyou/arvados-pipelines/scripts_revised/split_interval_list/gatk-split-interval-list.py
+python_script: /home/pkarnati/arvados-pipelines/scripts_revised/split_interval_list/gatk-split-interval-list.py
 #number_of_intervals: integer
 number_of_intervals: 50
 interval_list:
   class: File
   #path: /path/to/txt
-  path: /home/yejinyou/chr22.interval_list
+  path: /home/pkarnati/interval_list/wes-split-interval_list-50/S04380110-CTR.interval_list
 #output_directory: /path/to/desired/output/directory
-output_directory: /home/yejinyou/arvados-pipelines/scripts_revised/split_interval_list
+output_directory: /home/pkarnati/Desktop/interval_list_data
 
 
 

@@ -100,8 +100,9 @@ def create_interval_lists(genome_chunks, interval_list_coll, todir):
                 target_intervals[target] = (sn, end+1, real_end)
                 # put target back on the list
                 targets.insert(0, target)
-            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, str(target)[:str(target).index("_")]))    
-            # interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, target))
+            # interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, str(target)[:str(target).index("_")]))
+            
+            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, target))
             if chunk_num != genome_chunks:
                 # don't enforce points on the last chunk
                 remaining_points -= (end-start+1)
