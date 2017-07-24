@@ -19,8 +19,6 @@ inputs:
   inputBinding:
     position: 4
 outputs: []
-#  output:
-#    type: dict
-#    outputBinding:
- #     glob: "*.interval_list"
-
+hints:
+  DockerRequirement:
+    dockerPull: interval_list:latest

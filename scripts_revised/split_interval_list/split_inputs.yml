@@ -1,5 +1,10 @@
 #python_script: /path/to/python/file
+<<<<<<< HEAD
 python_script: /home/pkarnati/arvados-pipelines/scripts_revised/split_interval_list/gatk-split-interval-list.py
+=======
+#python_script: /home/yejinyou/arvados-pipelines/scripts_revised/split_interval_list/gatk-split-interval-list.py
+python_script: gatk-split-interval-list.py
+>>>>>>> c6105e40b408f8d595efd0310347d4134357725d
 #number_of_intervals: integer
 number_of_intervals: 50
 interval_list:
