@@ -93,32 +93,6 @@ RUN \
   rm -rf /tmp/apache-maven-3.3.9 && \
   rm -rf /tmp/gatk-protected
 
-#Install dependencies, homebrew, Node.js
-RUN \
-  apt-get update && \
-  apt-get install -y nodejs npm
-  #apt-get install build-essential curl git m4 ruby texinfo libbz2-dev libcurl4-openssl-dev libexpat-dev libncurses-dev zlib1g-dev && \
- # ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/linuxbrew/go/install)" && \
-#  brew install node && \
-#  apt-get install nodejs && \
- # apt-get install npm 
-
-#Install cwl-runner, cwltools, git directories
-RUN \
-  pip install cwlref-runner && \
-  pip install cwltool && \
-  git clone https://github.com/yejinyou/PY.git
-
-# Download GATK commandlind arguments
-RUN \
-  cd /PY && \
-  #mkdir /jsonfiles && \
-  #cd /jsonfiles && \
-  wget -O CommandLineGATK https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_engine_CommandLineGATK.php.json && \
-  wget -O HaplotypeCaller https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php.json
-#  sudo python docker_json2cwl.py
-
- 
 # Switch to crunch user and change to crunch-job work dir
 USER crunch
 WORKDIR /tmp/crunch-job
