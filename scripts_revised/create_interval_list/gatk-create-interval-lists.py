@@ -18,7 +18,7 @@ class APIError(Exception):
     pass
 
 
-def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
+def create_interval_lists(reference_coll, skip_sq_sn_r):
 
     #load the dict data
     dict_reader = reference_coll
@@ -64,59 +64,48 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
     print "Total genome length is %s" % total_len
     total_points = total_len + (total_sequences * weight_seq)
     print "Total points to split: %s" % (total_points)
-    chunk_points = int(total_points / genome_chunks)
+    # chunk_points = int(total_points / genome_chunks)
 
-    # create directory to save the created interval lists
     basename = os.path.basename(dict_reader.name)+'.interval_list'
     directory = os.path.join(os.getcwd(), basename)
     os.makedirs(directory)
     os.chdir(directory)
-    
-    print "Chunking genome into %s chunks of ~%s points" % (genome_chunks, chunk_points)
-    for chunk_i in range(0, genome_chunks):
-        chunk_num = chunk_i + 1
-        chunk_intervals_count = 0
-        chunk_input_name = os.path.basename(dict_reader.name) + (".%s_of_%s.interval_list" % (chunk_num, genome_chunks))
-        print "Creating interval file for chunk %s" % chunk_num
 
-        # create file with correct name and write to it
-        f = open(chunk_input_name, 'w+')
-        f.write(interval_header)
-        
-        remaining_points = chunk_points
-        while len(sns) > 0:
-            sn = sns.pop(0)
-            remaining_points -= weight_seq
-            if remaining_points <= 0:
-                sns.insert(0, sn)
-                break
-            if not sn_intervals.has_key(sn):
-                raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
-            start, end = sn_intervals[sn]
-            if (end-start+1) > remaining_points:
-                # not enough space for the whole sq, split it
-                real_end = end
-                end = remaining_points + start - 1
-                assert((end-start+1) <= remaining_points)
-                sn_intervals[sn] = (end+1, real_end)
-                sns.insert(0, sn)
-            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, "interval_%s_of_%s_%s" % (chunk_num, genome_chunks, sn))
-            remaining_points -= (end-start+1)
+    inpt_name = os.path.basename(dict_reader.name) + (".interval_list")
+    f = open(inpt_name, 'w+')
+
+    f.write(interval_header)
+
+    
+    remaining_points = total_points
+    chunk_num = 1
+    while len(sns) > 0:
+        chunk_num+=1
+        sn = sns.pop(0)
+        remaining_points -= weight_seq
+        if remaining_points <= 0:
+            sns.insert(0, sn)
+            break
+        if not sn_intervals.has_key(sn):
+            raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
+        start, end = sn_intervals[sn]
+        if (end-start+1) > remaining_points:
+            # not enough space for the whole sq, split it
+            real_end = end
+            end = remaining_points + start - 1
+            assert((end-start+1) <= remaining_points)
+            sn_intervals[sn] = (end+1, real_end)
+            sns.insert(0, sn)
+        interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, sn)
+        remaining_points -= (end-start+1)
 
             #write to the file
-            f.write(interval)
+        f.write(interval)
             
-            chunk_intervals_count += 1
-            if remaining_points <= 0:
-                break
-        if chunk_intervals_count > 0:
-            print "Chunk intervals file %s saved." % (chunk_input_name)
-        else:
-            print "WARNING: skipping empty intervals for %s" % chunk_input_name
-            
+        if remaining_points <= 0:
+            break        
     f.close()
 
-    #print the output directory
     chunk_input_pdh = directory
     print "Chunk intervals collection saved as: %s" % (chunk_input_pdh)
     return chunk_input_pdh
@@ -124,18 +113,14 @@ def create_interval_lists(genome_chunks, reference_coll, skip_sq_sn_r):
 def main():
 
     #parse the arguments from command line
-    genome_chunks = int(sys.argv[1])
-    path_to_dict = sys.argv[2]
-    todir = sys.argv[3]
+    path_to_dict = sys.argv[1]
+    todir = sys.argv[2]
     
     skip_sq_sn_regex = '_decoy$'
     # if 'skip_sq_sn_regex' in current_job['script_parameters']:
     #     skip_sq_sn_regex = current_job['script_parameters']['skip_sq_sn_regex']
     skip_sq_sn_r = re.compile(skip_sq_sn_regex)
     
-    if genome_chunks < 1:
-        raise InvalidArgumentError("genome_chunks must be a positive integer")
-
     # Create an interval_list file for each chunk based on the .dict in the reference collection
 
     #change to working directory
@@ -144,7 +129,7 @@ def main():
     #open dict file
     ref_input_pdh = open(path_to_dict, 'r')
     
-    output_locator = create_interval_lists(genome_chunks, ref_input_pdh, skip_sq_sn_r)
+    output_locator = create_interval_lists(ref_input_pdh, skip_sq_sn_r)
 
     # Done!
 
