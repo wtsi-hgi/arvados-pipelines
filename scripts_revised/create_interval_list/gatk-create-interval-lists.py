@@ -67,11 +67,11 @@ def create_interval_lists(reference_coll, skip_sq_sn_r):
     # chunk_points = int(total_points / genome_chunks)
 
     basename = os.path.basename(dict_reader.name)+'.interval_list'
-    directory = os.path.join(os.getcwd(), basename)
-    os.makedirs(directory)
-    os.chdir(directory)
+    # directory = os.path.join(os.getcwd(), basename)
+    # os.makedirs(directory)
+    # os.chdir(directory)
 
-    inpt_name = os.path.basename(dict_reader.name) + (".interval_list")
+    inpt_name = os.path.basename(dict_reader.name)
     f = open(inpt_name, 'w+')
 
     f.write(interval_header)
