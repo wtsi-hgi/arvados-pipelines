@@ -5,16 +5,10 @@
 cwlVersion: v1.0
 class: Workflow
 inputs:
-  - id: convert_script 
-    type: string
-  - id: split_script
-    type: string
   - id: genome_chunks
     type: int
-  - id: dictionary
+  - id: dict
     type: File
-  - id: list_directory
-    type: string
   - id: split_directory
     type: string
 
@@ -25,14 +19,11 @@ steps:
   - id: convert
     run: convertfirst.cwl
     in:
-      python_script: convert_script
-      dictionary: dictionary
-      directory: list_directory
+      dictionary: dict
     out: [out]
   - id: split
     run: split_interval_first.cwl
     in:
-      python_script: split_script
       number_of_intervals: genome_chunks
       interval_list: convert/out
       output_directory: split_directory
