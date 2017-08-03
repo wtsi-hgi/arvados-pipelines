@@ -2,8 +2,8 @@ cwlVersion: v1.0
 class: CommandLineTool
 baseCommand: python gatk-split-interval-list.py
 hints:
- - DockerRequirement:
-     dockerPull: split: latest
+ DockerRequirement:
+   dockerPull: split:latest
 inputs:
  - id: number_of_intervals
    type: int

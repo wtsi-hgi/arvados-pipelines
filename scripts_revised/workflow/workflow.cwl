@@ -17,7 +17,7 @@ outputs: []
 
 steps:
   - id: convert
-    run: convertfirst.cwl
+    run: convert_first.cwl
     in:
       dictionary: dict
     out: [out]

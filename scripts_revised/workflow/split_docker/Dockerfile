@@ -4,7 +4,7 @@ FROM python:2
 RUN \
 
   # script to split intervals
-    wget https://raw.githubusercontent.com/yejinyou/arvados-pipelines/master/scripts_revised/split_interval_list/gatk-split-interval-list.py
+    wget https://github.com/yejinyou/arvados-pipelines/blob/master/scripts_revised/workflow/gatk-split-interval-list.py
 
 
 CMD ["/bin/bash"]
