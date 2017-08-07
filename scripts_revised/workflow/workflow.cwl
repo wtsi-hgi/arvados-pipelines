@@ -27,5 +27,5 @@ steps:
       number_of_intervals: genome_chunks
       interval_list: convert/out
       output_directory: split_directory
-    out: []
+    out: [outf]
 

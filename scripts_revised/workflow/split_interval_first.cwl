@@ -1,6 +1,8 @@
 cwlVersion: v1.0
 class: CommandLineTool
-baseCommand: python gatk-split-interval-list.py
+baseCommand: ['python', '/gatk-split-interval-list.py']
+requirements:
+  - class: InlineJavascriptRequirement
 hints:
  DockerRequirement:
    dockerPull: split:latest
@@ -9,12 +11,20 @@ inputs:
    type: int
    inputBinding: 
      position: 1
+     prefix: --chunks
  - id: interval_list
    type: File
    inputBinding:
      position: 2
- - id: output_directory
-   type: string
-   inputBinding:
-     position: 3
-outputs: []
+     prefix: --path
+
+arguments:
+  - prefix: "--output_dir"
+    valueFrom: $(runtime.outdir)
+
+outputs:
+  - id: outf
+    type: File[]
+    outputBinding:
+      glob: $(inputs.interval_list.basename).split_intervals
+

@@ -1,10 +1,6 @@
 FROM python:2
 
 # Install python and clone script from github
-RUN \
+ADD gatk-split-interval-list.py /
 
-  # script to split intervals
-    wget https://github.com/yejinyou/arvados-pipelines/blob/master/scripts_revised/workflow/gatk-split-interval-list.py
-
-
-CMD ["/bin/bash"]
+CMD /bin/bash
