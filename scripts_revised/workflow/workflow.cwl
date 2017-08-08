@@ -13,7 +13,6 @@ inputs:
     type: string
 
 
-outputs: []
 
 steps:
   - id: convert
@@ -29,3 +28,7 @@ steps:
       output_directory: split_directory
     out: [outf]
 
+outputs:
+  - id: out
+    type: File[]
+    outputSource: "#split/outf"

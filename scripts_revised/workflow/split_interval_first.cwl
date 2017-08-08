@@ -26,5 +26,4 @@ outputs:
   - id: outf
     type: File[]
     outputBinding:
-      glob: $(inputs.interval_list.basename).split_intervals
-
+      glob: "*"
