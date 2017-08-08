@@ -27,7 +27,4 @@ genome_chunks: 200
 dict:
   class: File
   path: /path/to/dict/file
-outf:
-  class: File
-  path: /path/to/output/directory
 ```

@@ -9,9 +9,6 @@ inputs:
     type: int
   - id: dict
     type: File
-  - id: split_directory
-    type: string
-
 
 
 steps:
@@ -25,7 +22,6 @@ steps:
     in:
       number_of_intervals: genome_chunks
       interval_list: convert/out
-      output_directory: split_directory
     out: [outf]
 
 outputs:
