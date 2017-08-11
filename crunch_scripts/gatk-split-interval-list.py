@@ -39,11 +39,11 @@ def prepare_gatk_interval_list_collection(interval_list_coll):
             ref_input = interval_list_f.as_manifest()
             break
     # Create and return a portable data hash for the ref_input manifest
-    # try:
-    #     r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
-    #     ref_input_pdh = r["portable_data_hash"]
-    # except:
-    #     raise
+    try:
+        r = arvados.api().collections().create(body={"manifest_text": ref_input}).execute()
+        ref_input_pdh = r["portable_data_hash"]
+    except:
+        raise
     return ref_input_pdh
 
 def create_interval_lists(genome_chunks, interval_list_coll):
