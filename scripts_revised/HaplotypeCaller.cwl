@@ -1012,6 +1012,7 @@
             "type": [
                 "null", 
                 {
+                    "label": "list_of_file_or_string",
                     "items": [
                         "File", 
                         "string"

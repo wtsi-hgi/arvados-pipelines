@@ -2,20 +2,20 @@ analysis_type: HaplotypeCaller
 reference_sequence:
    class: File
    #path: /path/to/fasta/ref/file
-   path: /home/pkarnati/cwltests/chr22_cwl_test.fa 
+   path: /home/pkarnati/cwltests/chr22_cwl_test.fa
 refIndex:
    class: File
    #path: /path/to/index/file
-   path: /home/pkarnati/cwltests/chr22_cwl_test.fa.fai 
+   path: /home/pkarnati/cwltests/chr22_cwl_test.fa.fai
 refDict:
    class: File
    #path: /path/to/dict/file
-   path: /home/pkarnati/cwltests/chr22_cwl_test.fa.dict 
+   path: /home/pkarnati/cwltests/chr22_cwl_test.fa.dict
 input_file: #must be BAM or CRAM
    class: File
    #path: /path/to/input/file 
-   path: /home/pkarnati/cwltests/chr22_cwl_test_hs37d5.sort.cram
+   path: /home/pkarnati/cwltests/chr22_cwl_test.cram
 intervals:
    - class: File
-     path: /home/pkarnati/Desktop/interval_list_data/cwl_list/hs37d5.interval_list.183_of_200.interval_list
+     path: /home/pkarnati/Desktop/interval_list_data/chr_22/chr22_cwl_test.interval_list.4_of_20.interval_list
 out: out.gvcf.gz
