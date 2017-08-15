@@ -93,7 +93,6 @@ RUN \
   rm -rf /tmp/apache-maven-3.3.9 && \
   rm -rf /tmp/gatk-protected
 
-
 # Switch to crunch user and change to crunch-job work dir
 USER crunch
 WORKDIR /tmp/crunch-job

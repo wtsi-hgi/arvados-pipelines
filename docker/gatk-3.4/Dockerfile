@@ -43,21 +43,17 @@ RUN \
 
 # Install GATK requirements
 # Sun/Oracle JDK is required (OpenJDK is not supported)
-COPY jdk-wgetrc /tmp/jdk-wgetrc
+# Oracle have discontinued public downloading of JDK 7
+# To build this docker container, you must use an Oracle username/password to 
+# download jdk-7u25-linux-x64.tar.gz from Oracle and put it in the same 
+# directory as this Dockerfile.
+# Download from: http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-javase7-521261.html
+COPY jdk-7u25-linux-x64.tar.gz /tmp/jdk-7u25-linux-x64.tar.gz
 RUN \
-  apt-get -q=2 update && \
-  apt-get -q=2 -y --no-install-recommends install \
-    wget && \
-  apt-get autoremove && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* && \
   cd /tmp && \
-  WGETRC=/tmp/jdk-wgetrc \
   J_DIR=jdk1.7.0_25 \
   SHA256SUM=f80dff0e19ca8d038cf7fe3aaa89538496b80950f4d10ff5f457988ae159b2a6 \
-  FILENAME=jdk-7u25-linux-x64.tar.gz \
-  PARTNER_URL=http://download.oracle.com/otn-pub/java/jdk/7u25-b15/$FILENAME && \
-  wget --continue --no-check-certificate -O ${FILENAME} --header "Cookie: oraclelicense=a" $PARTNER_URL && \
+  FILENAME=jdk-7u25-linux-x64.tar.gz && \
   echo "${SHA256SUM} ${FILENAME}" | sha256sum -c && \
   tar xf ${FILENAME} && \
   mkdir -p /opt && \
@@ -70,21 +66,19 @@ ENV PATH /opt/jdk1.7.0_25/bin:${PATH}
 RUN \
   apt-get -q=2 update && \
   apt-get -q=2 -y --no-install-recommends install \
-    python-levenshtein \
-    python-httplib2 && \
+    python-levenshtein && \
   apt-get autoremove && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
-# Install GRL CA
-ADD grl-ca.pem /etc/ssl/certs/grl-ca.pem
-RUN \
-  ln -s /etc/ssl/certs/grl-ca.pem /usr/lib/ssl/certs/91155464.0 && \
-  cat /etc/ssl/certs/grl-ca.pem >> /etc/ssl/certs/ca-certificates.crt && \
-  cat /etc/ssl/certs/grl-ca.pem >> /usr/lib/python2.7/dist-packages/httplib2/cacerts.txt
-
 # Install GATK from git source
 RUN \
+  apt-get -q=2 update && \
+  apt-get -q=2 -y --no-install-recommends install \
+    wget && \
+  apt-get autoremove && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* && \
   cd /tmp && \
   wget http://mirror.vorboss.net/apache/maven/maven-3/3.3.9/binaries/apache-maven-3.3.9-bin.tar.gz && \
   echo "516923b3955b6035ba6b0a5b031fbd8b apache-maven-3.3.9-bin.tar.gz" | md5sum -c && \

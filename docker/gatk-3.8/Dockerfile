@@ -86,7 +86,7 @@ RUN \
   rm -f apache-maven-3.3.9-bin.tar.gz && \
   git clone https://github.com/broadgsa/gatk-protected.git && \
   cd gatk-protected && \
-  git checkout 3.7 && \
+  git checkout 3.8 && \
   /tmp/apache-maven-3.3.9/bin/mvn verify -P\!queue && \
   mkdir -p /gatk && \
   cp target/GenomeAnalysisTK.jar /gatk/GenomeAnalysisTK.jar && \
