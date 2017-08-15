@@ -13,11 +13,14 @@ class InvalidArgumentError(Exception):
 class APIError(Exception):
     pass
 
-def dict_to_interval_list(dict_text):
+def dict_to_interval_list(input_file, output_file):
     # Load the dict data
 
     interval_header = ""
-    dict_lines = dict_text.split("\n")
+
+    with open(input_file, 'r') as f:
+        dict_lines = f.readlines()
+
     dict_header = dict_lines.pop(0)
     if re.search(r'^@HD', dict_header) is None:
         raise InvalidArgumentError("Dict file in reference collection does not have correct header: [%s]" % dict_header)
@@ -59,36 +62,35 @@ def dict_to_interval_list(dict_text):
     total_points = total_len + (total_sequences * weight_seq)
     print("Total points to split: %s" % (total_points))
     
-    interval_list_text = interval_header
+    with open(output_file, "w+") as out_file:
+        out_file.write(interval_header)
 
-    remaining_points = total_points
-    chunk_num = 1
-    while sns:
-        chunk_num += 1
-        sn = sns.pop(0)
-        remaining_points -= weight_seq
-        if remaining_points <= 0:
-            sns.insert(0, sn)
-            break
-        if not sn_intervals.has_key(sn):
-            raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
-        start, end = sn_intervals[sn]
-        if (end - start + 1) > remaining_points:
-            # Not enough space for the whole sq, split it
-            real_end = end
-            end = remaining_points + start - 1
-            assert((end - start + 1) <= remaining_points)
-            sn_intervals[sn] = (end + 1, real_end)
-            sns.insert(0, sn)
-        interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, sn)
-        remaining_points -= (end - start + 1)
+        remaining_points = total_points
+        chunk_num = 1
+        while sns:
+            chunk_num += 1
+            sn = sns.pop(0)
+            remaining_points -= weight_seq
+            if remaining_points <= 0:
+                sns.insert(0, sn)
+                break
+            if not sn_intervals.has_key(sn):
+                raise ValueError("sn_intervals missing entry for sn [%s]" % sn)
+            start, end = sn_intervals[sn]
+            if (end - start + 1) > remaining_points:
+                # Not enough space for the whole sq, split it
+                real_end = end
+                end = remaining_points + start - 1
+                assert((end - start + 1) <= remaining_points)
+                sn_intervals[sn] = (end + 1, real_end)
+                sns.insert(0, sn)
+            interval = "%s\t%s\t%s\t+\t%s\n" % (sn, start, end, sn)
+            remaining_points -= (end - start + 1)
 
-        interval_list_text += interval
+            out_file.write(interval)
 
-        if remaining_points <= 0:
-            break
-
-    return interval_list_text
+            if remaining_points <= 0:
+                break
 
 
 def main():
@@ -101,11 +103,7 @@ def main():
 
     basename = os.path.splitext(os.path.basename(args.path))[0] + '.interval_list'
 
-    with open(args.path, 'r') as ref_input_pdh:
-        interval_list = dict_to_interval_list(ref_input_pdh)
-    
-    with open(os.path.join(args.output_dir, basename), "w+") as out_file:
-        out_file.write(interval_list)
+    dict_to_interval_list(args.path, os.path.join(args.output_dir, basename))
 
 
 if __name__ == '__main__':
