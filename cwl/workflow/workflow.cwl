@@ -1,7 +1,3 @@
-# What is exactly the output of each files -- figure that out so that you can example out things and connect it
-# what exactly is the /var/spool that the chr22 list is being created at? 
-#
-
 cwlVersion: v1.0
 class: Workflow
 inputs:
@@ -16,15 +12,17 @@ steps:
     run: convert_first.cwl
     in:
       dictionary: dict
-    out: [out]
+    out: 
+      - interval_list
   - id: split
     run: split_interval_first.cwl
     in:
       number_of_intervals: genome_chunks
-      interval_list: convert/out
-    out: [outf]
+      interval_list: convert/interval_list
+    out: 
+      - split_interval_lists
 
 outputs:
   - id: out
     type: File[]
-    outputSource: "#split/outf"
+    outputSource: "#split/split_interval_lists"
