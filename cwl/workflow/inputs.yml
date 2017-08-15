@@ -1,4 +1,4 @@
 genome_chunks: 20
 dict:
   class: File
-  path: /home/pkarnati/cwltests/chr22_cwl_test.dict
+  path: cwl-example-data/chr22_cwl_test.dict
