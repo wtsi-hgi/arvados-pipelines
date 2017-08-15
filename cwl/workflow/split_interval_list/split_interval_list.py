@@ -23,7 +23,7 @@ def split_interval_lists(genome_chunks, interval_list_path, out_dir):
     # Consume header
     while interval_list_lines:
         header_line = interval_list_lines.pop(0)
-        if header_line[0] == "@":
+        if not header_line[0] == "@":
             interval_list_lines.insert(0, header_line)
             break
         else:
@@ -130,7 +130,7 @@ def main():
         raise InvalidArgumentError("genome_chunks must be a positive integer")
 
     # Create an interval_list file for each chunk based on the .interval_list in the interval_list collection
-    split_interval_lists(genome_chunks, open(path_to_ilp, 'r'), out_dir)
+    split_interval_lists(genome_chunks, path_to_ilp, out_dir)
 
 
 if __name__ == '__main__':

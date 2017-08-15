@@ -1,8 +1,6 @@
 cwlVersion: v1.0
 class: CommandLineTool
 baseCommand: ['python', '/dict_to_interval_list.py']
-requirements:
-  - class: InlineJavascriptRequirement
 hints:
   DockerRequirement:
     dockerPull: dict_to_interval_list:latest

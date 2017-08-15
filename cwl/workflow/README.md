@@ -8,7 +8,7 @@ These workflows have a dependencies on docker containers. To install the docker 
 
 ```bash
 docker build dict_to_interval_list -t dict_to_interval_list
-docker build dict_to_interval_list -t dict_to_interval_list
+docker build split_interval_list -t split_interval_list
 ```
 
 ## Usage
