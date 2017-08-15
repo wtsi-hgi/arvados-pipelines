@@ -9,9 +9,6 @@ weight_seq = 120000
 class InvalidArgumentError(Exception):
     pass
 
-class APIError(Exception):
-    pass
-
 def split_interval_lists(genome_chunks, interval_list_path, out_dir):
     # Load the interval_list data
 
