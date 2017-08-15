@@ -2,8 +2,8 @@ cwlVersion: v1.0
 class: CommandLineTool
 hints:
  DockerRequirement:
-   dockerPull: arvados_pipeline_python:latest
-baseCommand: ['python', '/scripts/bed_to_il.py']
+   dockerPull: intersect:latest
+baseCommand: ['python', '/bed_to_il.py']
 
 inputs:
   - id: input

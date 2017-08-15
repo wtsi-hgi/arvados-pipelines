@@ -32,7 +32,7 @@ steps:
     out: []
 
   - id: intersect
-    run: bedtools_intersect/bedtools_intersect.cwl
+    run: ../bedtools_intersect/bedtools_intersect.cwl
     in:
       a: "#il_to_bed_A/bed_file"
       b: "#il_to_bed_B/bed_file"
