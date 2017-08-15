@@ -1,9 +1,9 @@
 cwlVersion: v1.0
 class: CommandLineTool
-baseCommand: ['python', '/scripts/gatk-split-interval-list.py']
+baseCommand: ['python', '/split_interval_list.py']
 hints:
  DockerRequirement:
-   dockerPull: arvados_pipeline_python:latest
+   dockerPull: split_interval_list:latest
 
 inputs:
  - id: number_of_intervals

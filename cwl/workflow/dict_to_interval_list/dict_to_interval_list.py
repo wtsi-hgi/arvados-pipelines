@@ -94,7 +94,7 @@ def dict_to_interval_list(input_file, output_file):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Create Interval List')
+    parser = argparse.ArgumentParser(description='Converts a dict file to an interval list file')
     parser.add_argument("--path", help="Path to dict file")
     parser.add_argument("--output_dir", help="Output directory for interval list")
     args = parser.parse_args()

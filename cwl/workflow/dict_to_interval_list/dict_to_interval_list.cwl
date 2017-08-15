@@ -1,11 +1,11 @@
 cwlVersion: v1.0
 class: CommandLineTool
-baseCommand: ['python', '/scripts/gatk-create-interval-lists.py']
+baseCommand: ['python', '/dict_to_interval_list.py']
 requirements:
   - class: InlineJavascriptRequirement
 hints:
   DockerRequirement:
-    dockerPull: arvados_pipeline_python:latest
+    dockerPull: dict_to_interval_list:latest
 
 arguments:
   - prefix: "--output_dir"

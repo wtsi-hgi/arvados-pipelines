@@ -8,14 +8,14 @@ inputs:
 
 
 steps:
-  - id: convert
-    run: convert_first.cwl
+  - id: dict_to_interval_list
+    run: dict_to_interval_list/dict_to_interval_list.cwl
     in:
       dictionary: dict
     out: 
       - interval_list
-  - id: split
-    run: split_interval_first.cwl
+  - id: split_interval_list
+    run: split_interval_list/split_interval_list.cwl
     in:
       number_of_intervals: genome_chunks
       interval_list: convert/interval_list
@@ -25,4 +25,4 @@ steps:
 outputs:
   - id: out
     type: File[]
-    outputSource: "#split/split_interval_lists"
+    outputSource: "#split_interval_list/split_interval_lists"

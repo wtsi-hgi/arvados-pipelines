@@ -4,10 +4,11 @@ Workflow.cwl takes in a dict file as an input and outputs the correct number of 
 
 ## Docker Requirement
 
-These workflows have a dependency on docker. To install the docker container run:
+These workflows have a dependencies on docker containers. To install the docker containers run:
 
 ```bash
-docker build . -t arvados_pipeline_python
+docker build dict_to_interval_list -t dict_to_interval_list
+docker build dict_to_interval_list -t dict_to_interval_list
 ```
 
 ## Usage
