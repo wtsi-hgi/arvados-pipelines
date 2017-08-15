@@ -4,16 +4,10 @@ Workflow.cwl takes in a dict file as an input and outputs the correct number of 
 
 ## Docker Requirement
 
-The cwl file has a dependency on docker. First, build the two docker containers in this folder by running:
+These workflows have a dependency on docker. To install the docker container run:
 
-```bash 
-docker build convert_docker/ -t convert
-```
-
-and
-
-```bash 
-docker build split_docker/ -t split
+```bash
+docker build . -t arvados_pipeline_python
 ```
 
 ## Usage
@@ -21,7 +15,7 @@ docker build split_docker/ -t split
 To run the CWL file, run:
 
 ```bash
-cwl_runner --outdir /path/to/output workflow.cwl inputs.yml
+cwl-runner --outdir /path/to/output workflow.cwl inputs.yml
 ```
 
 and specifying the necessary output directory.
