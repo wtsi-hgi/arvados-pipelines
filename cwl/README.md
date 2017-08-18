@@ -2,6 +2,14 @@
 
 Workflow.cwl takes in a dict file as an input and outputs the correct number of split interval lists by running the convert and split scripts within a docker container.
 
+## Cloning
+
+Clone this with the included submodule:
+
+```bash
+git clone --recursive https://github.com/wtsi-hgi/arvados-pipelines.git
+```
+
 ## Docker Requirement
 
 These workflows have a dependencies on docker containers. To install the docker containers run:
