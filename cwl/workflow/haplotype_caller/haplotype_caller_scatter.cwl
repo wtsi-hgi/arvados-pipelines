@@ -1,3 +1,5 @@
+# Runs HaplotypeCaller on each of the split intervals
+
 cwlVersion: v1.0
 class: Workflow
 
@@ -23,13 +25,13 @@ inputs:
           - File
           - string
         inputBinding:
-          prefix: --intervals
+          prefix: --intervals # This need to be exactly the same as the input
         type: array
   - id: analysis_type
     type: string
 
 steps:
-  - id: haplo
+  - id: haplotype_scatter
     in:
       reference_sequence: reference_sequence
       refIndex: refIndex
@@ -41,10 +43,5 @@ steps:
     out: []
     scatter: intervals
     run: HaplotypeCaller.cwl
-
-# outputs:
-#   - id: out
-#     type: File[]
-#     outputSource: "#haplo/output"
 
 outputs: []

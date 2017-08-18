@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 hints:
  DockerRequirement:
-   dockerPull: intersect:latest
+   dockerPull: intersect_intervals:latest
 baseCommand: ['python', '/bed_to_il.py']
 
 inputs:

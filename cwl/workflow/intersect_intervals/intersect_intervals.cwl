@@ -27,27 +27,27 @@ steps:
   - id: header_check
     run: header_check.cwl
     in:
-      a: "#il_to_bed_A/header"
-      b: "#il_to_bed_B/header"
+      a: il_to_bed_A/header
+      b: il_to_bed_B/header
     out: []
 
   - id: intersect
     run: ../bedtools_intersect/bedtools_intersect.cwl
     in:
-      a: "#il_to_bed_A/bed_file"
-      b: "#il_to_bed_B/bed_file"
+      a: il_to_bed_A/bed_file
+      b: il_to_bed_B/bed_file
     out: 
       - intersect_output
 
   - id: bed_to_il
     run: bed_to_il.cwl
     in:
-      input: "#intersect/intersect_output"
-      header: "#il_to_bed_A/header"
+      input: intersect/intersect_output
+      header: il_to_bed_A/header
     out: 
       - interval_list
 
 outputs:
-  - id: out
+  - id: intersected_interval_list
     type: File
-    outputSource: "#bed_to_il/interval_list"
+    outputSource: bed_to_il/interval_list

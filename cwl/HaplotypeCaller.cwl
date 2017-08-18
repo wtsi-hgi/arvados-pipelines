@@ -19,7 +19,10 @@
         {
             "doc": "Input file containing sequence data (BAM or CRAM)", 
             "inputBinding": {
-                "prefix": "--input_file"
+                "shellQuote": false, 
+                "prefix": "--input_file", 
+                "valueFrom": "$(parseTags(self.path, inputs.input_file_tags))", 
+                "separate": false
             }, 
             "type": "File", 
             "id": "input_file", 
@@ -31,12 +34,11 @@
             "id": "refIndex"
         }, 
         {
-            "doc": "dict file of reference genome", 
+            "doc": "Dict file of reference genome", 
             "type": "File", 
             "id": "refDict"
         }, 
         {
-            "default": 0.002, 
             "doc": "Threshold for the probability of a profile state being active.", 
             "inputBinding": {
                 "prefix": "--activeProbabilityThreshold"
@@ -212,7 +214,10 @@
                 {
                     "items": "File", 
                     "inputBinding": {
-                        "prefix": "--comp"
+                        "shellQuote": false, 
+                        "prefix": "--comp", 
+                        "valueFrom": "$(parseTags(self.path, inputs.comp_tags))", 
+                        "separate": false
                     }, 
                     "type": "array"
                 }
@@ -242,7 +247,6 @@
             "id": "contamination_fraction_per_sample_file"
         }, 
         {
-            "default": 0.0, 
             "doc": "Fraction of contamination in sequencing data (for all samples) to aggressively remove", 
             "inputBinding": {
                 "prefix": "--contamination_fraction_to_filter"
@@ -374,7 +378,6 @@
             "id": "forceActive"
         }, 
         {
-            "default": 10, 
             "doc": "Flat gap continuation penalty for use in the Pair HMM", 
             "inputBinding": {
                 "prefix": "--gcpHMM"
@@ -442,7 +445,6 @@
             "id": "GVCFGQBands"
         }, 
         {
-            "default": 0.001, 
             "doc": "Heterozygosity value used to compute prior likelihoods for any locus", 
             "inputBinding": {
                 "prefix": "--heterozygosity"
@@ -454,7 +456,6 @@
             "id": "heterozygosity"
         }, 
         {
-            "default": 0.000125, 
             "doc": "Heterozygosity for indel calling", 
             "inputBinding": {
                 "prefix": "--indel_heterozygosity"
@@ -466,7 +467,6 @@
             "id": "indel_heterozygosity"
         }, 
         {
-            "default": 10, 
             "doc": "The size of an indel to check for in the reference model", 
             "inputBinding": {
                 "prefix": "--indelSizeToEliminateInRefModel"
@@ -506,7 +506,6 @@
             "id": "kmerSize"
         }, 
         {
-            "default": 6, 
             "doc": "Maximum number of alternate alleles to genotype", 
             "inputBinding": {
                 "prefix": "--max_alternate_alleles"
@@ -518,7 +517,6 @@
             "id": "max_alternate_alleles"
         }, 
         {
-            "default": 128, 
             "doc": "Maximum number of haplotypes to consider for your population", 
             "inputBinding": {
                 "prefix": "--maxNumHaplotypesInPopulation"
@@ -530,7 +528,6 @@
             "id": "maxNumHaplotypesInPopulation"
         }, 
         {
-            "default": 10000, 
             "doc": "Maximum reads in an active region", 
             "inputBinding": {
                 "prefix": "--maxReadsInRegionPerSample"
@@ -542,7 +539,6 @@
             "id": "maxReadsInRegionPerSample"
         }, 
         {
-            "default": 10, 
             "doc": "Minimum base quality required to consider a base for calling", 
             "inputBinding": {
                 "prefix": "--min_base_quality_score"
@@ -554,7 +550,6 @@
             "id": "min_base_quality_score"
         }, 
         {
-            "default": 4, 
             "doc": "Minimum length of a dangling branch to attempt recovery", 
             "inputBinding": {
                 "prefix": "--minDanglingBranchLength"
@@ -566,7 +561,6 @@
             "id": "minDanglingBranchLength"
         }, 
         {
-            "default": 2, 
             "doc": "Minimum support to not prune paths in the graph", 
             "inputBinding": {
                 "prefix": "--minPruning"
@@ -578,7 +572,6 @@
             "id": "minPruning"
         }, 
         {
-            "default": 10, 
             "doc": "Minimum number of reads sharing the same alignment start for each genomic location in an active region", 
             "inputBinding": {
                 "prefix": "--minReadsPerAlignmentStart"
@@ -590,7 +583,6 @@
             "id": "minReadsPerAlignmentStart"
         }, 
         {
-            "default": 1, 
             "doc": "Number of samples that must pass the minPruning threshold", 
             "inputBinding": {
                 "prefix": "--numPruningSamples"
@@ -650,7 +642,6 @@
             "id": "pcr_indel_model"
         }, 
         {
-            "default": 45, 
             "doc": "The global assumed mismapping rate for reads", 
             "inputBinding": {
                 "prefix": "--phredScaledGlobalReadMismappingRate"
@@ -673,7 +664,6 @@
             "id": "sample_name"
         }, 
         {
-            "default": 2, 
             "doc": "Ploidy (number of chromosomes) per sample. For pooled data, set to (Number of samples in each pool * Sample Ploidy).", 
             "inputBinding": {
                 "prefix": "--sample_ploidy"
@@ -685,7 +675,6 @@
             "id": "sample_ploidy"
         }, 
         {
-            "default": 30.0, 
             "doc": "The minimum phred-scaled confidence threshold at which variants should be called", 
             "inputBinding": {
                 "prefix": "--standard_min_confidence_threshold_for_calling"
@@ -697,7 +686,6 @@
             "id": "standard_min_confidence_threshold_for_calling"
         }, 
         {
-            "default": 30.0, 
             "doc": "The minimum phred-scaled confidence threshold at which variants should be emitted (and filtered with LowQual if less than the calling threshold)", 
             "inputBinding": {
                 "prefix": "--standard_min_confidence_threshold_for_emitting"
@@ -779,7 +767,6 @@
             "id": "baq"
         }, 
         {
-            "default": 40.0, 
             "doc": "BAQ gap open penalty", 
             "inputBinding": {
                 "prefix": "--baqGapOpenPenalty"
@@ -950,7 +937,6 @@
             "id": "generate_md5"
         }, 
         {
-            "default": -1.0, 
             "doc": "Global Qscore Bayesian prior to use for BQSR", 
             "inputBinding": {
                 "prefix": "--globalQScorePrior"
@@ -960,6 +946,11 @@
                 "double"
             ], 
             "id": "globalQScorePrior"
+        }, 
+        {
+            "doc": "A argument to set the tags of 'input_file'", 
+            "type": "string[]?", 
+            "id": "input_file_tags"
         }, 
         {
             "doc": "Interval merging rule for abutting intervals", 
@@ -979,7 +970,6 @@
             "id": "interval_merging"
         }, 
         {
-            "default": 0, 
             "doc": "Amount of padding (in bp) to add to each interval", 
             "inputBinding": {
                 "prefix": "--interval_padding"
@@ -1011,8 +1001,8 @@
             "doc": "One or more genomic intervals over which to operate", 
             "type": [
                 "null", 
+                File,
                 {
-                    "label": "list_of_file_or_string",
                     "items": [
                         "File", 
                         "string"
@@ -1059,7 +1049,6 @@
             "id": "logging_level"
         }, 
         {
-            "default": -1, 
             "doc": "Stop execution cleanly as soon as maxRuntime has been reached", 
             "inputBinding": {
                 "prefix": "--maxRuntime"
@@ -1126,7 +1115,6 @@
             "id": "nonDeterministicRandomSeed"
         }, 
         {
-            "default": 1, 
             "doc": "Number of CPU threads to allocate per data thread", 
             "inputBinding": {
                 "prefix": "--num_cpu_threads_per_data_thread"
@@ -1138,7 +1126,6 @@
             "id": "num_cpu_threads_per_data_thread"
         }, 
         {
-            "default": 1, 
             "doc": "Number of data threads to allocate to this analysis", 
             "inputBinding": {
                 "prefix": "--num_threads"
@@ -1156,7 +1143,10 @@
                 {
                     "items": "File", 
                     "inputBinding": {
-                        "prefix": "--pedigree"
+                        "shellQuote": false, 
+                        "prefix": "--pedigree", 
+                        "valueFrom": "$(parseTags(self.path, inputs.pedigree_tags))", 
+                        "separate": false
                     }, 
                     "type": "array"
                 }
@@ -1224,7 +1214,6 @@
             "id": "phone_home"
         }, 
         {
-            "default": 6, 
             "doc": "Don't recalibrate bases with quality scores less than this threshold (with -BQSR)", 
             "inputBinding": {
                 "prefix": "--preserve_qscores_less_than"
@@ -1236,7 +1225,6 @@
             "id": "preserve_qscores_less_than"
         }, 
         {
-            "default": 0, 
             "doc": "Quantize quality scores to a given number of levels (with -BQSR)", 
             "inputBinding": {
                 "prefix": "--quantize_quals"
@@ -1298,7 +1286,6 @@
             "id": "refactor_NDN_cigar_string"
         }, 
         {
-            "default": 0, 
             "doc": "Reference window stop", 
             "inputBinding": {
                 "prefix": "--reference_window_stop"
@@ -1441,7 +1428,6 @@
             "id": "validation_strictness"
         }, 
         {
-            "default": -1, 
             "doc": "Parameter to pass to the VCF/BCF IndexCreator", 
             "inputBinding": {
                 "prefix": "--variant_index_parameter"
@@ -1694,7 +1680,7 @@
         {
             "class": "InlineJavascriptRequirement", 
             "expressionLib": [
-                "function getFileArgs(f, a){if(a == undefined){return ' ' + f}else{return ':' + a + ' ' + f}}"
+                "function parseTags(param, tags){if(tags == undefined){return ' ' + param}else{return ':' + tags.join(',') + ' ' + param}}"
             ]
         }, 
         {
@@ -1711,7 +1697,7 @@
                 "null", 
                 "File"
             ], 
-            "id": "--activeRegionOut"
+            "id": "activeRegionOutOutput"
         }, 
         {
             "outputBinding": {
@@ -1721,7 +1707,7 @@
                 "null", 
                 "File"
             ], 
-            "id": "--activityProfileOut"
+            "id": "activityProfileOutOutput"
         }, 
         {
             "outputBinding": {
@@ -1731,7 +1717,7 @@
                 "null", 
                 "File"
             ], 
-            "id": "--bamOutput"
+            "id": "bamOutputOutput"
         }, 
         {
             "outputBinding": {
@@ -1741,7 +1727,7 @@
                 "null", 
                 "File"
             ], 
-            "id": "--graphOutput"
+            "id": "graphOutputOutput"
         }, 
         {
             "outputBinding": {
@@ -1751,7 +1737,7 @@
                 "null", 
                 "File"
             ], 
-            "id": "--out"
+            "id": "outOutput"
         }
     ], 
     "baseCommand": [

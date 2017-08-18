@@ -1,0 +1,4 @@
+@HD	VN:1.5	SO:unsorted
+@SQ	SN:chr22	LN:something	M5:something	UR:a/file
+chr22	1	500	+	chr22
+chr22	900	50000	+	chr22
