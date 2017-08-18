@@ -99,3 +99,5 @@ ENV/
 .mypy_cache/
 
 cwl-example-data
+HaplotypeCaller.cwl
+out.gvcf.gz
