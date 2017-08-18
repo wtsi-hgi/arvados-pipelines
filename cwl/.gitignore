@@ -101,3 +101,5 @@ ENV/
 cwl-example-data
 HaplotypeCaller.cwl
 out.gvcf.gz
+
+GGR-cwl
