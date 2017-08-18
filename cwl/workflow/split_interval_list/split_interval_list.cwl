@@ -22,7 +22,7 @@ arguments:
     valueFrom: $(runtime.outdir)
 
 outputs:
-  - id: split_interval_lists
+  - id: interval_lists
     type: File[]
     outputBinding:
       glob: "*"
