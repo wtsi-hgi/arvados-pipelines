@@ -1,4 +1,0 @@
-genome_chunks: 20
-dict:
-  class: File
-  path: ../cwl-example-data/chr22_cwl_test.dict
