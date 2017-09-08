@@ -1,16 +1,16 @@
 # CWL Workflow
 
-Workflow.cwl takes in a dict file as an input and outputs the correct number of split interval lists by running the convert and split scripts within a docker container.
+CWL workflow files for part of the pipeline
 
 ## Cloning
 
-Clone this with the included submodule:
+Clone this with the included submodule (to get the bedtools intersect CWL file):
 
 ```bash
 git clone --recursive https://github.com/wtsi-hgi/arvados-pipelines.git
 ```
 
-## Docker Requirement
+## Installation
 
 These workflows have a dependencies on docker containers. To install the docker containers run:
 
@@ -37,4 +37,11 @@ genome_chunks: 200
 dict:
   class: File
   path: /path/to/dict/file
+```
+
+## Tests
+
+To run the tests, run:
+```bash
+python tests/test.py
 ```
