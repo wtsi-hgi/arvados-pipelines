@@ -48,7 +48,7 @@ steps:
     requirements:
       - class: ScatterFeatureRequirement
     scatter: intervals
-    run: HaplotypeCaller.cwl
+    run: workflow/HaplotypeCaller.cwl
     in:
       reference_sequence: reference_sequence
       refIndex: refIndex

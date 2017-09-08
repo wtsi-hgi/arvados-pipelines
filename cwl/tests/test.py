@@ -24,7 +24,7 @@ class TestWorkflowSteps(unittest.TestCase):
         tmp_folder = tempfile.mkdtemp()
 
         self.assertEquals(subprocess.call(
-            "cwl-runner --outdir {} overall_workflow.cwl inputs.yml".format(tmp_folder),
+            "cwl-runner --outdir {} overall_workflow.cwl tests/test_overall_workflow.yml".format(tmp_folder),
             shell=True), 0)
 
         self.assertEquals(len(os.listdir(tmp_folder)), 20)
