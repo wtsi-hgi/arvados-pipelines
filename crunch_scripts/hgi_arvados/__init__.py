@@ -625,8 +625,8 @@ def one_task_per_interval(interval_count, validate_task_output,
     interval_reader = open(interval_list_file, mode="r")
 
     lines = interval_reader.readlines()
-    sn_intervals = dict()
-    sns = []
+    intervals_sn_start_end = dict()
+    interval_keys = []
     total_len = 0
     for line in lines:
         if line[0] == '@':
@@ -640,8 +640,9 @@ def one_task_per_interval(interval_count, validate_task_output,
         end = int(fields[2])
         length = int(end) - int(start) + 1
         total_len += int(length)
-        sn_intervals[sn] = (start, end)
-        sns.append(sn)
+        interval_key = "%s:%s-%s" % (sn, start, end)
+        intervals_sn_start_end[interval_key] = (sn, start, end)
+        interval_keys.append(interval_key)
 
     print "Total chunk length is %s" % total_len
     interval_len = int(total_len / interval_count)
@@ -652,18 +653,18 @@ def one_task_per_interval(interval_count, validate_task_output,
         intervals_count = 0
         remaining_len = interval_len
         interval = []
-        while len(sns) > 0:
-            sn = sns.pop(0)
-            if not sn_intervals.has_key(sn):
-                raise errors.ValueError("sn_intervals missing entry for sn [%s]" % sn)
-            start, end = sn_intervals[sn]
+        while len(interval_keys) > 0:
+            interval_key = interval_keys.pop(0)
+            if not intervals_sn_start_end.has_key(interval_key):
+                raise errors.ValueError("intervals_sn_start_end missing entry for interval_key [%s]" % interval_key)
+            sn, start, end = intervals_sn_start_end[interval_key]
             if (end-start+1) > remaining_len:
                 # not enough space for the whole sq, split it
                 real_end = end
                 end = remaining_len + start - 1
                 assert((end-start+1) <= remaining_len)
-                sn_intervals[sn] = (end+1, real_end)
-                sns.insert(0, sn)
+                intervals_sn_start_end[interval_key] = (sn, end+1, real_end)
+                interval_keys.insert(0, interval_key)
             interval.append("%s:%s-%s" % (sn, start, end))
             remaining_len -= (end-start+1)
             intervals_count += 1
