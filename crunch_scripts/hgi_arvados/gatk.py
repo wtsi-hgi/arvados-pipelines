@@ -48,14 +48,15 @@ def _execute(gatk_args, **kwargs):
     return gatk_exit
 
 
-def combine_gvcfs(ref_file, gvcf_files, out_path, **kwargs):
+def combine_gvcfs(ref_file, gvcf_files, interval_list_file, out_path, **kwargs):
     java_mem = kwargs.pop("java_mem", "10g")
     print "combine_gvcfs called with ref_file=[%s] gvcf_files=[%s] out_path=[%s] java_mem=[%s] **kwargs=[%s]" % (ref_file, ' '.join(gvcf_files), out_path, java_mem, ' '.join(['%s = %s' % (k,v) for k,v in kwargs.items()]))
     # Call GATK CombineGVCFs
     gatk_args = [
             "-T", "CombineGVCFs",
             "--no_cmdline_in_header",
-            "-R", ref_file]
+            "-R", ref_file,
+            "-L", interval_list_file]
     for gvcf_file in gvcf_files:
         gatk_args.extend(["--variant", gvcf_file])
     gatk_args.extend([

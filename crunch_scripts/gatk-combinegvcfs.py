@@ -45,55 +45,24 @@ def main():
     assert(this_task['sequence'] > 0)
 
     ################################################################################
-    # Phase II: Read interval_list and split into additional intervals
-    ################################################################################
-    hgi_arvados.one_task_per_interval(interval_count, validate_task_output,
-                                      reuse_tasks=True,
-                                      oldest_git_commit_to_reuse="1f6e1e0b8bb12c573dd253d7900ef55305d55aa1",
-                                      if_sequence=1, and_end_task=True)
-
-    # We will never reach this point if we are in the 1st task sequence
-    assert(this_task['sequence'] > 1)
-
-    ################################################################################
-    # Phase IIIa: If we are a "reuse" task, just set our output and be done with it
-    ################################################################################
-    if 'reuse_job_task' in this_task['parameters']:
-        print "This task's work was already done by JobTask %s" % this_task['parameters']['reuse_job_task']
-        exit(0)
-
-    ################################################################################
-    # Phase IIIb: Combine gVCFs!
+    # Phase II: Combine gVCFs!
     ################################################################################
     ref_file = gatk_helper.mount_gatk_reference(ref_param="ref")
     gvcf_files = gatk_helper.mount_gatk_gvcf_inputs(inputs_param="inputs")
     out_dir = hgi_arvados.prepare_out_dir()
+    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="interval_list")
     name = this_task['parameters'].get('name')
     if not name:
         name = "unknown"
-    interval_str = this_task['parameters'].get('interval')
-    if not interval_str:
-        interval_str = ""
-    interval_strs = interval_str.split()
-    intervals = []
-    for interval in interval_strs:
-        intervals.extend(["--intervals", interval])
     out_file = name + ".vcf.gz"
-    if interval_count > 1:
-        out_file = name + "." + '_'.join(interval_strs) + ".vcf.gz"
-        if len(out_file) > 255:
-            out_file = name + "." + '_'.join([interval_strs[0], interval_strs[-1]]) + ".vcf.gz"
-            print "Output file name was too long with full interval list, shortened it to: %s" % out_file
-        if len(out_file) > 255:
-            raise errors.InvalidArgumentError("Output file name is too long, cannot continue: %s" % out_file)
 
     # because of a GATK bug, name cannot contain the string '.bcf' anywhere within it or we will get BCF output
     out_file = out_file.replace(".bcf", "._cf")
 
     # CombineGVCFs!
-    extra_args = intervals
+    extra_args = []
     extra_args.extend(["--breakBandsAtMultiplesOf", "1000000"])
-    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, os.path.join(out_dir, out_file), extra_gatk_args=extra_args)
+    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, interval_list_file, os.path.join(out_dir, out_file), extra_gatk_args=extra_args)
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
