@@ -1,6 +1,9 @@
 FROM ubuntu:14.04
 MAINTAINER jcrandall@alum.mit.edu
 
+# Require gatk version to be specified
+ARG version
+
 # Switch to root user for installation
 USER root
 
@@ -86,7 +89,7 @@ RUN \
   rm -f apache-maven-3.3.9-bin.tar.gz && \
   git clone https://github.com/broadgsa/gatk-protected.git && \
   cd gatk-protected && \
-  git checkout 3.7 && \
+  git checkout ${version} && \
   /tmp/apache-maven-3.3.9/bin/mvn verify -P\!queue && \
   mkdir -p /gatk && \
   cp target/GenomeAnalysisTK.jar /gatk/GenomeAnalysisTK.jar && \
