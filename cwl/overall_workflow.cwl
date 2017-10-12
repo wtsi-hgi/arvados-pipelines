@@ -44,6 +44,13 @@ steps:
       interval_list: dict_to_interval_list/interval_list
     out: [interval_lists]
 
+  - id: split_interval_list
+    run: $(inputs.split_interval_list_method)
+    in:
+      number_of_intervals: chunks
+      interval_list: dict_to_interval_list/interval_list
+    out: [interval_lists]
+
   - id: haplotype_caller
     requirements:
       - class: ScatterFeatureRequirement

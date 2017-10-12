@@ -12,7 +12,7 @@ class TestWorkflowSteps(unittest.TestCase):
         tmp_folder = tempfile.mkdtemp()
 
         self.assertEquals(subprocess.call(
-            "cwl-runner --outdir {} workflow/intersect_intervals/intersect_intervals.cwl tests/test_intersect.yml".format(tmp_folder),
+            "cwl-runner --outdir {} tools/intersect_intervals/intersect_intervals.cwl tests/test_intersect.yml".format(tmp_folder),
             shell=True), 0)
 
         with open(tmp_folder + "/output.bed") as file:

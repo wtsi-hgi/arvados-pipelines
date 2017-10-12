@@ -3,6 +3,7 @@ class: CommandLineTool
 hints:
  DockerRequirement:
    dockerPull: intersect_intervals:latest
+
 baseCommand: ['python', '/il_to_bed.py']
 
 inputs:
