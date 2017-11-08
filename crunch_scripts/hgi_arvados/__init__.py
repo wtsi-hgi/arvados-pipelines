@@ -150,6 +150,115 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
                                          ).execute()
         exit(0)
 
+def chunked_tasks_per_bam_file(ref_input, job_input, interval_lists, validate_task_output,
+                                if_sequence=0, and_end_task=True,
+                                reuse_tasks=True, reuse_tasks_retrieve_all=True,
+                                interval_list_param="interval_list",
+                                oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
+                                script=arvados.current_job()['script']):
+    """
+    Queue one task for each bam file in this job's input collection.
+    Each new task will have an "input" parameter: a manifest
+    containing one .bam file and its corresponding .bai index file.
+    Files in the input collection that are not named *.bam or *.bai
+    (as well as *.bai files that do not match any .bam file present)
+    are silently ignored.
+    if_sequence and and_end_task arguments have the same significance
+    as in arvados.job_setup.one_task_per_input_file().
+    """
+    if if_sequence != arvados.current_task()['sequence']:
+        return
+
+    # prepare interval lists
+    cr = arvados.CollectionReader(interval_lists)
+    chunk_interval_list = {}
+    chunk_input_pdh_names = []
+    for s in cr.all_streams():
+        for f in s.all_files():
+            if re.search(r'\.interval_list$', f.name()):
+                chunk_interval_list[s.name(), f.name()] = f
+    for ((s_name, f_name), chunk_interval_list_f) in sorted(chunk_interval_list.items()):
+        chunk_input = chunk_interval_list_f.as_manifest()
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": chunk_input}).execute()
+            chunk_input_pdh = r["portable_data_hash"]
+            chunk_input_name = os.path.join(s_name, f_name)
+            chunk_input_pdh_names.append((chunk_input_pdh, chunk_input_name))
+        except:
+            raise
+
+    if len(chunk_input_pdh_names) == 0:
+        raise errors.InvalidArgumentError("No interval_list files found in %s" % (interval_lists))
+
+    # prepare BAM input collections
+    cr = arvados.CollectionReader(job_input)
+    bam = {}
+    bai = {}
+    for s in cr.all_streams():
+        for f in s.all_files():
+            if re.search(r'\.bam$', f.name()):
+                bam[s.name(), f.name()] = f
+            elif re.search(r'\.bai$', f.name()):
+                bai[s.name(), f.name()] = f
+    for ((s_name, f_name), bam_f) in bam.items():
+        bai_f = bai.get((s_name, re.sub(r'bam$', 'bai', f_name)),
+                          bai.get((s_name, re.sub(r'bam$', 'bam.bai', f_name)),
+                                   None))
+        task_input = bam_f.as_manifest()
+        if bai_f:
+            task_input += bai_f.as_manifest()
+        else:
+            # no BAI for BAM
+            raise errors.InvalidArgumentError("No correponding BAI file found for BAM file %s" % f_name)
+
+        # Create a portable data hash for the task's subcollection
+        try:
+            r = arvados.api().collections().create(body={"manifest_text": task_input}).execute()
+            task_input_pdh = r["portable_data_hash"]
+        except:
+            raise
+
+        if reuse_tasks:
+            task_key_params=['input', 'ref', 'chunk']
+            # get candidates for task reuse
+            job_filters = [
+                ['script', '=', script],
+                ['repository', '=', arvados.current_job()['repository']],
+                ['script_version', 'in git', oldest_git_commit_to_reuse],
+                ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
+            ]
+            if reuse_tasks_retrieve_all:
+                # retrieve a full set of all possible reusable tasks
+                reusable_tasks = get_reusable_tasks(if_sequence + 1, task_key_params, job_filters)
+                print "Have %s tasks for potential reuse" % (len(reusable_tasks))
+            else:
+                reusable_task_jobs = get_jobs_for_task_reuse(job_filters)
+                print "Have %s jobs for potential task reuse" % (len(reusable_task_jobs))
+                reusable_task_job_uuids = [job['uuid'] for job in reusable_task_jobs['items']]
+
+        for chunk_input_pdh, chunk_input_name in chunk_input_pdh_names:
+            # Create task for each BAM / chunk
+            new_task_params = {
+                'input': task_input_pdh,
+                'ref': ref_input,
+                'chunk': chunk_input_pdh
+            }
+            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
+            if reuse_tasks:
+                if reuse_tasks_retrieve_all:
+                    task = create_or_reuse_task(if_sequence + 1, new_task_params, reusable_tasks, task_key_params, validate_task_output)
+                else:
+                    task = create_or_reuse_task_from_jobs(if_sequence + 1, new_task_params, reusable_task_job_uuids, task_key_params, validate_task_output)
+            else:
+                task = create_task(if_sequence + 1, new_task_params)
+
+    if and_end_task:
+        print "Ending task 0 successfully"
+        arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                         body={'success':True}
+                                         ).execute()
+        exit(0)
+
 def one_task_per_gvcf_group_in_stream(stream_name, gvcf_by_group, gvcf_indices, interval_list_by_group, if_sequence, ref_input_pdh, create_task_func=create_task):
     """
     Process one stream of data and launch a subtask for handling it
@@ -516,8 +625,8 @@ def one_task_per_interval(interval_count, validate_task_output,
     interval_reader = open(interval_list_file, mode="r")
 
     lines = interval_reader.readlines()
-    sn_intervals = dict()
-    sns = []
+    intervals_sn_start_end = dict()
+    interval_keys = []
     total_len = 0
     for line in lines:
         if line[0] == '@':
@@ -531,8 +640,9 @@ def one_task_per_interval(interval_count, validate_task_output,
         end = int(fields[2])
         length = int(end) - int(start) + 1
         total_len += int(length)
-        sn_intervals[sn] = (start, end)
-        sns.append(sn)
+        interval_key = "%s:%s-%s" % (sn, start, end)
+        intervals_sn_start_end[interval_key] = (sn, start, end)
+        interval_keys.append(interval_key)
 
     print "Total chunk length is %s" % total_len
     interval_len = int(total_len / interval_count)
@@ -543,18 +653,18 @@ def one_task_per_interval(interval_count, validate_task_output,
         intervals_count = 0
         remaining_len = interval_len
         interval = []
-        while len(sns) > 0:
-            sn = sns.pop(0)
-            if not sn_intervals.has_key(sn):
-                raise errors.ValueError("sn_intervals missing entry for sn [%s]" % sn)
-            start, end = sn_intervals[sn]
+        while len(interval_keys) > 0:
+            interval_key = interval_keys.pop(0)
+            if not intervals_sn_start_end.has_key(interval_key):
+                raise errors.ValueError("intervals_sn_start_end missing entry for interval_key [%s]" % interval_key)
+            sn, start, end = intervals_sn_start_end[interval_key]
             if (end-start+1) > remaining_len:
                 # not enough space for the whole sq, split it
                 real_end = end
                 end = remaining_len + start - 1
                 assert((end-start+1) <= remaining_len)
-                sn_intervals[sn] = (end+1, real_end)
-                sns.insert(0, sn)
+                intervals_sn_start_end[interval_key] = (sn, end+1, real_end)
+                interval_keys.insert(0, interval_key)
             interval.append("%s:%s-%s" % (sn, start, end))
             remaining_len -= (end-start+1)
             intervals_count += 1

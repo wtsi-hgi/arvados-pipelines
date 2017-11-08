@@ -102,10 +102,44 @@ def mount_gatk_cram_input(input_param="input"):
             raise errors.FileAccessError("No readable CRAM index file for CRAM file: %s" % cram_file)
     return cram_file
 
+def mount_gatk_bam_input(input_param="input"):
+    # Get single BAM file for this task
+    print "Mounting task input collection"
+    input_dir = arvados.get_task_param_mount('input')
+
+    input_bam_files = []
+    for f in arvados.util.listdir_recursive(input_dir):
+        if re.search(r'\.bam$', f):
+            stream_name, input_file_name = os.path.split(f)
+            input_bam_files += [os.path.join(input_dir, f)]
+    if len(input_bam_files) != 1:
+        raise errors.InvalidArgumentError("Expected exactly one bam file per task.")
+
+    # There is only one BAM file
+    bam_file = input_bam_files[0]
+
+    # Ensure we can read the BAM file
+    if not os.access(bam_file, os.R_OK):
+        raise errors.FileAccessError("BAM file not readable: %s" % bam_file)
+
+    # Ensure we have corresponding BAI index and can read it as well
+    bam_file_base, bam_file_ext = os.path.splitext(bam_file)
+    assert(bam_file_ext == ".bam")
+    bai_file = bam_file_base + ".bai"
+    if not os.access(bai_file, os.R_OK):
+        bai_file = bam_file_base + ".bam.bai"
+        if not os.access(bai_file, os.R_OK):
+            raise errors.FileAccessError("No readable BAM index file for BAM file: %s" % bam_file)
+    return bam_file
+
 def mount_gatk_gvcf_inputs(inputs_param="inputs"):
     # Get input gVCFs for this task
     print "Mounting task input collection"
-    inputs_dir = arvados.get_task_param_mount(inputs_param)
+    inputs_dir = ""
+    if inputs_param in arvados.current_task()['parameters']:
+        inputs_dir = arvados.get_task_param_mount(inputs_param)
+    else:
+        inputs_dir = arvados.get_job_param_mount(inputs_param)
 
     # Sanity check input gVCFs
     input_gvcf_files = []

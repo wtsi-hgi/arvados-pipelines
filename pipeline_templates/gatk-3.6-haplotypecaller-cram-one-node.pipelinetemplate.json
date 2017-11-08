@@ -1,5 +1,5 @@
 {
- "name":"GATK 3.5 HaplotypeCaller (CRAM to GVCF) single node",
+ "name":"GATK 3.6 HaplotypeCaller (CRAM to GVCF) single node",
  "components":{
   "gatk-haplotypecaller-cram-gvcf":{
    "script":"gatk-haplotypecaller-cram.py",
@@ -20,12 +20,12 @@
     }
    },
    "runtime_constraints":{
-    "docker_image":"mercury/gatk-3.5",
+    "docker_image":"mercury/gatk-3.6",
     "min_nodes":1,
     "max_tasks_per_node":10,
     "keep_cache_mb_per_task":1280
    }
   }
  },
- "description":"GATK 3.5 HaplotypeCaller (CRAM to gVCF) on a single node"
+ "description":"GATK 3.6 HaplotypeCaller (CRAM to gVCF) on a single node"
 }

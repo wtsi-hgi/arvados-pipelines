@@ -1,0 +1,22 @@
+{
+ "name":"Concatenate VCFs",
+ "components":{
+  "bcftools-concatvcfs":{
+   "script":"bcftools-concatvcfs.py",
+   "script_version":"master",
+   "repository":"jr17/hgi",
+   "script_parameters":{
+    "inputs":{
+     "required":true,
+     "dataclass":"Collection"
+    }
+   },
+   "runtime_constraints":{
+    "docker_image":"mercury/samtools-1.3.1",
+    "min_nodes":1,
+    "max_tasks_per_node":1
+   }
+  }
+ },
+ "description":"Concatenate VCFs into a single output VCF using bcftools"
+}

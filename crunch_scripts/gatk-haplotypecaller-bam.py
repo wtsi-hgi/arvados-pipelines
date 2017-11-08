@@ -8,13 +8,7 @@ import subprocess
 import hgi_arvados
 from hgi_arvados import gatk
 from hgi_arvados import gatk_helper
-from hgi_arvados import errors
 from hgi_arvados import validators
-
-# TODO: make group_by_regex and max_gvcfs_to_combine parameters
-group_by_regex = '[._](?P<group_by>[0-9]+_of_[0-9]+)[._]'
-max_gvcfs_to_combine = 200
-interval_count = 1
 
 def validate_task_output(output_locator):
     print "Validating task output %s" % (output_locator)
@@ -34,39 +28,43 @@ def main():
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
-    hgi_arvados.one_task_per_group_and_per_n_gvcfs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
-                                                   group_by_regex, max_gvcfs_to_combine,
-                                                   if_sequence=0, and_end_task=True)
+    hgi_arvados.chunked_tasks_per_bam_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, validate_task_output,
+                                            if_sequence=0, and_end_task=True, reuse_tasks=False,
+                                            oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
+                                            script="gatk-haplotypecaller-bam.py")
 
     # Get object representing the current task
     this_task = arvados.current_task()
 
-    # We will never reach this point if we are in the 0th task sequence
-    assert(this_task['sequence'] > 0)
+    # We will never reach this point if we are in the 0th task
+    assert(this_task['sequence'] != 0)
 
     ################################################################################
-    # Phase II: Combine gVCFs!
+    # Phase IIa: If we are a "reuse" task, just set our output and be done with it
+    ################################################################################
+    if 'reuse_job_task' in this_task['parameters']:
+        print "This task's work was already done by JobTask %s" % this_task['parameters']['reuse_job_task']
+        exit(0)
+
+    ################################################################################
+    # Phase IIb: Call Haplotypes!
     ################################################################################
     ref_file = gatk_helper.mount_gatk_reference(ref_param="ref")
-    gvcf_files = gatk_helper.mount_gatk_gvcf_inputs(inputs_param="inputs")
+    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="chunk")
+    bam_file = gatk_helper.mount_gatk_bam_input(input_param="input")
+    bam_file_base, bam_file_ext = os.path.splitext(bam_file)
     out_dir = hgi_arvados.prepare_out_dir()
-    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="interval_list")
-    name = this_task['parameters'].get('name')
-    if not name:
-        name = "unknown"
-    out_file = name + ".vcf.gz"
+    out_filename = os.path.basename(bam_file_base) + "." + os.path.basename(interval_list_file) + ".vcf.gz"
 
     # because of a GATK bug, name cannot contain the string '.bcf' anywhere within it or we will get BCF output
-    out_file = out_file.replace(".bcf", "._cf")
+    out_filename = out_filename.replace(".bcf", "._cf")
 
-    # CombineGVCFs!
-    extra_args = []
-    extra_args.extend(["--breakBandsAtMultiplesOf", "1000000"])
-    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, interval_list_file, os.path.join(out_dir, out_file), extra_gatk_args=extra_args)
+    # HaplotypeCaller!
+    gatk_exit = gatk.haplotype_caller(ref_file, bam_file, interval_list_file, os.path.join(out_dir, out_filename))
 
     if gatk_exit != 0:
-        print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
-        arvados.api().job_tasks().update(uuid=this_task['uuid'],
+        print "ERROR: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
+        arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={'success':False}
                                          ).execute()
     else:
@@ -81,6 +79,7 @@ def main():
         # Commit the output to Keep.
         output_locator = out.finish()
 
+        print "Task output written to keep, validating it"
         if validate_task_output(output_locator):
             print "Task output validated, setting output to %s" % (output_locator)
 
@@ -88,9 +87,10 @@ def main():
             this_task.set_output(output_locator)
         else:
             print "ERROR: Failed to validate task output (%s)" % (output_locator)
-            arvados.api().job_tasks().update(uuid=this_task['uuid'],
+            arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
                                              body={'success':False}
                                              ).execute()
+
 
     # Done!
 

@@ -1,0 +1,6 @@
+interval_list_A:
+  class: File
+  path: tst1.interval_list
+interval_list_B:
+  class: File
+  path: tst2.interval_list

@@ -11,10 +11,8 @@ from hgi_arvados import gatk_helper
 from hgi_arvados import errors
 from hgi_arvados import validators
 
-# TODO: make group_by_regex and max_gvcfs_to_combine parameters
-group_by_regex = '[._](?P<group_by>[0-9]+_of_[0-9]+)[._]'
-max_gvcfs_to_combine = 200
-interval_count = 1
+# TODO: make group_by_regex a parameter
+group_by_regex = '(?P<group_by>[0-9]+_of_[0-9]+)[^0-9]'
 
 def validate_task_output(output_locator):
     print "Validating task output %s" % (output_locator)
@@ -33,10 +31,31 @@ def main():
     if "interval_count" in arvados.current_job()['script_parameters']:
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
-    # Setup sub tasks 1-N (and terminate if this is task 0)
-    hgi_arvados.one_task_per_group_and_per_n_gvcfs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
-                                                   group_by_regex, max_gvcfs_to_combine,
-                                                   if_sequence=0, and_end_task=True)
+    if arvados.current_task()['sequence'] == 0:
+        # get candidates for task reuse
+        task_key_params=['inputs', 'ref', 'name'] # N.B. inputs collection includes input vcfs and corresponding interval_list
+        script="gatk-genotypegvcfs.py"
+        oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2'
+        job_filters = [
+            ['script', '=', script],
+            ['repository', '=', arvados.current_job()['repository']],
+            ['script_version', 'in git', oldest_git_commit_to_reuse],
+            ['docker_image_locator', 'in docker', arvados.current_job()['docker_image_locator']],
+        ]
+
+        # retrieve a full set of all possible reusable tasks at sequence 1
+        print "Retrieving all potentially reusable tasks"
+        reusable_tasks = hgi_arvados.get_reusable_tasks(1, task_key_params, job_filters)
+        print "Have %s tasks for potential reuse" % (len(reusable_tasks))
+
+        def create_task_with_validated_reuse(sequence, params):
+            return hgi_arvados.create_or_reuse_task(sequence, params, reusable_tasks, task_key_params, validate_task_output)
+
+        # Setup sub tasks (and terminate if this is task 0)
+        hgi_arvados.one_task_per_group_combined_inputs(ref_input_pdh, job_input_pdh, interval_lists_pdh,
+                                                       group_by_regex,
+                                                       if_sequence=0, and_end_task=True,
+                                                       create_task_func=create_task_with_validated_reuse)
 
     # Get object representing the current task
     this_task = arvados.current_task()
@@ -45,12 +64,19 @@ def main():
     assert(this_task['sequence'] > 0)
 
     ################################################################################
-    # Phase II: Combine gVCFs!
+    # Phase IIa: If we are a "reuse" task, just set our output and be done with it
+    ################################################################################
+    if 'reuse_job_task' in this_task['parameters']:
+        print "This task's work was already done by JobTask %s" % this_task['parameters']['reuse_job_task']
+        exit(0)
+
+    ################################################################################
+    # Phase IIb: Genotype gVCFs!
     ################################################################################
     ref_file = gatk_helper.mount_gatk_reference(ref_param="ref")
     gvcf_files = gatk_helper.mount_gatk_gvcf_inputs(inputs_param="inputs")
     out_dir = hgi_arvados.prepare_out_dir()
-    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="interval_list")
+    interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="inputs")
     name = this_task['parameters'].get('name')
     if not name:
         name = "unknown"
@@ -59,10 +85,8 @@ def main():
     # because of a GATK bug, name cannot contain the string '.bcf' anywhere within it or we will get BCF output
     out_file = out_file.replace(".bcf", "._cf")
 
-    # CombineGVCFs!
-    extra_args = []
-    extra_args.extend(["--breakBandsAtMultiplesOf", "1000000"])
-    gatk_exit = gatk.combine_gvcfs(ref_file, gvcf_files, interval_list_file, os.path.join(out_dir, out_file), extra_gatk_args=extra_args)
+    # GenotypeGVCFs!
+    gatk_exit = gatk.genotype_gvcfs(ref_file, interval_list_file, gvcf_files, os.path.join(out_dir, out_file), cores="32", java_mem="200g")
 
     if gatk_exit != 0:
         print "WARNING: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
