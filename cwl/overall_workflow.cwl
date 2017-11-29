@@ -25,27 +25,20 @@ inputs:
 
 steps:
   - id: dict_to_interval_list
-    run: workflow/dict_to_interval_list/dict_to_interval_list.cwl
+    run: tools/dict_to_interval_list/dict_to_interval_list.cwl
     in:
       dictionary: dict_file
     out: [interval_list]
 
   - id: intersect
-    run: workflow/intersect_intervals/intersect_intervals.cwl
+    run: tools/intersect_intervals/intersect_intervals.cwl
     in:
       interval_list_A: intersect_file
       interval_list_B: dict_to_interval_list/interval_list
     out: [intersected_interval_list]
 
   - id: split_interval_list
-    run: workflow/split_interval_list/split_interval_list.cwl
-    in:
-      number_of_intervals: chunks
-      interval_list: dict_to_interval_list/interval_list
-    out: [interval_lists]
-
-  - id: split_interval_list
-    run: $(inputs.split_interval_list_method)
+    run: tools/split_interval_list/split_interval_list.cwl
     in:
       number_of_intervals: chunks
       interval_list: dict_to_interval_list/interval_list
@@ -55,7 +48,7 @@ steps:
     requirements:
       - class: ScatterFeatureRequirement
     scatter: intervals
-    run: workflow/HaplotypeCaller.cwl
+    run: tools/HaplotypeCaller.cwl
     in:
       reference_sequence: reference_sequence
       refIndex: refIndex
