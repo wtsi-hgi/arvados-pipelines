@@ -15,9 +15,9 @@ git clone --recursive https://github.com/wtsi-hgi/arvados-pipelines.git
 These workflows have a dependencies on docker containers. To install the docker containers run:
 
 ```bash
-docker build dict_to_interval_list -t dict_to_interval_list
-docker build split_interval_list -t split_interval_list
-docker build intersect_intervals -t intersect_intervals
+docker build -t dict_to_interval_list tools/dict_to_interval_list
+docker build -t split_interval_list tools/split_interval_list
+docker build -t intersect_intervals tools/intersect_intervals
 ```
 
 ## Usage
