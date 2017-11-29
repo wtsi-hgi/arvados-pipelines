@@ -98,6 +98,6 @@ ENV/
 # mypy
 .mypy_cache/
 
-cwl-example-data
+tests/cwl-example-data
 out.gvcf.gz
 

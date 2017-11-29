@@ -1,33 +1,91 @@
-import unittest
+from __future__ import print_function
+import pytest
 import subprocess
 import tempfile
 import shutil
 import os
 
+GATK_CWL_GENERATOR_VERSION="v1.4.1"
+
+"""
+Download example data to be used in CWL integration tests
+"""
+@pytest.fixture(scope="module")
+def example_data():
+    if not os.path.isfile("tests/cwl-example-data/chr22_cwl_test.cram"):
+        from six.moves.urllib.request import urlopen
+        import tarfile
+        print("Downloading and extracting cwl-example-data")
+        tgz = urlopen("https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test.tgz")
+        tar = tarfile.open(fileobj=tgz, mode="r|gz")
+        tar.extractall(path="./tests/cwl-example-data")
+        tar.close()
+        tgz.close()
+
+"""
+Download generated GATK CommandLineTool CWL from gatk-cwl-generator releases
+"""
+@pytest.fixture(scope="module")
+def example_data():
+    if not os.path.isfile("./tests/commonwel/gatk_cmdline_tools/3.8/cwl/HaplotypeCaller.cwl"):
+        from six.moves.urllib.request import urlopen
+        import tarfile
+        url = "https://github.com/wtsi-hgi/gatk-cwl-generator/releases/download/%s/gatk-cwl-generator-%s-gatk_cmdline_tools.tgz" % (GATK_CWL_GENERATOR_VERSION, GATK_CWL_GENERATOR_VERSION)
+        print("Downloading gatk_cmdline_tools from gatk-cwl-geneator for release %s: %s" % (GATK_CWL_GENERATOR_VERSION, url))
+        tgz = urlopen(url)
+        tar = tarfile.open(fileobj=tgz, mode="r|gz")
+        print("Extracting to ./tests/commonwl")
+        tar.extractall(path="./tests/commonwl")
+        tar.close()
+        tgz.close()
+
+def ensure_docker_build(image):
+    p = subprocess.Popen(["docker", "build", "-t", image, "tools/%s" % (image)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (stdout, stderr) = p.communicate()
+    rval = p.wait()
+    if rval != 0:
+        raise Exception("docker build returned %s: %s %s" % (rval, stderr, stdout))
+
+"""
+Ensure docker images are built locally
+"""
+@pytest.fixture(scope="module")
+def docker_images():
+    for image in ["dict_to_interval_list", "split_interval_list", "intersect_intervals"]:
+        print("Building docker image %s" % image)
+        ensure_docker_build(image)
+
 base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 os.chdir(base_dir) # Make the current directory cwl
+os.environ["XDG_DATA_HOME"] = "%s/tests" % (base_dir)
 
-class TestWorkflowSteps(unittest.TestCase):
-    def test_intersect(self):
+class TestWorkflowSteps:
+    def test_intersect(self, docker_images):
         tmp_folder = tempfile.mkdtemp()
 
-        self.assertEquals(subprocess.call(
+        rval = subprocess.call(
             "cwl-runner --outdir {} tools/intersect_intervals/intersect_intervals.cwl tests/test_intersect.yml".format(tmp_folder),
-            shell=True), 0)
+            shell=True)
+        assert rval == 0
 
         with open(tmp_folder + "/output.bed") as file:
-            self.assertEquals(len(file.readlines()), 5)
+            assert len(file.readlines()) == 5
         
         shutil.rmtree(tmp_folder)
     
-    def test_workflow(self):
+    def test_workflow(self, docker_images, example_data):
         tmp_folder = tempfile.mkdtemp()
 
-        self.assertEquals(subprocess.call(
+        rval = subprocess.call(
             "cwl-runner --outdir {} overall_workflow.cwl tests/test_overall_workflow.yml".format(tmp_folder),
-            shell=True), 0)
+            shell=True)
+        assert rval == 0
 
-        self.assertEquals(len(os.listdir(tmp_folder)), 20)
+        assert len(os.listdir(tmp_folder)) > 0
+        
+        out_file = "%s/out.vcf" % (tmp_folder)
+        assert os.path.isfile(out_file)
 
-if __name__ == "__main__":
-    unittest.main()
+        assert os.path.getsize(out_file) > 500000
+
+        shutil.rmtree(tmp_folder)

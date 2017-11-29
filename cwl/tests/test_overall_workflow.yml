@@ -17,4 +17,4 @@ dict_file:
 chunks: 2
 intersect_file:
     class: File
-    path: cwl-example-data/intersect.interval_list
+    path: chr22_cwl_test.interval_list

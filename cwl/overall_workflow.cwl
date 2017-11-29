@@ -48,7 +48,7 @@ steps:
     requirements:
       - class: ScatterFeatureRequirement
     scatter: intervals
-    run: tools/HaplotypeCaller.cwl
+    run: https://hgi-commonwl.cog.sanger.ac.uk/gatk-cwl-generator-v1.4.1/gatk_cmdline_tools/3.8/cwl/HaplotypeCaller.cwl
     in:
       reference_sequence: reference_sequence
       refIndex: refIndex
