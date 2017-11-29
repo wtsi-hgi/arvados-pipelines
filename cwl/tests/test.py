@@ -22,23 +22,6 @@ def example_data():
         tar.close()
         tgz.close()
 
-"""
-Download generated GATK CommandLineTool CWL from gatk-cwl-generator releases
-"""
-@pytest.fixture(scope="module")
-def example_data():
-    if not os.path.isfile("./tests/commonwel/gatk_cmdline_tools/3.8/cwl/HaplotypeCaller.cwl"):
-        from six.moves.urllib.request import urlopen
-        import tarfile
-        url = "https://github.com/wtsi-hgi/gatk-cwl-generator/releases/download/%s/gatk-cwl-generator-%s-gatk_cmdline_tools.tgz" % (GATK_CWL_GENERATOR_VERSION, GATK_CWL_GENERATOR_VERSION)
-        print("Downloading gatk_cmdline_tools from gatk-cwl-geneator for release %s: %s" % (GATK_CWL_GENERATOR_VERSION, url))
-        tgz = urlopen(url)
-        tar = tarfile.open(fileobj=tgz, mode="r|gz")
-        print("Extracting to ./tests/commonwl")
-        tar.extractall(path="./tests/commonwl")
-        tar.close()
-        tgz.close()
-
 def ensure_docker_build(image):
     p = subprocess.Popen(["docker", "build", "-t", image, "tools/%s" % (image)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = p.communicate()
