@@ -1,0 +1,11 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/wtsi-hgi/GGR-cwl
+	branch = master
+	commit = c293a3b407b154c1efcd4f9fedb675e241c8c2af
+	parent = 848591827150ff6e1902ceb0aafbc95145379966
+	cmdver = 0.3.1
