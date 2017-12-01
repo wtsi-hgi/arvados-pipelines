@@ -2,6 +2,9 @@
 
 CWL workflow files for part of the pipeline
 
+## Prerequisites
+- python 2
+
 ## Cloning
 
 Clone this with the included submodule (to get the bedtools intersect CWL file):
@@ -43,5 +46,8 @@ dict:
 
 To run the tests, run:
 ```bash
-python tests/test.py
+pip install -r test_requirements.txt
+
+pytest -s tests/test.py
 ```
+Depending on the size of the test data and the hardware, the tests can take a while to run; for example, full chromosome 22 data takes 11 minutes to complete.  The `-s` in the pytest command gives realtime output.
