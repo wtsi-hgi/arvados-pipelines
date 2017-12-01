@@ -82,7 +82,7 @@ def haplotype_caller(ref_file, cram_file, interval_list_file, out_path, **kwargs
         "--emitRefConfidence", "GVCF",
         "--variant_index_type", "LINEAR",
         "--variant_index_parameter", "128000",
-        "--ploidy", ploidy,
+        "--sample_ploidy", ploidy,
         "-o", out_path,
         "-l", "INFO"
         ]

@@ -30,6 +30,7 @@ def main():
     ploidy = 2
     if "ploidy" in arvados.current_job()['script_parameters']:
         ploidy = arvados.current_job()['script_parameters']['ploidy']
+        print "Have script_parameters ploidy = %s" % (ploidy)
 
     # Setup sub tasks 1-N (and terminate if this is task 0)
     hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, validate_task_output,

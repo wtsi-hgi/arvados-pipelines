@@ -136,7 +136,7 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
                 'chunk': chunk_input_pdh,
                 'ploidy': ploidy
             }
-            print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
+            print "Creating new task to process %s with chunk interval %s (ploidy %s)" % (f_name, chunk_input_name, ploidy)
             if reuse_tasks:
                 if reuse_tasks_retrieve_all:
                     task = create_or_reuse_task(if_sequence + 1, new_task_params, reusable_tasks, task_key_params, validate_task_output)
