@@ -17,6 +17,12 @@
     "interval_lists_collection":{
      "required":true,
      "dataclass":"Collection"
+    },
+    "ploidy":{
+     "required":false,
+     "dataclass":"number",
+     "default":2,
+     "description":"Ploidy to use for HaplotypeCaller."
     }
    },
    "runtime_constraints":{

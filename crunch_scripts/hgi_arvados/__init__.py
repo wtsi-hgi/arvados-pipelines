@@ -45,6 +45,7 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
                                 if_sequence=0, and_end_task=True,
                                 reuse_tasks=True, reuse_tasks_retrieve_all=True,
                                 interval_list_param="interval_list",
+                                ploidy=2,
                                 oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
                                 script=arvados.current_job()['script']):
     """
@@ -132,7 +133,8 @@ def chunked_tasks_per_cram_file(ref_input, job_input, interval_lists, validate_t
             new_task_params = {
                 'input': task_input_pdh,
                 'ref': ref_input,
-                'chunk': chunk_input_pdh
+                'chunk': chunk_input_pdh,
+                'ploidy': ploidy
             }
             print "Creating new task to process %s with chunk interval %s " % (f_name, chunk_input_name)
             if reuse_tasks:

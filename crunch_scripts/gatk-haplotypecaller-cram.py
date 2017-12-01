@@ -27,11 +27,20 @@ def main():
     if "interval_count" in arvados.current_job()['script_parameters']:
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
+    ploidy = 2
+    if "ploidy" in arvados.current_job()['script_parameters']:
+        ploidy = arvados.current_job()['script_parameters']['ploidy']
+
     # Setup sub tasks 1-N (and terminate if this is task 0)
     hgi_arvados.chunked_tasks_per_cram_file(ref_input_pdh, job_input_pdh, interval_lists_pdh, validate_task_output,
                                             if_sequence=0, and_end_task=True, reuse_tasks=False,
+                                            ploidy=ploidy,
                                             oldest_git_commit_to_reuse='6ca726fc265f9e55765bf1fdf71b86285b8a0ff2',
                                             script="gatk-haplotypecaller-cram.py")
+
+    ###############################################################################
+    # Below this point will only run in tasks > 0
+    ###############################################################################
 
     # Get object representing the current task
     this_task = arvados.current_task()
@@ -53,6 +62,9 @@ def main():
     interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="chunk")
     cram_file = gatk_helper.mount_gatk_cram_input(input_param="input")
     cram_file_base, cram_file_ext = os.path.splitext(cram_file)
+    ploidy = 2
+    if 'ploidy' in this_task['parameters']:
+        ploidy = this_task['parameters']['ploidy']
     out_dir = hgi_arvados.prepare_out_dir()
     out_filename = os.path.basename(cram_file_base) + "." + os.path.basename(interval_list_file) + ".vcf.gz"
 
@@ -60,7 +72,7 @@ def main():
     out_filename = out_filename.replace(".bcf", "._cf")
 
     # HaplotypeCaller!
-    gatk_exit = gatk.haplotype_caller(ref_file, cram_file, interval_list_file, os.path.join(out_dir, out_filename))
+    gatk_exit = gatk.haplotype_caller(ref_file, cram_file, interval_list_file, os.path.join(out_dir, out_filename), ploidy=ploidy)
 
     if gatk_exit != 0:
         print "ERROR: GATK exited with exit code %s (NOT WRITING OUTPUT)" % gatk_exit
