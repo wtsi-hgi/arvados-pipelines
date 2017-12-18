@@ -53,19 +53,19 @@ class TestWorkflowSteps:
 
         with open(tmp_folder + "/output.bed") as file:
             assert len(file.readlines()) == 5
-        
+
         shutil.rmtree(tmp_folder)
-    
+
     def test_workflow(self, docker_images, example_data):
         tmp_folder = tempfile.mkdtemp()
 
         rval = subprocess.call(
-            "cwl-runner --outdir {} overall_workflow.cwl tests/test_overall_workflow.yml".format(tmp_folder),
+            "cwl-runner --debug --js-console --outdir {} overall_workflow.cwl tests/test_overall_workflow.yml".format(tmp_folder),
             shell=True)
         assert rval == 0
 
         assert len(os.listdir(tmp_folder)) > 0
-        
+
         out_file = "%s/out.vcf" % (tmp_folder)
         assert os.path.isfile(out_file)
 

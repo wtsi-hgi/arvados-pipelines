@@ -3,17 +3,10 @@ class: Workflow
 
 requirements:
   - class: SubworkflowFeatureRequirement
+  - class: InlineJavascriptRequirement
 
 inputs:
-  - id: reference_sequence
-    type: File
-  - id: refIndex
-    type: File
-  - id: refDict
-    type: File
   - id: input_file
-    type: File
-  - id: dict_file
     type: File
   - id: chunks
     type: int
@@ -24,10 +17,32 @@ inputs:
     type: File
 
 steps:
+  - id: samtools_fastaref
+    run: tools/fastaref/fastaref.cwl
+    in:
+      output_file_name:
+        default: "reference.fa"
+      input: input_file
+    out: [reference_sequence]
+
+  - id: samtools_faidx
+    run: tools/samtools/samtools-faidx.cwl
+    in:
+      input: samtools_fastaref/reference_sequence
+    out: [index]
+
+  - id: samtools_dict
+    run: tools/samtools/samtools-dict.cwl
+    in:
+      output:
+        default: "reference.dict"
+      input: samtools_fastaref/reference_sequence
+    out: [dict]
+
   - id: dict_to_interval_list
     run: tools/dict_to_interval_list/dict_to_interval_list.cwl
     in:
-      dictionary: dict_file
+      dictionary: samtools_dict/dict
     out: [interval_list]
 
   - id: intersect
@@ -41,24 +56,58 @@ steps:
     run: tools/split_interval_list/split_interval_list.cwl
     in:
       number_of_intervals: chunks
-      interval_list: dict_to_interval_list/interval_list
+      interval_list: intersect/intersected_interval_list
     out: [interval_lists]
+
+  - id: combine_sequence_files
+    in:
+      reference: samtools_fastaref/reference_sequence
+      index: samtools_faidx/index
+      dict: samtools_dict/dict
+    out:
+      [reference_with_files]
+    run:
+      class: CommandLineTool
+      doc: Step to put the reference, dict and index in the same folder
+      inputs:
+        reference: File
+        index: File
+        dict: File
+      baseCommand: echo
+      outputs:
+        reference_with_files:
+          outputBinding:
+            glob: ${
+              console.log(inputs);
+              return inputs.reference.basename;
+              }
+          secondaryFiles:
+            - $(inputs.index.basename)
+            - $(inputs.dict.basename)
+          type: File
+      requirements:
+        InitialWorkDirRequirement:
+          listing:
+            - entry: $(inputs.reference)
+              entryname: $(inputs.reference.basename)
+            - entry: $(inputs.index)
+              entryname: $(inputs.index.basename)
+            - entry: $(inputs.dict)
+              entryname: $(inputs.dict.basename)
 
   - id: haplotype_caller
     requirements:
       - class: ScatterFeatureRequirement
-    scatter: intervals
-    run: https://hgi-commonwl.cog.sanger.ac.uk/gatk-cwl-generator-v1.4.1/gatk_cmdline_tools/3.8/cwl/HaplotypeCaller.cwl
+#    scatter: intervals
+    run: tools/HaplotypeCaller.cwl
     in:
-      reference_sequence: reference_sequence
-      refIndex: refIndex
-      refDict: refDict
+      reference_sequence: combine_sequence_files/reference_with_files
       input_file: input_file
       intervals: split_interval_list/interval_lists
       analysis_type: analysis_type
     out: [outOutput]
 
-outputs: 
+outputs:
   - id: gvcf_file
     type: File[]
     outputSource: haplotype_caller/outOutput
