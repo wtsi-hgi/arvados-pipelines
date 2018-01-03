@@ -23,6 +23,8 @@ arguments:
 
 outputs:
   - id: interval_lists
-    type: File[]
+    type:
+      type: array
+      items: File
     outputBinding:
       glob: "*"

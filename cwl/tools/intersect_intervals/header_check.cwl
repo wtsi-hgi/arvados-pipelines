@@ -1,18 +1,35 @@
 cwlVersion: v1.0
-class: CommandLineTool
-hints:
- DockerRequirement:
-   dockerPull: ubuntu:latest
-baseCommand: ['cmp']
+class: Workflow
+
+requirements:
+  - class: SubworkflowFeatureRequirement
 
 inputs:
-  - id: a
+  - id: header_A
     type: File
-    inputBinding:
-      position: 1
-  - id: b
+  - id: header_B
     type: File
-    inputBinding:
-      position: 2
+
+steps:
+  - id: cleanse_header_A
+    run: cleanse_header.cwl
+    in:
+      header: header_A
+    out: 
+      - cleansed_header
+
+  - id: cleanse_header_B
+    run: cleanse_header.cwl
+    in:
+      header: header_B
+    out: 
+      - cleansed_header
+
+  - id: cmp
+    run: cmp.cwl
+    in:
+      a: cleanse_header_A/cleansed_header
+      b: cleanse_header_B/cleansed_header
+    out: []
 
 outputs: []

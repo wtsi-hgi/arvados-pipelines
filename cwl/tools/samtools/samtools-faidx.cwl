@@ -14,6 +14,7 @@ requirements:
   listing:
   - entry: $(inputs.input)
     entryname: $(inputs.input.basename)
+
 inputs:
   input:
     type: File

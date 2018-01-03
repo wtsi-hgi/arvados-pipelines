@@ -1,11 +1,11 @@
 cwlVersion: v1.0
 class: Workflow
+
 inputs:
   - id: interval_list_A
     type: File
   - id: interval_list_B
     type: File
-
 
 steps:
   - id: il_to_bed_A
@@ -24,12 +24,12 @@ steps:
       - bed_file
       - header
 
-  - id: header_check
-    run: header_check.cwl
-    in:
-      a: il_to_bed_A/header
-      b: il_to_bed_B/header
-    out: []
+  # - id: header_check
+  #   run: header_check.cwl
+  #   in:
+  #     header_A: il_to_bed_A/header
+  #     header_B: il_to_bed_B/header
+  #   out: []
 
   - id: intersect
     run: ../../GGR-cwl/map/bedtools-intersect.cwl
