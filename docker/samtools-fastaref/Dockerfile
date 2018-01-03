@@ -9,7 +9,7 @@ RUN \
   cd /tmp && \
   git clone https://github.com/wtsi-hgi/htslib.git && \
   cd htslib && \
-  git checkout 1a6a7e242d75c9b746653ee548d2bce430cb905b && \
+  git checkout 62cfaa0fe71e6fd8f0beac45d5264ab5fef3c30c && \
   autoreconf && \
   ./configure && \
   make && \
@@ -19,7 +19,7 @@ RUN \
   cd .. && \
   git clone https://github.com/wtsi-hgi/samtools.git && \
   cd samtools && \
-  git checkout bd1bf1ee9f8242c118ecfc8ac7ee408ada48d228 && \
+  git checkout 2e36cc84942eee4ba24e9d4c7747027f10b8b042 && \
   autoreconf && \
   ./configure && \
   make && \
