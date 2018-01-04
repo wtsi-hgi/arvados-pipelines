@@ -66,10 +66,7 @@ steps:
       outputs:
         reference_with_files:
           outputBinding:
-            glob: ${
-              console.log(inputs);
-              return inputs.reference.basename;
-              }
+            glob: $(inputs.reference.basename)
           secondaryFiles:
             - $(inputs.index.basename)
             - $(inputs.dict.basename)
