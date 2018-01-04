@@ -4,14 +4,17 @@ cwlVersion: v1.0
 class: CommandLineTool
 
 requirements:
-- $import: samtools-docker.yml
+- class: DockerRequirement
+  dockerPull: scidap/samtools:v1.2-242-4d56437
+  dockerFile: >
+    $import: samtools-Dockerfile
 - class: InlineJavascriptRequirement
 - class: InitialWorkDirRequirement
   listing:
-  - entry: $(inputs.input)
-    entryname: $(inputs.input.path.split('/').slice(-1)[0])
+  - entry: $(inputs.fasta)
+    entryname: $(inputs.fasta.path.split('/').slice(-1)[0])
 inputs:
-  input:
+  fasta:
     type: File
     doc: <file.fa|file.fa.gz>
     inputBinding:
@@ -39,7 +42,7 @@ inputs:
       prefix: -o
 
 outputs:
-  dict:
+  fasta_dict:
     type: File
     outputBinding:
       glob: $(inputs.output)

@@ -25,9 +25,7 @@ arguments:
 
 outputs:
   - id: interval_lists
-    type:
-      type: array
-      items: File
+    type: File[]?
     outputBinding:
       glob: "*.*_of_*.interval_list"
       outputEval: |
@@ -35,21 +33,25 @@ outputs:
           var files={};
           var output=[];
           var re = /^.*[.]([0-9]+)_of_[0-9]+[.]interval_list$/;
+          if (self.length == 0) {
+            return output;
+          }
           for (var i = 0; i < self.length; ++i) {
             var fn = self[i].basename
             var result = re.exec(fn);
             if (result === null) {
-              throw new Error('Unexpected filename in output ' + fn);
+              throw new Error("Unexpected filename in output " + fn);
             } else {
               var index = result[1];
-              console.log("have index " + index + " for filename " + fn);
             }
             files[index] = self[i];
           }
           var sorted_indices = Object.keys(files);
           sorted_indices.sort(function(a,b){return parseInt(a) - parseInt(b);});
-          for (index of sorted_indices) {
+          for (var i = 0; i < sorted_indices.length; ++i) {
+           index = sorted_indices[i];
             output.push(files[index]);
           }
           return output;
         }
+

@@ -23,11 +23,11 @@ RUN \
   autoreconf && \
   ./configure && \
   make && \
-  cp samtools /usr/local/bin
-  # cd && \
-  # rm -rf /tmp/htslib && \
-  # rm -rf /tmp/samtools && \
-  # apt-get -q=2 -y purge build-essential git zlib1g-dev libbz2-dev liblzma-dev libcurl4-openssl-dev libncurses5-dev && \
-  # apt-get -q=2 -y autoremove && \
-  # apt-get -q=2 -y clean && \
-  # rm -rf /var/lib/apt/lists/*
+  cp samtools /usr/local/bin && \
+  cd && \
+  rm -rf /tmp/htslib && \
+  rm -rf /tmp/samtools && \
+  apt-get -q=2 -y purge build-essential git zlib1g-dev libbz2-dev liblzma-dev libcurl4-openssl-dev libncurses5-dev automake autoconf && \
+  apt-get -q=2 -y autoremove && \
+  apt-get -q=2 -y clean && \
+  rm -rf /var/lib/apt/lists/*

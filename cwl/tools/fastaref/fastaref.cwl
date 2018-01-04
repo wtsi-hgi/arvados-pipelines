@@ -2,9 +2,14 @@ cwlVersion: v1.0
 class: CommandLineTool
 hints:
  DockerRequirement:
-   dockerPull: samtools:fastaref
+   dockerPull: mercury/samtools-fastaref
 baseCommand: ['samtools', 'fastaref']
 
+requirements:
+  EnvVarRequirement:
+    envDef:
+      REF_PATH: $(inputs.ref_cache_dir.path)/%2s/%2s/%s
+      
 inputs:
   - id: output_file_name
     doc: Output file name
@@ -20,10 +25,8 @@ inputs:
       - "null"
       - type: array
         items: string
-  - id: REF_CACHE
-    doc: The location of the REF_CACHE enviromental variable, which
-      stores a cache of enviromental variables
-    type: File?
+  - id: ref_cache_dir
+    type: Directory
   - id: max_line_length
     doc: Maximum length of outputted lines
     type: int?
@@ -36,7 +39,7 @@ inputs:
       position: 1 # Make this the last argument
 
 outputs:
-  - id: reference_sequence
+  - id: reference_fasta
     type: File
     outputBinding:
       glob: $(inputs.output_file_name)

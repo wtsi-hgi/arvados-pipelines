@@ -9,42 +9,28 @@ requirements:
 inputs:
   - id: library_cram
     type: File
-  - id: reference_sequence
-    type: File
   - id: chunks
     type: int
   - id: intersect_file
     type: File
+  - id: ref_fasta_files
+    type: File[]
 
 steps:
-  # - id: samtools_fastaref
-  #   run: ../tools/fastaref/fastaref.cwl
-  #   in:
-  #     output_file_name:
-  #       default: "reference.fa"
-  #     input: library_cram
-  #   out: [reference_sequence]
-
-  - id: samtools_faidx
-    run: ../tools/samtools/samtools-faidx.cwl
+  - id: cram_get_fasta
+    run: cram-get-fasta.cwl
     in:
-#      input: samtools_fastaref/reference_sequence
-      input: reference_sequence
-    out: [index]
-
-  - id: samtools_dict
-    run: ../tools/samtools/samtools-dict.cwl
-    in:
-      output:
-        default: "reference.dict"
-#      input: samtools_fastaref/reference_sequence
-      input: reference_sequence
-    out: [dict]
+      input_cram: library_cram
+      ref_fasta_files: ref_fasta_files
+    out:
+      - reference_fasta
+      - reference_index
+      - reference_dict
 
   - id: dict_to_interval_list
     run: ../tools/dict_to_interval_list/dict_to_interval_list.cwl
     in:
-      dictionary: samtools_dict/dict
+      dictionary: cram_get_fasta/reference_dict
     out: [interval_list]
 
   - id: intersect
@@ -64,10 +50,9 @@ steps:
 
   - id: combine_sequence_files
     in:
-#      reference: samtools_fastaref/reference_sequence
-      reference: reference_sequence
-      index: samtools_faidx/index
-      dict: samtools_dict/dict
+      reference: cram_get_fasta/reference_fasta
+      index: cram_get_fasta/reference_index
+      dict: cram_get_fasta/reference_dict
     out:
       [reference_with_files]
     run:
@@ -135,3 +120,4 @@ outputs:
   - id: gvcf_file
     type: File[]
     outputSource: haplotype_caller/outOutput
+
