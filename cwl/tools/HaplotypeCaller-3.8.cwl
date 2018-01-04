@@ -1156,9 +1156,7 @@ outputs:
   id: graphOutputOutput
 - outputBinding:
     glob: $(inputs.out)
-  type:
-  - 'null'
-  - File
+  type: File
   id: outOutput
 baseCommand:
 - java
