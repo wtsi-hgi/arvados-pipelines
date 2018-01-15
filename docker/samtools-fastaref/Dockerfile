@@ -9,7 +9,7 @@ RUN \
   cd /tmp && \
   git clone https://github.com/wtsi-hgi/htslib.git && \
   cd htslib && \
-  git checkout 1e4c98069e9d650b2ac5bfa2ee6dcb6d91cddd8e && \
+  git checkout 62cfaa0fe71e6fd8f0beac45d5264ab5fef3c30c && \
   autoreconf && \
   ./configure && \
   make && \
@@ -23,11 +23,11 @@ RUN \
   autoreconf && \
   ./configure && \
   make && \
-  cp samtools /usr/local/bin
-  # cd && \
-  # rm -rf /tmp/htslib && \
-  # rm -rf /tmp/samtools && \
-  # apt-get -q=2 -y purge build-essential git zlib1g-dev libbz2-dev liblzma-dev libcurl4-openssl-dev libncurses5-dev && \
-  # apt-get -q=2 -y autoremove && \
-  # apt-get -q=2 -y clean && \
-  # rm -rf /var/lib/apt/lists/*
+  cp samtools /usr/local/bin && \
+  cd && \
+  rm -rf /tmp/htslib && \
+  rm -rf /tmp/samtools && \
+  apt-get -q=2 -y purge build-essential git zlib1g-dev libbz2-dev liblzma-dev libcurl4-openssl-dev libncurses5-dev automake autoconf && \
+  apt-get -q=2 -y autoremove && \
+  apt-get -q=2 -y clean && \
+  rm -rf /var/lib/apt/lists/*

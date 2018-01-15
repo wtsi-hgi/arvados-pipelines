@@ -1,0 +1,3 @@
+input:
+  class: File
+  location: keep:1747025feb654a015d8c3728df0aa1cc+2129/Homo_sapiens.GRCh38_full_analysis_set_plus_decoy_hla.fa

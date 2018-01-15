@@ -27,7 +27,7 @@ def main():
     if "interval_count" in arvados.current_job()['script_parameters']:
         interval_count = arvados.current_job()['script_parameters']['interval_count']
 
-    ploidy = 2
+    ploidy = "2"
     if "ploidy" in arvados.current_job()['script_parameters']:
         ploidy = arvados.current_job()['script_parameters']['ploidy']
         print "Have script_parameters ploidy = %s" % (ploidy)
@@ -63,7 +63,7 @@ def main():
     interval_list_file = gatk_helper.mount_single_gatk_interval_list_input(interval_list_param="chunk")
     cram_file = gatk_helper.mount_gatk_cram_input(input_param="input")
     cram_file_base, cram_file_ext = os.path.splitext(cram_file)
-    ploidy = 2
+    ploidy = "2"
     if 'ploidy' in this_task['parameters']:
         ploidy = this_task['parameters']['ploidy']
     out_dir = hgi_arvados.prepare_out_dir()

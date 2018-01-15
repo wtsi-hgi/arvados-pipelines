@@ -19,6 +19,12 @@ inputs:
   type: File
   id: input_file
   secondaryFiles: $(self.basename + self.nameext.replace('m','i'))
+# - doc: Index file of reference genome
+#   type: File
+#   id: refIndex
+# - doc: Dict file of reference genome
+#   type: File
+#   id: refDict
 - doc: Threshold for the probability of a profile state being active.
   inputBinding:
     prefix: --activeProbabilityThreshold
@@ -508,10 +514,13 @@ inputs:
   - 'null'
   - boolean
   id: allow_potentially_misencoded_quality_scores
-- doc: Name of the tool to run
+- default: HaplotypeCaller
+  doc: Name of the tool to run
   inputBinding:
     prefix: --analysis_type
-  type: string
+  type:
+  - 'null'
+  - string
   id: analysis_type
 - doc: Compression level to use for writing BAM files (0 - 9, higher is more compressed)
   inputBinding:
@@ -670,18 +679,11 @@ inputs:
     - INTERSECTION
     type: enum
   id: interval_set_rule
-- doc: One or more genomic intervals over which to operate
-  type:
-  - 'null'
-  - File
-  - string
-  - items:
-    - File
-    - string
-    inputBinding:
-      prefix: --intervals
-    type: array
-  id: intervals
+- id: intervals
+  doc: One or more genomic intervals over which to operate
+  type: File
+  inputBinding:
+    prefix: --intervals 
 - doc: Keep program records in the SAM header
   inputBinding:
     prefix: --keep_program_records
@@ -1125,7 +1127,7 @@ requirements:
   expressionLib:
   - function parseTags(param, tags){if(tags == undefined){return ' ' + param}else{return
     ':' + tags.join(',') + ' ' + param}}
-- dockerPull: broadinstitute/gatk3:3.8-0
+- dockerPull: mercury/gatk:3.8-htsjdk2.11.0
   class: DockerRequirement
 outputs:
 - outputBinding:
@@ -1154,13 +1156,11 @@ outputs:
   id: graphOutputOutput
 - outputBinding:
     glob: $(inputs.out)
-  type:
-  - 'null'
-  - File
+  type: File
   id: outOutput
 baseCommand:
 - java
 - -jar
-- /usr/GenomeAnalysisTK.jar
+- /gatk/GenomeAnalysisTK.jar
 id: HaplotypeCaller
 class: CommandLineTool
