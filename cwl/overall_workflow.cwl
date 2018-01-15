@@ -10,13 +10,19 @@ inputs:
     type: File
   - id: chunks
     type: int
-  - id: analysis_type
-    type: string
-    default: HaplotypeCaller
   - id: intersect_file
     type: File
+  - id: MAPQ_cap
+    type: int
 
 steps:
+  - id: capmq
+    run: tools/capmq/capmq.cwl
+    in:
+      input_file: input_file
+      MAPQ_cap: MAPQ_cap
+    out: [capped_sam]
+
   - id: samtools_fastaref
     run: tools/fastaref/fastaref.cwl
     in:
@@ -28,7 +34,7 @@ steps:
   - id: samtools_faidx
     run: tools/samtools/samtools-faidx.cwl
     in:
-      input: samtools_fastaref/reference_sequence
+      fasta: samtools_fastaref/reference_sequence
     out: [index]
 
   - id: samtools_dict
@@ -36,7 +42,7 @@ steps:
     in:
       output:
         default: "reference.dict"
-      input: samtools_fastaref/reference_sequence
+      fasta: samtools_fastaref/reference_sequence
     out: [dict]
 
   - id: dict_to_interval_list
@@ -77,10 +83,7 @@ steps:
       outputs:
         reference_with_files:
           outputBinding:
-            glob: ${
-              console.log(inputs);
-              return inputs.reference.basename;
-              }
+            glob: $(inputs.reference.basename)
           secondaryFiles:
             - $(inputs.index.basename)
             - $(inputs.dict.basename)
@@ -98,16 +101,15 @@ steps:
   - id: haplotype_caller
     requirements:
       - class: ScatterFeatureRequirement
-#    scatter: intervals
-    run: tools/HaplotypeCaller.cwl
+    scatter: intervals
+    run: tools/HaplotypeCaller-3.8.cwl
     in:
       reference_sequence: combine_sequence_files/reference_with_files
-      input_file: input_file
+      input_file: capmq/capped_sam
       intervals: split_interval_list/interval_lists
-      analysis_type: analysis_type
     out: [outOutput]
 
 outputs:
-  - id: gvcf_file
+  - id: gvcf_files
     type: File[]
     outputSource: haplotype_caller/outOutput
