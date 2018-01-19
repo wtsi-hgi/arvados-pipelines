@@ -1,8 +1,8 @@
 cwlVersion: v1.0
 class: CommandLineTool
 hints:
- DockerRequirement:
-   dockerPull: mercury/samtools-seq_cache_populate
+  DockerRequirement:
+    dockerPull: mercury/samtools-seq_cache_populate
 
 baseCommand: ['seq_cache_populate.pl']
 
@@ -10,7 +10,7 @@ arguments:
   - prefix: -root
     valueFrom: $(runtime.outdir)
     position: 1
-  
+
 inputs:
   - id: ref_fasta_files
     doc: Reference fasta files

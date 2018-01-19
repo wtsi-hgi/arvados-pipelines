@@ -1,0 +1,7 @@
+input_file:
+  class: File
+  path: ./Dockerfile
+MAPQ_cap: 123
+htslib_input_options:
+  thing: param
+  other_thing: param2
