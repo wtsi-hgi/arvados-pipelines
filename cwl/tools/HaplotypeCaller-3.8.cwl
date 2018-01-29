@@ -1,4 +1,5 @@
 cwlVersion: v1.0
+
 inputs:
 - doc: Reference sequence file
   inputBinding:
@@ -1160,7 +1161,9 @@ outputs:
   id: outOutput
 baseCommand:
 - java
+- -d64
 - -jar
 - /gatk/GenomeAnalysisTK.jar
+
 id: HaplotypeCaller
 class: CommandLineTool
