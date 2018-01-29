@@ -6,6 +6,12 @@ requirements:
   - class: InlineJavascriptRequirement
   - class: StepInputExpressionRequirement
 
+hints:
+  ResourceRequirement:
+    ramMin: 100
+    coresMin: 1
+    tmpdirMin: 1000
+
 inputs:
   - id: library_cram
     type: File
@@ -86,6 +92,9 @@ steps:
       - class: ScatterFeatureRequirement
     scatter:
       - intervals
+    hints:
+      ResourceRequirement:
+        ramMin: 8500
     run: ../tools/HaplotypeCaller-3.8.cwl
     in:
       reference_sequence: combine_sequence_files/reference_with_files
