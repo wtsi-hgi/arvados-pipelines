@@ -11,7 +11,7 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
-    
+
 steps:
   - id: samtools_seq_cache_populate
     run: ../tools/samtools_seq_cache_populate/samtools_seq_cache_populate.cwl
@@ -22,7 +22,7 @@ steps:
   - id: samtools_fastaref
     run: ../tools/fastaref/fastaref.cwl
     in:
-      ref_cache_dir: samtools_seq_cache_populate/ref_cache
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
       output_file_name:
         default: "reference.fa"
       input: input_cram

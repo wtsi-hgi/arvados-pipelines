@@ -25,7 +25,7 @@ arguments:
 
 outputs:
   - id: interval_lists
-    type: File[]?
+    type: File[]
     outputBinding:
       glob: "*.*_of_*.interval_list"
       outputEval: |

@@ -1,19 +1,19 @@
 cwlVersion: v1.0
 class: CommandLineTool
-hints:
- DockerRequirement:
-   dockerPull: mercury/samtools-fastaref
-baseCommand: ['samtools', 'fastaref']
-
 requirements:
+  DockerRequirement:
+    dockerPull: samtools:fastaref #mercury/samtools-fastaref
   EnvVarRequirement:
     envDef:
-      REF_PATH: $(inputs.ref_cache_dir.path)/%2s/%2s/%s
-      
+      REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
+
+baseCommand: ['samtools', 'fastaref']
+
 inputs:
   - id: output_file_name
     doc: Output file name
     type: string?
+    default: reference.fa
     inputBinding:
       prefix: -o
   - id: keys
@@ -25,7 +25,8 @@ inputs:
       - "null"
       - type: array
         items: string
-  - id: ref_cache_dir
+  # TODO: make the overall workflow work with this uncommented
+  - id: ref_path_dir
     type: Directory
   - id: max_line_length
     doc: Maximum length of outputted lines

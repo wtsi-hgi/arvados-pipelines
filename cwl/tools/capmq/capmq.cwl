@@ -23,10 +23,25 @@ requirements:
       function parseHtslibOptions(){
           if(typeof self !== "object")
             throw new Error("Htslib option must be of type object")
-          if(self)
-            return Object.keys(self).map(function(key){return key + "=" + self[key]});
+          if(self){
+            if(self.file_format === undefined){
+              throw new Error("Htslib option must have file_format defined");
+            }
+            var file_format = self.file_format;
+
+            delete self.file_format;
+
+            return [file_format].concat(Object.keys(self).map(function(key){
+              var value = self[key];
+              if(typeof(value) === "boolean"){
+                return key;
+              }
+              else if(key === "file_format")
+              return key + "=" + value;
+            })).join(",");
+          }
           else
-            return null
+            return null;
       }
 baseCommand: ['capmq']
 
@@ -111,21 +126,26 @@ inputs:
       - 'null'
     inputBinding:
       prefix: -I
-      itemSeparator: ","
       valueFrom: $(parseHtslibOptions())
-    doc: Input format and format-options [auto].
+    doc: |
+      Input format and format-options.
+      This is passed in through a object which has fields of the options set
+      plus a compulsary file_format to set the file format.
   - id: htslib_output_options
     type:
       - Any
       - 'null'
     inputBinding:
       prefix: -O
-      itemSeparator: ","
       valueFrom: $(parseHtslibOptions())
-    doc: Output format and format-options [SAM].
+    doc: |
+      Output format and format-options [SAM].
+      This is passed in through a object which has fields of the options set
+      plus a compulsary file_format to set the file format. The default for this
+      is file_format: sam
 
 outputs:
-  - id: capped_sam
+  - id: capped_file
     type: File
     outputBinding:
       glob: $(inputs.output_filename || inputs.input_file.basename)
