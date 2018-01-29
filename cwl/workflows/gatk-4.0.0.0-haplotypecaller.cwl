@@ -7,6 +7,12 @@ requirements:
   - class: StepInputExpressionRequirement
   - class: MultipleInputFeatureRequirement
 
+hints:
+  ResourceRequirement:
+    ramMin: 100
+    coresMin: 1
+    tmpdirMin: 1000
+
 inputs:
   - id: library_cram
     type: File
@@ -93,6 +99,9 @@ steps:
       - class: ScatterFeatureRequirement
     scatter:
       - intervals
+    hints:
+      ResourceRequirement:
+        ramMin: 8500
     run: ../tools/HaplotypeCaller-4.0.0.cwl
     in:
       reference: combine_reference_files/file_with_secondary_files
