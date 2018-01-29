@@ -1,20 +1,8 @@
-analysis_type: HaplotypeCaller
-reference_sequence:
-   class: File
-   path: cwl-example-data/chr22_cwl_test.fa
-refIndex:
-   class: File
-   path: cwl-example-data/chr22_cwl_test.fa.fai
-refDict:
-   class: File
-   path: cwl-example-data/chr22_cwl_test.fa.dict
-input_file: #must be BAM or CRAM
+input_file:
    class: File
    path: cwl-example-data/chr22_cwl_test.cram
-dict_file:
-   class: File
-   path: cwl-example-data/chr22_cwl_test.fa.dict
 chunks: 2
 intersect_file:
     class: File
     path: chr22_cwl_test.interval_list
+MAPQ_cap: 200
