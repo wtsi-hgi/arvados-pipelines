@@ -129,3 +129,6 @@ outputs:
   - id: gvcf_file
     type: File[]
     outputSource: haplotype_caller/output
+  - id: intervals
+    type: File[]
+    outputSource: split_interval_list/interval_lists
