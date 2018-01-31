@@ -77,7 +77,6 @@ requirements:
     }
 - class: DockerRequirement
   dockerPull: broadinstitute/gatk3:3.8-0
->>>>>>> 9799c93010a9b9bbfc504f873725baa6c3ede55c
 inputs:
 - doc: Reference sequence file
   id: reference_sequence
