@@ -1,0 +1,1 @@
+cat $1 | grep ^[^@] | awk -F '\t' '{print $1 ":" $2 "-" $3}' -- | jq -R . | jq -c -s .

@@ -26,7 +26,9 @@ steps:
       chunks: chunks
       intersect_file: intersect_file
       ref_fasta_files: ref_fasta_files
-    out: [gvcf_file]
+    out:
+      - gvcf_file
+      - intervals
 
 # FIXME add combine/genotypegvcfs
 

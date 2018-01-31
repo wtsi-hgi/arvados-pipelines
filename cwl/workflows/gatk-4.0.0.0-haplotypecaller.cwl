@@ -80,7 +80,7 @@ steps:
           - cram_get_fasta/reference_dict
     out:
       [file_with_secondary_files]
-    run: ../tools/combine_files.cwl
+    run: ../expression-tools/combine_files.cwl
 
   - id: combine_cram_files
     in:
@@ -92,7 +92,7 @@ steps:
         linkMerge: merge_nested
     out:
       [file_with_secondary_files]
-    run: ../tools/combine_files.cwl
+    run: ../expression-tools/combine_files.cwl
 
   - id: haplotype_caller
     requirements:

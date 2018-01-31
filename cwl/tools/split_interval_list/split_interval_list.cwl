@@ -10,7 +10,7 @@ hints:
 inputs:
  - id: number_of_intervals
    type: int
-   inputBinding: 
+   inputBinding:
      position: 1
      prefix: --chunks
  - id: interval_list
