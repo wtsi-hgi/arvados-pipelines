@@ -2,23 +2,24 @@ cwlVersion: v1.0
 class: Workflow
 
 inputs:
-  varient:
+  variant:
     type: File[]
   list_of_intervals:
     type: string[]
 
 steps:
   - id: consolidate_gvcfs
-    scatter: interval
+    scatter: intervals
     run: ../tools/GenomicsDBImport-4.0.0.cwl
     in:
-      variant: varient
-      interval: list_of_intervals
-      genomicsdb-workspace-path: /genomicsdb
+      variant: variant
+      intervals: list_of_intervals
+      genomicsdb-workspace-path:
+        default: "genomicsdb"
     out:
       - genomicsdb-workspace
 
-output:
-  - id: genomicsdb-workspace
-    type: Directory
+outputs:
+  - id: genomicsdb-workspaces
+    type: Directory[]
     outputSource: consolidate_gvcfs/genomicsdb-workspace

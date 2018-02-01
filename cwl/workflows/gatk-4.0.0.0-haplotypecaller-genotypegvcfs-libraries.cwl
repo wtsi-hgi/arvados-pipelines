@@ -13,6 +13,8 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
+  - id: MAPQ_cap
+    type: int
 
 steps:
   - id: haplotype_caller
@@ -26,18 +28,29 @@ steps:
       chunks: chunks
       intersect_file: intersect_file
       ref_fasta_files: ref_fasta_files
+      MAPQ_cap: MAPQ_cap
     out:
       - gvcf_file
       - intervals
+      - reference
+  - id: genotype_gvcf
+    requirements:
+      - class: StepInputExpressionRequirement
+    run: gatk-4.0.0.0-genotype-gvcf.cwl
+    in:
+      gvcf_files: haplotype_caller/gvcf_file
+      intervals:
+        source: haplotype_caller/intervals
+        valueFrom: $(self[0])
+      reference: haplotype_caller/reference
+    out:
+       - out
 
-# FIXME add combine/genotypegvcfs
 
 outputs:
-  - id: gvcf_file
+  - id: output
     type:
       type: array
-      items:
-        - type: array
-          items: File
-    outputSource: haplotype_caller/gvcf_file
+      items: File
+    outputSource: genotype_gvcf/out
 

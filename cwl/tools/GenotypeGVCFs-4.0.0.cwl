@@ -5,7 +5,6 @@ baseCommand:
 - -D64
 - -jar
 - /gatk/gatk.jar
-- -d64
 - GenotypeGVCFs
 class: CommandLineTool
 doc: |-

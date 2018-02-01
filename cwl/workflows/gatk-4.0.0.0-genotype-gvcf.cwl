@@ -41,18 +41,18 @@ steps:
     scatter:
       - variant
       - list_of_intervals
-    run: gatk-4.0.0.0-genomics-db-wrapper.cwl
     scatterMethod: dotproduct
+    run: gatk-4.0.0.0-genomics-db-wrapper.cwl
     requirements:
       - class: ScatterFeatureRequirement
     in:
       variant: transpose_gvcf_files_list/transposed_array
       list_of_intervals: interval_list_to_cwl_list/list_of_intervals
-    out: [genomicsdb-workspace]
-  - id: flattern-genomicsdb-workspace-array
+    out: [genomicsdb-workspaces]
+  - id: flattern-genomicsdb-workspaces-array
     run: ../expression-tools/flattern-array.cwl
     in:
-      2d-array: consolidate_gvcfs_wrapper/genomicsdb-workspace
+      2d-array: consolidate_gvcfs_wrapper/genomicsdb-workspaces
     out: [flatterned_array]
   - id: genotype_gvcfs
     run: ../tools/GenotypeGVCFs-4.0.0.cwl
@@ -61,8 +61,9 @@ steps:
     scatter:
       - variant
       - reference
+    scatterMethod: dotproduct
     in:
-      variant: flattern-genomicsdb-workspace-array/flatterned_array
+      variant: flattern-genomicsdb-workspaces-array/flatterned_array
       reference: reference
       output-filename:
         valueFrom: output.gvcf

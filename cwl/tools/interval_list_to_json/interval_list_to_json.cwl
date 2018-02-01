@@ -8,6 +8,9 @@ hints:
   DockerRequirement:
     dockerImageId: interval_list_to_json
 
+requirements:
+  - class: InlineJavascriptRequirement
+
 stdout: stdout_file
 
 inputs:
