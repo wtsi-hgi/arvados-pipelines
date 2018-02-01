@@ -16,6 +16,7 @@ inputs:
       position: 0
   output_filename:
     type: string?
+    default: ""
     inputBinding:
       position: 1
       valueFrom: $(self || inputs.input.basename + ".crai")

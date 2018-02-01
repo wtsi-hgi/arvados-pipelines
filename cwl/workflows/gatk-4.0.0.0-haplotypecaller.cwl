@@ -72,12 +72,10 @@ steps:
 
   - id: combine_reference_files
     in:
-      main_file:
-        source: cram_get_fasta/reference_fasta
+      main_file: cram_get_fasta/reference_fasta
       secondary_files:
-        source:
-          - cram_get_fasta/reference_index
-          - cram_get_fasta/reference_dict
+        - cram_get_fasta/reference_index
+        - cram_get_fasta/reference_dict
     out:
       [file_with_secondary_files]
     run: ../expression-tools/combine_files.cwl
@@ -141,3 +139,6 @@ outputs:
   - id: intervals
     type: File[]
     outputSource: split_interval_list/interval_lists
+  - id: reference
+    type: File
+    outputSource: combine_reference_files/file_with_secondary_files

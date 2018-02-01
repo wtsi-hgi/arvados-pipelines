@@ -52,10 +52,11 @@ inputs:
       position: 1
     type: File
   - id: output_filename
+    default: ""
     inputBinding:
       position: 2
       valueFrom: $(self || inputs.input_file.basename)
-    type: string?
+    type: string
   - id: MAPQ_cap
     inputBinding:
       prefix: -C
