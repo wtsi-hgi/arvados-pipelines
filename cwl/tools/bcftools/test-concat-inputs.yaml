@@ -1,0 +1,12 @@
+# needs two vcf files to test, with .tbi indexes
+# test vcfs can be found at  https://github.com/vcflib/vcflib
+vcfs: 
+ - class: File 
+   path: sample1.compressed.vcf.gz
+ - class: File 
+   path: sample2.compressed.vcf.gz
+ 
+# allow_overlaps: true 
+# needed if the vcfs can overlap 
+   
+filename: test
