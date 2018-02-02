@@ -6,6 +6,7 @@ requirements:
   - class: InlineJavascriptRequirement
   - class: StepInputExpressionRequirement
   - class: MultipleInputFeatureRequirement
+  - class: ScatterFeatureRequirement
 
 hints:
   ResourceRequirement:
@@ -133,25 +134,22 @@ steps:
     out:
       - output
       - variant-index
-
-  # - id: combine_haplotype_index
-  #   requirements:
-  #     - class: ScatterFeatureRequirement
-  #   scatter:
-  #     - intervals
-  #   scatterMethod: dotproduct
-  #   in:
-  #     main_file: haplotype_caller/output
-  #     secondary_files:
-  #       - haplotype_caller/variant-index
-  #   out:
-  #     [file_with_secondary_files]
-  #   run: ../expression-tools/combine_files.cwl
+  - id: combine_haplotype_index
+    scatter:
+      - main_file
+      - secondary_files
+    scatterMethod: dotproduct
+    in:
+      main_file: haplotype_caller/output
+      secondary_files: haplotype_caller/variant-index
+    out:
+      [file_with_secondary_files]
+    run: ../expression-tools/combine_files.cwl
 
 outputs:
   - id: gvcf_file
     type: File[]
-    outputSource: haplotype_caller/output
+    outputSource: combine_haplotype_index/file_with_secondary_files
   - id: gvcf_index
     type: File[]
     outputSource: haplotype_caller/variant-index
