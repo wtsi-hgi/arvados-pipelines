@@ -130,12 +130,31 @@ steps:
       #   valueFrom: INFO
       output-filename:
         valueFrom: $(inputs.input.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
-    out: [output]
+    out:
+      - output
+      - variant-index
+
+  # - id: combine_haplotype_index
+  #   requirements:
+  #     - class: ScatterFeatureRequirement
+  #   scatter:
+  #     - intervals
+  #   scatterMethod: dotproduct
+  #   in:
+  #     main_file: haplotype_caller/output
+  #     secondary_files:
+  #       - haplotype_caller/variant-index
+  #   out:
+  #     [file_with_secondary_files]
+  #   run: ../expression-tools/combine_files.cwl
 
 outputs:
   - id: gvcf_file
     type: File[]
     outputSource: haplotype_caller/output
+  - id: gvcf_index
+    type: File[]
+    outputSource: haplotype_caller/variant-index
   - id: intervals
     type: File[]
     outputSource: split_interval_list/interval_lists
