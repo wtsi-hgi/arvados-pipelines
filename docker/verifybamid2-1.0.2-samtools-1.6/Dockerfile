@@ -36,3 +36,5 @@ RUN \
   apt-get -q=2 -y autoremove && \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
+
+ADD verifybamid_rg.sh /usr/local/bin/verifybamid_rg
