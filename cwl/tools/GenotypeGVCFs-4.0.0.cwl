@@ -139,6 +139,12 @@ requirements:
     }
 - class: DockerRequirement
   dockerPull: broadinstitute/gatk:4.0.0.0
+- class: InitialWorkDirRequirement
+  listing:
+    - entry: $(inputs.variant)
+      entryname: my_database
+      writable: True
+
 inputs:
 - doc: Reference sequence file
   id: reference
@@ -704,7 +710,9 @@ inputs:
     - File
     - Directory
   inputBinding:
-    valueFrom: $(applyTagsToArgument("--variant", inputs['variant_tags']))
+    prefix: --variant
+    valueFrom: gendb://$(self.path)
+# TODO: make the above generalise to a file as well as a folder
 - type:
   - 'null'
   - string

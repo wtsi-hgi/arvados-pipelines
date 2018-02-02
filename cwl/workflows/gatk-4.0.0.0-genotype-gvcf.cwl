@@ -3,6 +3,8 @@ class: Workflow
 
 requirements:
   - class: SubworkflowFeatureRequirement
+  - class: ScatterFeatureRequirement
+  - class: StepInputExpressionRequirement
 
 inputs:
   - id: gvcf_files
@@ -29,8 +31,6 @@ steps:
       array: gvcf_files
     out: [transposed_array]
   - id: interval_list_to_cwl_list
-    requirements:
-      - class: ScatterFeatureRequirement
     run: ../tools/interval_list_to_json/interval_list_to_json.cwl
     scatter: interval_list_file
     in:
@@ -43,27 +43,23 @@ steps:
       - list_of_intervals
     scatterMethod: dotproduct
     run: gatk-4.0.0.0-genomics-db-wrapper.cwl
-    requirements:
-      - class: ScatterFeatureRequirement
     in:
       variant: transpose_gvcf_files_list/transposed_array
       list_of_intervals: interval_list_to_cwl_list/list_of_intervals
     out: [genomicsdb-workspaces]
-  - id: flattern-genomicsdb-workspaces-array
-    run: ../expression-tools/flattern-array.cwl
+  - id: flatten-genomicsdb-workspaces-array
+    run: ../expression-tools/flatten-array.cwl
     in:
       2d-array: consolidate_gvcfs_wrapper/genomicsdb-workspaces
-    out: [flatterned_array]
+    out: [flattened_array]
   - id: genotype_gvcfs
     run: ../tools/GenotypeGVCFs-4.0.0.cwl
-    requirements:
-      - class: ScatterFeatureRequirement
     scatter:
       - variant
       - reference
     scatterMethod: dotproduct
     in:
-      variant: flattern-genomicsdb-workspaces-array/flatterned_array
+      variant: flatten-genomicsdb-workspaces-array/flattened_array
       reference: reference
       output-filename:
         valueFrom: output.gvcf
