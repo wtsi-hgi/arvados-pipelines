@@ -705,7 +705,7 @@ inputs:
     prefix: --use-new-qual-calculator
     valueFrom: $(generateGATK4BooleanValue())
 - doc: A VCF file containing variants
-  id: variant-file
+  id: variant
   type:
     - File
     - Directory
