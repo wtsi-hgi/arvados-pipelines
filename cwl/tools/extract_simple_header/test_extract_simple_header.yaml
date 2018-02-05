@@ -1,0 +1,10 @@
+# one cram file to test
+# test crams can be found at 
+cram: 
+  class: File
+  path: ./chr22_cwl_test.cram
+
+
+filename: test   
+ 
+
