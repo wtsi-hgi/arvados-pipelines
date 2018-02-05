@@ -27,11 +27,18 @@ inputs:
     type: int
 
 steps:
+  - id: samtools_seq_cache_populate
+    run: ../tools/samtools_seq_cache_populate/samtools_seq_cache_populate.cwl
+    in:
+      ref_fasta_files: ref_fasta_files
+    out: [ref_cache]
+
   - id: capmq
     run: ../tools/capmq/capmq.cwl
     in:
       input_file: library_cram
       MAPQ_cap: MAPQ_cap
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
     out: [capped_file]
 
   - id: get_cram_index
@@ -44,7 +51,7 @@ steps:
     run: cram-get-fasta.cwl
     in:
       input_cram: library_cram
-      ref_fasta_files: ref_fasta_files
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
     out:
       - reference_fasta
       - reference_index

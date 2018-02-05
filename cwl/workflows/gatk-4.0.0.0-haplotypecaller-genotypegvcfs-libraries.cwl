@@ -46,7 +46,6 @@ steps:
     out:
        - out
 
-
 outputs:
   - id: output
     type: File

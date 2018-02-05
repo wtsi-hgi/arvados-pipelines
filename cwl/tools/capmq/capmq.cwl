@@ -3,6 +3,9 @@ class: CommandLineTool
 requirements:
   DockerRequirement:
     dockerPull: capmq:latest
+  EnvVarRequirement:
+    envDef:
+      REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
   InlineJavascriptRequirement:
     expressionLib:
     - |
@@ -46,6 +49,8 @@ requirements:
 baseCommand: ['capmq']
 
 inputs:
+  - id: ref_path_dir
+    type: Directory?
   - id: input_file
     inputBinding:
       valueFrom: $(checkExclusive("MAPQ_cap", "restore_mapq", "readgroup_caps"))
