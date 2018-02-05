@@ -49,8 +49,6 @@ steps:
 
 outputs:
   - id: output
-    type:
-      type: array
-      items: File
+    type: File
     outputSource: genotype_gvcf/out
 

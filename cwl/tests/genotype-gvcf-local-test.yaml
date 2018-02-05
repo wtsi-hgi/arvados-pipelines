@@ -9,5 +9,5 @@ intervals:
   - class: File
     path: ./test-files/output.bed.1_of_1.interval_list
 reference:
-  - class: File
-    path: ./test-files/reference.fa
+  class: File
+  path: ./test-files/reference.fa

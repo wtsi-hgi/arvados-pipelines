@@ -7,7 +7,8 @@ cwlVersion: v1.0
 class: CommandLineTool
 
 requirements:
-- $import: bcftools-docker.yml
+- class: DockerRequirement
+  dockerPull: mercury/bcftools-1.6:v2
 - class: InlineJavascriptRequirement
 
 inputs:
@@ -17,9 +18,7 @@ inputs:
       position: 1
       prefix: -a
     doc: 'First coordinate of the next file can precede last record of the current
-      file.
-
-      '
+      file.'
   remove_duplicates:
     type: boolean?
     inputBinding:
@@ -32,33 +31,25 @@ inputs:
     inputBinding:
       position: 1
       prefix: -d
-    doc: 'Output duplicate records present in multiple files only once: <snps|indels|both|all|none>
-
-      '
+    doc: 'Output duplicate records present in multiple files only once: <snps|indels|both|all|none>'
   ligate:
     type: boolean?
     inputBinding:
       position: 1
       prefix: -l
-    doc: 'Ligate phased VCFs by matching phase at overlapping haplotypes
-
-      '
+    doc: 'Ligate phased VCFs by matching phase at overlapping haplotypes'
   threads:
     type: int?
     inputBinding:
       position: 1
       prefix: --threads
-    doc: 'Number of extra output compression threads [0]
-
-      '
+    doc: 'Number of extra output compression threads [0]'
   min_PQ:
     type: int?
     inputBinding:
       position: 1
       prefix: -q
-    doc: 'Break phase set if phasing quality is lower than <int> [30]
-
-      '
+    doc: 'Break phase set if phasing quality is lower than <int> [30]'
   filename:
     type: string
     inputBinding:
@@ -86,23 +77,18 @@ inputs:
       position: 1
       prefix: -c
     doc: 'Do not output PS tag at each site, only at the start of a new phase set
-      block.
-
-      '
+      block.'
   regions_file:
     type: File?
     inputBinding:
       position: 1
       prefix: -R
-    doc: 'Restrict to regions listed in a file
-
-      '
+    doc: 'Restrict to regions listed in a file'
   vcfs:
     type:
       type: array
       items: File
-    secondaryFiles:
-      - .tbi
+    # TODO: add secondaryFiles here
     inputBinding:
       position: 2
 
@@ -113,9 +99,7 @@ inputs:
       separate: false
       prefix: -O
     doc: '<b|u|z|v> b: compressed BCF, u: uncompressed BCF, z: compressed VCF, v:
-      uncompressed VCF [v]
-
-      '
+      uncompressed VCF [v]'
 outputs:
   output:
     type: File
