@@ -5,8 +5,8 @@ intersect_file:
   location: chr22_cwl_test.interval_list
 library_cram:
   class: File
-  location: ../cwl-example-data/chr22_cwl_test_1.cram
+  location: ./cwl-example-data/chr22_cwl_test_1.cram
 ref_fasta_files:
   - class: File
-    location: ../cwl-example-data/chr22_cwl_test.fa
+    location: ./cwl-example-data/chr22_cwl_test.fa
 MAPQ_cap: 200

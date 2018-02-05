@@ -1,4 +1,0 @@
-class: DockerRequirement
-dockerPull: mercury/bcftools-1.6:v2
-
-

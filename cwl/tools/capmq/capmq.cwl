@@ -3,6 +3,9 @@ class: CommandLineTool
 requirements:
   DockerRequirement:
     dockerPull: capmq:latest
+  EnvVarRequirement:
+    envDef:
+      REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
   InlineJavascriptRequirement:
     expressionLib:
     - |
@@ -46,6 +49,8 @@ requirements:
 baseCommand: ['capmq']
 
 inputs:
+  - id: ref_path_dir
+    type: Directory?
   - id: input_file
     inputBinding:
       valueFrom: $(checkExclusive("MAPQ_cap", "restore_mapq", "readgroup_caps"))
@@ -131,7 +136,7 @@ inputs:
     doc: |
       Input format and format-options.
       This is passed in through a object which has fields of the options set
-      plus a compulsary file_format to set the file format.
+      plus a compulsory file_format to set the file format.
   - id: htslib_output_options
     type:
       - Any
@@ -142,8 +147,7 @@ inputs:
     doc: |
       Output format and format-options [SAM].
       This is passed in through a object which has fields of the options set
-      plus a compulsary file_format to set the file format. The default for this
-      is file_format: sam
+      plus a compulsory file_format to set the file format.
 
 outputs:
   - id: capped_file

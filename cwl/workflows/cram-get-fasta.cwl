@@ -9,20 +9,14 @@ requirements:
 inputs:
   - id: input_cram
     type: File
-  - id: ref_fasta_files
-    type: File[]
+  - id: ref_path_dir
+    type: Directory
 
 steps:
-  - id: samtools_seq_cache_populate
-    run: ../tools/samtools_seq_cache_populate/samtools_seq_cache_populate.cwl
-    in:
-      ref_fasta_files: ref_fasta_files
-    out: [ref_cache]
-
   - id: samtools_fastaref
     run: ../tools/fastaref/fastaref.cwl
     in:
-      ref_path_dir: samtools_seq_cache_populate/ref_cache
+      ref_path_dir: ref_path_dir
       output_file_name:
         default: "reference.fa"
       input: input_cram

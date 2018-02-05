@@ -19,8 +19,8 @@ inputs:
     doc: List of intervals_list files
     type: File[]
   - id: reference
-    doc: List of reference files
-    type: File[]
+    doc: The reference file for all the samples
+    type: File
 
 
 steps:
@@ -56,7 +56,6 @@ steps:
     run: ../tools/GenotypeGVCFs-4.0.0.cwl
     scatter:
       - variant
-      - reference
     scatterMethod: dotproduct
     in:
       variant: flatten-genomicsdb-workspaces-array/flattened_array
@@ -65,8 +64,29 @@ steps:
         valueFrom: output.gvcf
     out:
       - output
+      - variant-index
+  - id: combine_gvcf_index
+    scatter:
+      - main_file
+      - secondary_files
+    scatterMethod: dotproduct
+    in:
+      main_file: genotype_gvcfs/output
+      secondary_files: genotype_gvcfs/variant-index
+    out:
+      [file_with_secondary_files]
+    run: ../expression-tools/combine_files.cwl
+  - id: combine_gvcfs
+    run: ../tools/bcftools/bcftools-concat.cwl
+    in:
+      vcfs: combine_gvcf_index/file_with_secondary_files
+      filename:
+        valueFrom: output.gvcf
+    out:
+      - output
+
 
 outputs:
   - id: out
-    type: File[]
-    outputSource: genotype_gvcfs/output
+    type: File
+    outputSource: combine_gvcfs/output

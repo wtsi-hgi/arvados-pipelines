@@ -755,8 +755,8 @@ outputs:
   type: File?
   outputBinding:
     glob:
-    - $(inputs['create-output-variant-index'] + '.idx')
-    - $(inputs['create-output-variant-index'] + '.tbi')
+     - $(inputs['output-filename']).idx
+     - $(inputs['output-filename']).tbi
 - id: variant-md5
   doc: md5 file generated if create-output-variant-md5 is true
   type: File?
