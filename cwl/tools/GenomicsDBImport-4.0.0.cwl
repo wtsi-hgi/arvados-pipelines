@@ -470,8 +470,8 @@ inputs:
     prefix: --genomicsdb-vcf-buffer-size
 - doc: Workspace for GenomicsDB. Must be a POSIX file system path, but can be a relative
     path. Must be an empty or non-existent directory.
-  id: genomicsdb-workspace-path
-  type: string
+  id: genomicsdb-workspace-path-filename
+  type: Directory
   inputBinding:
     prefix: --genomicsdb-workspace-path
 - type:
@@ -679,20 +679,14 @@ inputs:
   id: variant
   type:
   - 'null'
-  - type: array
-    items: File
-    inputBinding:
-      valueFrom: $(null)
   - File
+  - Directory
   inputBinding:
     valueFrom: $(applyTagsToArgument("--variant", inputs['variant_tags']))
 - type:
   - 'null'
-  - type: array
-    items:
-    - string
-    - type: array
-      items: string
+  - string
+  - string[]
   doc: A argument to set the tags of 'variant'
   id: variant_tags
 - doc: Control verbosity of logging.
@@ -719,27 +713,27 @@ outputs:
   type: File?
   outputBinding:
     glob:
-    - $(inputs['create-output-bam-index'] + '.idx')
-    - $(inputs['create-output-bam-index'] + '.tbi')
+    - $(inputs['output-filename']).idx
+    - $(inputs['output-filename']).tbi
 - id: bam-md5
   doc: md5 file generated if create-output-bam-md5 is true
   type: File?
   outputBinding:
-    glob: $(inputs['create-output-bam-md5'] + '.md5')
+    glob: $(inputs['output-filename']).md5
 - id: variant-index
   doc: index file generated if create-output-variant-index is true
   type: File?
   outputBinding:
     glob:
-    - $(inputs['create-output-variant-index'] + '.idx')
-    - $(inputs['create-output-variant-index'] + '.tbi')
+    - $(inputs['output-filename']).idx
+    - $(inputs['output-filename']).tbi
 - id: variant-md5
   doc: md5 file generated if create-output-variant-md5 is true
   type: File?
   outputBinding:
-    glob: $(inputs['create-output-variant-md5'] + '.md5')
-- id: genomicsdb-workspace
-  doc: genomicsdb output folder
-  type: Directory
+    glob: $(inputs['output-filename']).md5
+- id: genomicsdb-workspace-path
+  doc: Output file from corresponding to the input argument genomicsdb-workspace-path-filename
+  type: File
   outputBinding:
-    glob: $(inputs["genomicsdb-workspace-path"])
+    glob: $(inputs['genomicsdb-workspace-path-filename'])

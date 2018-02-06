@@ -137,14 +137,13 @@ requirements:
 
         return output;
     }
-- class: DockerRequirement
-  dockerPull: broadinstitute/gatk:4.0.0.0
 - class: InitialWorkDirRequirement
   listing:
-    - entry: $(inputs.variant)
-      entryname: my_database
-      writable: True
-
+  - entry: $(inputs.variant)
+    entryname: variant_input_file
+    writable: true
+- class: DockerRequirement
+  dockerPull: broadinstitute/gatk:4.0.0.0
 inputs:
 - doc: Reference sequence file
   id: reference
@@ -707,12 +706,11 @@ inputs:
 - doc: A VCF file containing variants
   id: variant
   type:
-    - File
-    - Directory
+  - File
+  - Directory
   inputBinding:
     prefix: --variant
-    valueFrom: gendb://$(self.path)
-# TODO: make the above generalise to a file as well as a folder
+    valueFrom: '$((self.class == "Directory" ? "gendb://" : "") + self.path)'
 - type:
   - 'null'
   - string
@@ -743,25 +741,25 @@ outputs:
   type: File?
   outputBinding:
     glob:
-    - $(inputs['create-output-bam-index'] + '.idx')
-    - $(inputs['create-output-bam-index'] + '.tbi')
+    - $(inputs['output-filename']).idx
+    - $(inputs['output-filename']).tbi
 - id: bam-md5
   doc: md5 file generated if create-output-bam-md5 is true
   type: File?
   outputBinding:
-    glob: $(inputs['create-output-bam-md5'] + '.md5')
+    glob: $(inputs['output-filename']).md5
 - id: variant-index
   doc: index file generated if create-output-variant-index is true
   type: File?
   outputBinding:
     glob:
-     - $(inputs['output-filename']).idx
-     - $(inputs['output-filename']).tbi
+    - $(inputs['output-filename']).idx
+    - $(inputs['output-filename']).tbi
 - id: variant-md5
   doc: md5 file generated if create-output-variant-md5 is true
   type: File?
   outputBinding:
-    glob: $(inputs['create-output-variant-md5'] + '.md5')
+    glob: $(inputs['output-filename']).md5
 - id: output
   doc: Output file from corresponding to the input argument output-filename
   type: File

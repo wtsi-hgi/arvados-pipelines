@@ -2,6 +2,7 @@ id: HaplotypeCaller
 cwlVersion: v1.0
 baseCommand:
 - java
+- -D64
 - -jar
 - /gatk/gatk.jar
 - HaplotypeCaller
@@ -214,6 +215,126 @@ inputs:
   inputBinding:
     valueFrom: $(applyTagsToArgument("--input", inputs['input_tags']))
   secondaryFiles: $(self.basename + self.nameext.replace('m','i'))
+- doc: Threshold number of ambiguous bases. If null, uses threshold fraction; otherwise,
+    overrides threshold fraction.
+  id: ambig-filter-bases
+  type: int?
+  inputBinding:
+    prefix: --ambig-filter-bases
+- doc: Threshold fraction of ambiguous bases
+  id: ambig-filter-frac
+  type: double?
+  inputBinding:
+    prefix: --ambig-filter-frac
+- doc: Maximum length of fragment (insert size)
+  id: max-fragment-length
+  type: int?
+  inputBinding:
+    prefix: --max-fragment-length
+- doc: Name of the library to keep
+  id: library
+  type:
+  - 'null'
+  - type: array
+    items: string
+    inputBinding:
+      valueFrom: $(null)
+  - string
+  inputBinding:
+    valueFrom: $(generateArrayCmd("--library"))
+- doc: Maximum mapping quality to keep (inclusive)
+  id: maximum-mapping-quality
+  type: int?
+  inputBinding:
+    prefix: --maximum-mapping-quality
+- doc: Minimum mapping quality to keep (inclusive)
+  id: minimum-mapping-quality
+  type: int?
+  inputBinding:
+    prefix: --minimum-mapping-quality
+- doc: Allow a read to be filtered out based on having only 1 soft-clipped block.
+    By default, both ends must have a soft-clipped block, setting this flag requires
+    only 1 soft-clipped block
+  id: dont-require-soft-clips-both-ends
+  type: boolean?
+  inputBinding:
+    prefix: --dont-require-soft-clips-both-ends
+    valueFrom: $(generateGATK4BooleanValue())
+- doc: Minimum number of aligned bases
+  id: filter-too-short
+  type: int?
+  inputBinding:
+    prefix: --filter-too-short
+- doc: Platform attribute (PL) to match
+  id: platform-filter-name
+  type:
+  - 'null'
+  - type: array
+    items: string
+    inputBinding:
+      valueFrom: $(null)
+  - string
+  inputBinding:
+    valueFrom: $(generateArrayCmd("--platform-filter-name"))
+- doc: Platform unit (PU) to filter out
+  id: black-listed-lanes
+  type:
+  - 'null'
+  - type: array
+    items: string
+    inputBinding:
+      valueFrom: $(null)
+  - string
+  inputBinding:
+    valueFrom: $(generateArrayCmd("--black-listed-lanes"))
+- doc: The name of the read group to filter out
+  id: read-group-black-list
+  type:
+  - 'null'
+  - type: array
+    items: string
+    inputBinding:
+      valueFrom: $(null)
+  - string
+  inputBinding:
+    valueFrom: $(generateArrayCmd("--read-group-black-list"))
+- doc: The name of the read group to keep
+  id: keep-read-group
+  type: string?
+  inputBinding:
+    prefix: --keep-read-group
+- doc: Keep only reads with length at most equal to the specified value
+  id: max-read-length
+  type: int?
+  inputBinding:
+    prefix: --max-read-length
+- doc: Keep only reads with length at least equal to the specified value
+  id: min-read-length
+  type: int?
+  inputBinding:
+    prefix: --min-read-length
+- doc: Keep only reads with this read name
+  id: read-name
+  type: string?
+  inputBinding:
+    prefix: --read-name
+- doc: Keep only reads on the reverse strand
+  id: keep-reverse-strand-only
+  type: boolean?
+  inputBinding:
+    prefix: --keep-reverse-strand-only
+    valueFrom: $(generateGATK4BooleanValue())
+- doc: The name of the sample(s) to keep, filtering out all others
+  id: sample
+  type:
+  - 'null'
+  - type: array
+    items: string
+    inputBinding:
+      valueFrom: $(null)
+  - string
+  inputBinding:
+    valueFrom: $(generateArrayCmd("--sample"))
 - doc: Minimum probability for a locus to be considered active.
   id: active-probability-threshold
   type: double?
@@ -221,16 +342,9 @@ inputs:
     prefix: --active-probability-threshold
 - doc: Output the raw activity profile results in IGV format
   id: activity-profile-out-filename
-  type: File?
+  type: string?
   inputBinding:
-    valueFrom: $(applyTagsToArgument("--activity-profile-out", inputs['activity-profile-out_tags']))
-- type:
-  - 'null'
-  - string
-  - type: array
-    items: string
-  doc: A argument to set the tags of 'activity-profile-out'
-  id: activity-profile-out_tags
+    prefix: --activity-profile-out
 - doc: If true, adds a PG tag to created SAM/BAM/CRAM files.
   id: add-output-sam-program-record
   type: boolean?
@@ -257,8 +371,7 @@ inputs:
 - type:
   - 'null'
   - string
-  - type: array
-    items: string
+  - string[]
   doc: A argument to set the tags of 'alleles'
   id: alleles_tags
 - doc: Allow graphs that have non-unique kmers in the reference
@@ -329,16 +442,9 @@ inputs:
   id: arguments_file_tags
 - doc: Output the assembly region to this IGV formatted file
   id: assembly-region-out-filename
-  type: File?
+  type: string?
   inputBinding:
-    valueFrom: $(applyTagsToArgument("--assembly-region-out", inputs['assembly-region-out_tags']))
-- type:
-  - 'null'
-  - string
-  - type: array
-    items: string
-  doc: A argument to set the tags of 'assembly-region-out'
-  id: assembly-region-out_tags
+    prefix: --assembly-region-out
 - doc: Number of additional bases of context to include around each assembly region
   id: assembly-region-padding
   type: int?
@@ -411,8 +517,7 @@ inputs:
 - type:
   - 'null'
   - string
-  - type: array
-    items: string
+  - string[]
   doc: A argument to set the tags of 'contamination-fraction-per-sample-file'
   id: contamination-fraction-per-sample-file_tags
 - doc: Fraction of contamination in sequencing data (for all samples) to aggressively
@@ -454,8 +559,7 @@ inputs:
 - type:
   - 'null'
   - string
-  - type: array
-    items: string
+  - string[]
   doc: A argument to set the tags of 'dbsnp'
   id: dbsnp_tags
 - doc: Print out very verbose debug information about each triggering active region
@@ -557,8 +661,7 @@ inputs:
 - type:
   - 'null'
   - string
-  - type: array
-    items: string
+  - string[]
   doc: A argument to set the tags of 'gatk-config-file'
   id: gatk-config-file_tags
 - doc: If the GCS bucket channel errors out, how many times it will attempt to re-initiate
@@ -579,16 +682,9 @@ inputs:
     prefix: --genotyping-mode
 - doc: Write debug assembly graph information to this file
   id: graph-output-filename
-  type: File?
+  type: string?
   inputBinding:
-    valueFrom: $(applyTagsToArgument("--graph-output", inputs['graph-output_tags']))
-- type:
-  - 'null'
-  - string
-  - type: array
-    items: string
-  doc: A argument to set the tags of 'graph-output'
-  id: graph-output_tags
+    prefix: --graph-output
 - doc: Exclusive upper bounds for reference confidence GQ bands (must be in [1, 100]
     and specified in increasing order)
   id: gvcf-gq-bands
@@ -873,8 +969,7 @@ inputs:
 - type:
   - 'null'
   - string
-  - type: array
-    items: string
+  - string[]
   doc: A argument to set the tags of 'reference'
   id: reference_tags
 - doc: Name of single sample to use from a multi-sample bam
@@ -902,8 +997,7 @@ inputs:
 - type:
   - 'null'
   - string
-  - type: array
-    items: string
+  - string[]
   doc: A argument to set the tags of 'sequence-dictionary'
   id: sequence-dictionary_tags
 - doc: display hidden arguments
@@ -997,126 +1091,6 @@ inputs:
   inputBinding:
     prefix: --version
     valueFrom: $(generateGATK4BooleanValue())
-- doc: Threshold number of ambiguous bases. If null, uses threshold fraction; otherwise,
-    overrides threshold fraction.
-  id: ambig-filter-bases
-  type: int?
-  inputBinding:
-    prefix: --ambig-filter-bases
-- doc: Threshold fraction of ambiguous bases
-  id: ambig-filter-frac
-  type: double?
-  inputBinding:
-    prefix: --ambig-filter-frac
-- doc: Maximum length of fragment (insert size)
-  id: max-fragment-length
-  type: int?
-  inputBinding:
-    prefix: --max-fragment-length
-- doc: Name of the library to keep
-  id: library
-  type:
-  - 'null'
-  - type: array
-    items: string
-    inputBinding:
-      valueFrom: $(null)
-  - string
-  inputBinding:
-    valueFrom: $(generateArrayCmd("--library"))
-- doc: Maximum mapping quality to keep (inclusive)
-  id: maximum-mapping-quality
-  type: int?
-  inputBinding:
-    prefix: --maximum-mapping-quality
-- doc: Minimum mapping quality to keep (inclusive)
-  id: minimum-mapping-quality
-  type: int?
-  inputBinding:
-    prefix: --minimum-mapping-quality
-- doc: Allow a read to be filtered out based on having only 1 soft-clipped block.
-    By default, both ends must have a soft-clipped block, setting this flag requires
-    only 1 soft-clipped block
-  id: dont-require-soft-clips-both-ends
-  type: boolean?
-  inputBinding:
-    prefix: --dont-require-soft-clips-both-ends
-    valueFrom: $(generateGATK4BooleanValue())
-- doc: Minimum number of aligned bases
-  id: filter-too-short
-  type: int?
-  inputBinding:
-    prefix: --filter-too-short
-- doc: Platform attribute (PL) to match
-  id: platform-filter-name
-  type:
-  - 'null'
-  - type: array
-    items: string
-    inputBinding:
-      valueFrom: $(null)
-  - string
-  inputBinding:
-    valueFrom: $(generateArrayCmd("--platform-filter-name"))
-- doc: Platform unit (PU) to filter out
-  id: black-listed-lanes
-  type:
-  - 'null'
-  - type: array
-    items: string
-    inputBinding:
-      valueFrom: $(null)
-  - string
-  inputBinding:
-    valueFrom: $(generateArrayCmd("--black-listed-lanes"))
-- doc: The name of the read group to filter out
-  id: read-group-black-list
-  type:
-  - 'null'
-  - type: array
-    items: string
-    inputBinding:
-      valueFrom: $(null)
-  - string
-  inputBinding:
-    valueFrom: $(generateArrayCmd("--read-group-black-list"))
-- doc: The name of the read group to keep
-  id: keep-read-group
-  type: string?
-  inputBinding:
-    prefix: --keep-read-group
-- doc: Keep only reads with length at most equal to the specified value
-  id: max-read-length
-  type: int?
-  inputBinding:
-    prefix: --max-read-length
-- doc: Keep only reads with length at least equal to the specified value
-  id: min-read-length
-  type: int?
-  inputBinding:
-    prefix: --min-read-length
-- doc: Keep only reads with this read name
-  id: read-name
-  type: string?
-  inputBinding:
-    prefix: --read-name
-- doc: Keep only reads on the reverse strand
-  id: keep-reverse-strand-only
-  type: boolean?
-  inputBinding:
-    prefix: --keep-reverse-strand-only
-    valueFrom: $(generateGATK4BooleanValue())
-- doc: The name of the sample(s) to keep, filtering out all others
-  id: sample
-  type:
-  - 'null'
-  - type: array
-    items: string
-    inputBinding:
-      valueFrom: $(null)
-  - string
-  inputBinding:
-    valueFrom: $(generateArrayCmd("--sample"))
 outputs:
 - id: activity-profile-out
   doc: Output file from corresponding to the input argument activity-profile-out-filename
@@ -1138,25 +1112,25 @@ outputs:
   type: File?
   outputBinding:
     glob:
-    - $(inputs['create-output-bam-index'] + '.idx')
-    - $(inputs['create-output-bam-index'] + '.tbi')
+    - $(inputs['output-filename']).idx
+    - $(inputs['output-filename']).tbi
 - id: bam-md5
   doc: md5 file generated if create-output-bam-md5 is true
   type: File?
   outputBinding:
-    glob: $(inputs['create-output-bam-md5'] + '.md5')
+    glob: $(inputs['output-filename']).md5
 - id: variant-index
   doc: index file generated if create-output-variant-index is true
   type: File?
   outputBinding:
     glob:
-     - $(inputs['output-filename']).idx
-     - $(inputs['output-filename']).tbi
+    - $(inputs['output-filename']).idx
+    - $(inputs['output-filename']).tbi
 - id: variant-md5
   doc: md5 file generated if create-output-variant-md5 is true
   type: File?
   outputBinding:
-    glob: $(inputs['create-output-variant-md5'] + '.md5')
+    glob: $(inputs['output-filename']).md5
 - id: graph-output
   doc: Output file from corresponding to the input argument graph-output-filename
   type: File?
