@@ -13,7 +13,7 @@ arguments:
   - >
     cat "$(inputs.interval_list.path)" | awk 
     'BEGIN {
-      FS="\t";
+      FS="\\t";
     }
     /^@/ || $1~/$(inputs.chromosome_regex)/ {
       print;
@@ -24,6 +24,7 @@ inputs:
     type: File
 
   output_filename:
+    default: filtered_interval_list.interval_list
     type: string
 
   chromosome_regex:

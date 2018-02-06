@@ -16,19 +16,47 @@ inputs:
   - id: ref_fasta_files
     type: File[]
 steps:
+  - id: filter_interval_list
+    run: ../tools/filter_interval_list.cwl
+    in:
+      interval_list: intersect_file
+      chromosome_regex:
+        valueFrom: "^(chr)?Y$"
+    out:
+      - output
+
   - id: haplotype_caller
     scatter:
       - library_cram
-    run: gatk-4.0.0.0-haplotypecaller.cwl
+    run: gatk-4.0.0.0-library-cram-to-gvcf.cwl
     in:
       library_cram: library_crams
       chunks: chunks
       intersect_file: intersect_file
       ref_fasta_files: ref_fasta_files
+      ploidy:
+        valueFrom: 2
     out:
       - gvcf_file
       - intervals
-      - reference
+
+  - id: haplotype_caller_haploid
+    scatter:
+      - library_cram
+    run: gatk-4.0.0.0-library-cram-to-gvcf.cwl
+    in:
+      library_cram: library_crams
+      chunks: chunks
+      intersect_file: intersect_file
+      ref_fasta_files: ref_fasta_files
+      ploidy:
+        valueFrom: 1
+      include_chromosome_regex:
+        valueFrom: "^(chr)?Y$"
+    out:
+      - gvcf_file
+      - intervals
+
   - id: genotype_gvcf
     run: gatk-4.0.0.0-genotype-gvcf.cwl
     in:

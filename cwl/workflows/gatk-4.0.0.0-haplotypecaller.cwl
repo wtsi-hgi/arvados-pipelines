@@ -21,70 +21,21 @@ inputs:
     type: int
   - id: intersect_file
     type: File
-  - id: ref_fasta_files
-    type: File[]
+  - id: reference_dict
+    type: File
+  - id: reference_fasta
+    type: File
+  - id: ploidy
+    type: int
+  - id: include_chromosome_regex
+    type: string?
+    default: "."
 
 steps:
-  - id: samtools_seq_cache_populate
-    run: ../tools/samtools_seq_cache_populate.cwl
-    in:
-      ref_fasta_files: ref_fasta_files
-    out: [ref_cache]
-
-  - id: get_cram_index
-    run: ../tools/samtools/samtools-index.cwl
-    in:
-      input: capmq/capped_file
-    out: [cram_index]
-
-  - id: cram_get_fasta
-    run: cram-get-fasta.cwl
-    in:
-      input_cram: library_cram
-      ref_path_dir: samtools_seq_cache_populate/ref_cache
-    out:
-      - reference_fasta
-      - reference_index
-      - reference_dict
-
-  - id: get_rg_values
-    run: ../tools/list_rgs.cwl
-    in:
-      cram: library_cram
-    out:
-      - rg_values
-
-  - id: verify_bam_id
-    run: ../tools/verifybamid2-rg.cwl
-    scatter: rg
-    scatterMethod: dotproduct
-    in:
-      cram: library_cram
-      rg: get_rg_values/rg_values
-      ref: cram_get_fasta/reference_fasta
-    out:
-      - out-file
-
-  - id: get_read_group_caps
-    run: ../tools/get_read_group_caps.cwl
-    in:
-      read_groups: get_rg_values/rg_values
-      verify_bam_id_files: verify_bam_id/out-file
-    out:
-      - read_group_caps_file
-
-  - id: capmq
-    run: ../tools/capmq.cwl
-    in:
-      input_file: library_cram
-      ref_path_dir: samtools_seq_cache_populate/ref_cache
-      readgroup_caps_file: get_read_group_caps/read_group_caps_file
-    out: [capped_file]
-
   - id: dict_to_interval_list
     run: ../tools/dict_to_interval_list.cwl
     in:
-      dictionary: cram_get_fasta/reference_dict
+      dictionary: reference_dict
     out: [interval_list]
 
   - id: intersect
@@ -94,33 +45,21 @@ steps:
       interval_list_B: dict_to_interval_list/interval_list
     out: [intersected_interval_list]
 
+  - id: filter_interval_list
+    run: ../tools/filter_interval_list.cwl
+    in:
+      interval_list: intersect/intersected_interval_list
+      chromosome_regex: include_chromosome_regex
+    out:
+      - output
+
   - id: split_interval_list
     run: ../tools/split_interval_list.cwl
     in:
       number_of_intervals: chunks
-      interval_list: intersect/intersected_interval_list
+      interval_list: filter_interval_list/output
     out:
       - interval_lists
-
-  - id: combine_reference_files
-    in:
-      main_file: cram_get_fasta/reference_fasta
-      secondary_files:
-        - cram_get_fasta/reference_index
-        - cram_get_fasta/reference_dict
-    out:
-      [file_with_secondary_files]
-    run: ../expression-tools/combine_files.cwl
-
-  - id: combine_cram_files
-    in:
-      main_file: capmq/capped_file
-      secondary_files:
-          - get_cram_index/cram_index
-          - cram_get_fasta/reference_index
-    out:
-      [file_with_secondary_files]
-    run: ../expression-tools/combine_files.cwl
 
   - id: haplotype_caller
     scatter:
@@ -130,8 +69,8 @@ steps:
         ramMin: 8500
     run: ../tools/gatk-4.0/HaplotypeCaller.cwl
     in:
-      reference: combine_reference_files/file_with_secondary_files
-      input: combine_cram_files/file_with_secondary_files
+      reference: reference_fasta
+      input: library_cram
       intervals: split_interval_list/interval_lists
       # Below are already set to their default value
       # num_cpu_threads_per_data_thread:
@@ -145,6 +84,7 @@ steps:
         valueFrom: $(["StrandBiasBySample"])
       emit-ref-confidence:
         valueFrom: GVCF
+      ploidy: ploidy
       # I think below isn't needed in GATK 4 anymore
       # variant_index_type:
       #   valueFrom: LINEAR
@@ -175,15 +115,10 @@ steps:
     run: ../expression-tools/combine_files.cwl
 
 outputs:
-  - id: gvcf_file
+  - id: gvcf_files
     type: File[]
     outputSource: combine_haplotype_index/file_with_secondary_files
-  - id: gvcf_index
-    type: File[]
-    outputSource: haplotype_caller/variant-index
   - id: intervals
     type: File[]
     outputSource: split_interval_list/interval_lists
-  - id: reference
-    type: File
-    outputSource: combine_reference_files/file_with_secondary_files
+

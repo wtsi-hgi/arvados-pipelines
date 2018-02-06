@@ -9,14 +9,20 @@ requirements:
 inputs:
   - id: input_cram
     type: File
-  - id: ref_path_dir
-    type: Directory
+  - id: ref_fasta_files
+    type: File[]
 
 steps:
+  - id: samtools_seq_cache_populate
+    run: ../tools/samtools_seq_cache_populate.cwl
+    in:
+      ref_fasta_files: ref_fasta_files
+    out: [ref_cache]
+
   - id: samtools_fastaref
     run: ../tools/samtools/samtools-fastaref.cwl
     in:
-      ref_path_dir: ref_path_dir
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
       output_file_name:
         default: "reference.fa"
       input: input_cram
@@ -36,14 +42,20 @@ steps:
       fasta: samtools_fastaref/reference_fasta
     out: [fasta_dict]
 
+  - id: combine_reference_files
+    in:
+      main_file: samtools_fastaref/reference_fasta
+      secondary_files:
+        - samtools_faidx/fasta_index
+        - samtools_dict/fasta_dict
+    out:
+      [file_with_secondary_files]
+    run: ../expression-tools/combine_files.cwl
+
 outputs:
   - id: reference_fasta
     type: File
-    outputSource: samtools_fastaref/reference_fasta
-  - id: reference_index
-    type: File
-    outputSource: samtools_faidx/fasta_index
+    outputSource: combine_reference_files/file_with_secondary_files
   - id: reference_dict
     type: File
     outputSource: samtools_dict/fasta_dict
-
