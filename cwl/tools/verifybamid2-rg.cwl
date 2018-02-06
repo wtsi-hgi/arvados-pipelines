@@ -21,6 +21,10 @@ inputs:
     type: File
     inputBinding:
       prefix: --ref-file
+    secondaryFiles:
+      - .fai
+      # this tool generates fai files if they aren't specified, but
+      # it's better if they're already there
   - id: svdset
     doc: SVD set to use
     type: string
