@@ -28,13 +28,13 @@ inputs:
 
 steps:
   - id: samtools_seq_cache_populate
-    run: ../tools/samtools_seq_cache_populate/samtools_seq_cache_populate.cwl
+    run: ../tools/samtools_seq_cache_populate.cwl
     in:
       ref_fasta_files: ref_fasta_files
     out: [ref_cache]
 
   - id: capmq
-    run: ../tools/capmq/capmq.cwl
+    run: ../tools/capmq.cwl
     in:
       input_file: library_cram
       MAPQ_cap: MAPQ_cap
@@ -58,7 +58,7 @@ steps:
       - reference_dict
 
   - id: dict_to_interval_list
-    run: ../tools/dict_to_interval_list/dict_to_interval_list.cwl
+    run: ../tools/dict_to_interval_list.cwl
     in:
       dictionary: cram_get_fasta/reference_dict
     out: [interval_list]
@@ -71,7 +71,7 @@ steps:
     out: [intersected_interval_list]
 
   - id: split_interval_list
-    run: ../tools/split_interval_list/split_interval_list.cwl
+    run: ../tools/split_interval_list.cwl
     in:
       number_of_intervals: chunks
       interval_list: intersect/intersected_interval_list
@@ -92,23 +92,19 @@ steps:
     in:
       main_file: capmq/capped_file
       secondary_files:
-        source:
           - get_cram_index/cram_index
           - cram_get_fasta/reference_index
-        linkMerge: merge_nested
     out:
       [file_with_secondary_files]
     run: ../expression-tools/combine_files.cwl
 
   - id: haplotype_caller
-    requirements:
-      - class: ScatterFeatureRequirement
     scatter:
       - intervals
     hints:
       ResourceRequirement:
         ramMin: 8500
-    run: ../tools/HaplotypeCaller-4.0.0.cwl
+    run: ../tools/gatk-4.0/HaplotypeCaller.cwl
     in:
       reference: combine_reference_files/file_with_secondary_files
       input: combine_cram_files/file_with_secondary_files
@@ -119,7 +115,7 @@ steps:
       # num_threads:
       #   valueFrom: ${ return 1 }
       add-output-vcf-command-line:
-        valueFrom: ${return true }
+        valueFrom: $( true )
       # Removed StrandAlleleCountsBySample in gatk 4
       annotation:
         valueFrom: $(["StrandBiasBySample"])
@@ -141,6 +137,7 @@ steps:
     out:
       - output
       - variant-index
+
   - id: combine_haplotype_index
     scatter:
       - main_file

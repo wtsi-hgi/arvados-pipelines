@@ -14,7 +14,7 @@ inputs:
 
 steps:
   - id: samtools_fastaref
-    run: ../tools/fastaref/fastaref.cwl
+    run: ../tools/samtools/samtools-fastaref.cwl
     in:
       ref_path_dir: ref_path_dir
       output_file_name:

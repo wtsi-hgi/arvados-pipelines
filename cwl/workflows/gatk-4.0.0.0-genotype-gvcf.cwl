@@ -53,7 +53,7 @@ steps:
       2d-array: consolidate_gvcfs_wrapper/genomicsdb-workspaces
     out: [flattened_array]
   - id: genotype_gvcfs
-    run: ../tools/GenotypeGVCFs-4.0.0.cwl
+    run: ../tools/gatk-4.0/GenotypeGVCFs.cwl
     scatter:
       - variant
     scatterMethod: dotproduct

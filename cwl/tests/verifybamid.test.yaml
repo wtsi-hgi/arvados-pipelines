@@ -1,0 +1,11 @@
+cwl:tool: ../tools/verifybamid2-rg.cwl
+cram:
+  class: File
+  path: cwl-example-data/chr22_cwl_test_1.cram
+rg: HG001_130920_L1
+ref:
+  class: File
+  path: cwl-example-data/chr22_cwl_test.fa
+  secondaryFiles:
+    - class: File
+      path: cwl-example-data/chr22_cwl_test.fa.fai

@@ -470,8 +470,8 @@ inputs:
     prefix: --genomicsdb-vcf-buffer-size
 - doc: Workspace for GenomicsDB. Must be a POSIX file system path, but can be a relative
     path. Must be an empty or non-existent directory.
-  id: genomicsdb-workspace-path-filename
-  type: Directory
+  id: genomicsdb-workspace-path
+  type: string
   inputBinding:
     prefix: --genomicsdb-workspace-path
 - type:
@@ -679,14 +679,20 @@ inputs:
   id: variant
   type:
   - 'null'
+  - type: array
+    items: File
+    inputBinding:
+      valueFrom: $(null)
   - File
-  - Directory
   inputBinding:
     valueFrom: $(applyTagsToArgument("--variant", inputs['variant_tags']))
 - type:
   - 'null'
-  - string
-  - string[]
+  - type: array
+    items:
+    - string
+    - type: array
+      items: string
   doc: A argument to set the tags of 'variant'
   id: variant_tags
 - doc: Control verbosity of logging.
@@ -708,32 +714,8 @@ inputs:
     prefix: --version
     valueFrom: $(generateGATK4BooleanValue())
 outputs:
-- id: bam-index
-  doc: index file generated if create-output-bam-index is true
-  type: File?
+- id: genomicsdb-workspace
+  doc: Output folder corresponding to the input argument genomicsdb-workspace-path
+  type: Directory
   outputBinding:
-    glob:
-    - $(inputs['output-filename']).idx
-    - $(inputs['output-filename']).tbi
-- id: bam-md5
-  doc: md5 file generated if create-output-bam-md5 is true
-  type: File?
-  outputBinding:
-    glob: $(inputs['output-filename']).md5
-- id: variant-index
-  doc: index file generated if create-output-variant-index is true
-  type: File?
-  outputBinding:
-    glob:
-    - $(inputs['output-filename']).idx
-    - $(inputs['output-filename']).tbi
-- id: variant-md5
-  doc: md5 file generated if create-output-variant-md5 is true
-  type: File?
-  outputBinding:
-    glob: $(inputs['output-filename']).md5
-- id: genomicsdb-workspace-path
-  doc: Output file from corresponding to the input argument genomicsdb-workspace-path-filename
-  type: File
-  outputBinding:
-    glob: $(inputs['genomicsdb-workspace-path-filename'])
+    glob: $(inputs['genomicsdb-workspace-path'])

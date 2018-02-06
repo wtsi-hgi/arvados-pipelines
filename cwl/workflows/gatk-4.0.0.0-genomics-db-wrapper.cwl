@@ -1,6 +1,9 @@
 cwlVersion: v1.0
 class: Workflow
 
+requirements:
+  - class: ScatterFeatureRequirement
+
 inputs:
   variant:
     type: File[]
@@ -10,7 +13,7 @@ inputs:
 steps:
   - id: consolidate_gvcfs
     scatter: intervals
-    run: ../tools/GenomicsDBImport-4.0.0.cwl
+    run: ../tools/gatk-4.0/GenomicsDBImport.cwl
     in:
       variant: variant
       intervals: list_of_intervals

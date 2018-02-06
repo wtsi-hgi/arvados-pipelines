@@ -761,7 +761,7 @@ outputs:
   outputBinding:
     glob: $(inputs['output-filename']).md5
 - id: output
-  doc: Output file from corresponding to the input argument output-filename
+  doc: Output file corresponding to the input argument output-filename
   type: File
   outputBinding:
     glob: $(inputs['output-filename'])
