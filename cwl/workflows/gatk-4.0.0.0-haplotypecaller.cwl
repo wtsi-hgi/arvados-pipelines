@@ -6,6 +6,7 @@ requirements:
   - class: InlineJavascriptRequirement
   - class: StepInputExpressionRequirement
   - class: MultipleInputFeatureRequirement
+  - class: ScatterFeatureRequirement
 
 hints:
   ResourceRequirement:
@@ -26,11 +27,18 @@ inputs:
     type: int
 
 steps:
+  - id: samtools_seq_cache_populate
+    run: ../tools/samtools_seq_cache_populate/samtools_seq_cache_populate.cwl
+    in:
+      ref_fasta_files: ref_fasta_files
+    out: [ref_cache]
+
   - id: capmq
     run: ../tools/capmq/capmq.cwl
     in:
       input_file: library_cram
       MAPQ_cap: MAPQ_cap
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
     out: [capped_file]
 
   - id: get_cram_index
@@ -43,7 +51,7 @@ steps:
     run: cram-get-fasta.cwl
     in:
       input_cram: library_cram
-      ref_fasta_files: ref_fasta_files
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
     out:
       - reference_fasta
       - reference_index
@@ -130,12 +138,28 @@ steps:
       #   valueFrom: INFO
       output-filename:
         valueFrom: $(inputs.input.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
-    out: [output]
+    out:
+      - output
+      - variant-index
+  - id: combine_haplotype_index
+    scatter:
+      - main_file
+      - secondary_files
+    scatterMethod: dotproduct
+    in:
+      main_file: haplotype_caller/output
+      secondary_files: haplotype_caller/variant-index
+    out:
+      [file_with_secondary_files]
+    run: ../expression-tools/combine_files.cwl
 
 outputs:
   - id: gvcf_file
     type: File[]
-    outputSource: haplotype_caller/output
+    outputSource: combine_haplotype_index/file_with_secondary_files
+  - id: gvcf_index
+    type: File[]
+    outputSource: haplotype_caller/variant-index
   - id: intervals
     type: File[]
     outputSource: split_interval_list/interval_lists

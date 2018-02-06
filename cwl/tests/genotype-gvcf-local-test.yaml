@@ -1,15 +1,13 @@
 cwl:tool: ../workflows/gatk-4.0.0.0-genotype-gvcf.cwl
 gvcf_files:
   - - class: File
-      path: /Users/th10/checkouts/arvados-pipeline/arvados-pipelines/cwl/test_files/chr22_cwl_test_1.vcf.gz
+      path: ./test-files/chr22_cwl_test_1_output.bed.1_of_1.g.vcf.gz
       secondaryFiles:
         - class: File
-          path: /Users/th10/checkouts/arvados-pipeline/arvados-pipelines/cwl/test_files/chr22_cwl_test_1.cram.crai
-        - class: File
-          path: /Users/th10/checkouts/arvados-pipeline/arvados-pipelines/cwl/test_files/chr22_cwl_test_1.dict
+          path: ./test-files/chr22_cwl_test_1_output.bed.1_of_1.g.vcf.gz.tbi
 intervals:
   - class: File
-    path: /Users/th10/checkouts/arvados-pipeline/arvados-pipelines/cwl/output.bed.1_of_1.interval_list
+    path: ./test-files/output.bed.1_of_1.interval_list
 reference:
-  - class: File
-    path: /Users/th10/checkouts/arvados-pipeline/arvados-pipelines/cwl/reference.fa
+  class: File
+  path: ./test-files/reference.fa

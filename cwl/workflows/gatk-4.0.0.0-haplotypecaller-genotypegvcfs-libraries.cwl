@@ -3,6 +3,8 @@ class: Workflow
 
 requirements:
   - class: SubworkflowFeatureRequirement
+  - class: StepInputExpressionRequirement
+  - class: ScatterFeatureRequirement
 
 inputs:
   - id: library_crams
@@ -18,8 +20,6 @@ inputs:
 
 steps:
   - id: haplotype_caller
-    requirements:
-      - class: ScatterFeatureRequirement
     scatter:
       - library_cram
     run: gatk-4.0.0.0-haplotypecaller.cwl
@@ -34,23 +34,20 @@ steps:
       - intervals
       - reference
   - id: genotype_gvcf
-    requirements:
-      - class: StepInputExpressionRequirement
     run: gatk-4.0.0.0-genotype-gvcf.cwl
     in:
       gvcf_files: haplotype_caller/gvcf_file
       intervals:
         source: haplotype_caller/intervals
         valueFrom: $(self[0])
-      reference: haplotype_caller/reference
+      reference:
+        source: haplotype_caller/reference
+        valueFrom: $(self[0])
     out:
        - out
 
-
 outputs:
   - id: output
-    type:
-      type: array
-      items: File
+    type: File
     outputSource: genotype_gvcf/out
 
