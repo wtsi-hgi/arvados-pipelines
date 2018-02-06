@@ -98,7 +98,7 @@ inputs:
             - name: read_group
               type: string
             - name: cap_value
-              type: int
+              type: float
         inputBinding:
           valueFrom: $(self.map(function (item){return x.read_group + ":" + x.cap_value}))
   - id: readgroup_caps_file

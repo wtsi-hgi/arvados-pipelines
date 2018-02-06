@@ -10,3 +10,4 @@ ref_fasta_files:
   - class: File
     location: ./cwl-example-data/chr22_cwl_test.fa
 MAPQ_cap: 200
+rg_values: [HG001_130920_L1]
