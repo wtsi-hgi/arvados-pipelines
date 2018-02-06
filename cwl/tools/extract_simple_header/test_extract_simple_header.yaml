@@ -1,10 +1,13 @@
-# one cram file to test
-# test crams can be found at 
+# need one cram file to test
+# (would also work for sam and bam as headers and commands are the same)
+# test crams can be found at ???
 cram: 
   class: File
-  path: ./chr22_cwl_test.cram
+  path: ./x.sam
+  #path: ./chr22_cwl_test.cram
 
-
-filename: test   
+# the filename for the simplified header
+# kind of a dict file
+filename: test.dict   
  
 
