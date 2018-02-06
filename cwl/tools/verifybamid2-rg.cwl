@@ -2,12 +2,12 @@ cwlVersion: v1.0
 class: CommandLineTool
 requirements:
   DockerRequirement:
-    dockerPull: mercury/verifybamid2-1.0.2-samtools-1.6:v3
+    dockerPull: mercury/verifybamid2-1.0.2-samtools-1.6:v4
 
 baseCommand: ['verifybamid_rg']
 
 inputs:
-  - id: cram-file
+  - id: cram
     doc: Input cram file
     type: File
     inputBinding:
@@ -17,13 +17,15 @@ inputs:
     type: string
     inputBinding:
       prefix: --rg
-  - id: ref-file
+  - id: ref
     type: File
     inputBinding:
       prefix: --ref-file
-  - id: svd-prefix
+  - id: svdset
+    doc: SVD set to use
     type: string
+    default: hgdp.10k
     inputBinding:
-      prefix: --svd-prefix
+      prefix: --svd-set
 
 outputs: []

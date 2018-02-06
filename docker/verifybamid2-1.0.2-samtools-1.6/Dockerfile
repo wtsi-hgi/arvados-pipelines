@@ -13,7 +13,9 @@ RUN \
   cd build && \
   cmake .. && \
   make && \
-  cp ../bin/VerifyBamID /usr/local/bin/VerifyBamID && \
+  cd .. && \
+  cp bin/VerifyBamID /usr/local/bin/VerifyBamID && \
+  cp -r resource /resource && \
   cd /tmp && \
   rm -rf /tmp/VerifyBamID && \
   git clone https://github.com/samtools/htslib.git && \
