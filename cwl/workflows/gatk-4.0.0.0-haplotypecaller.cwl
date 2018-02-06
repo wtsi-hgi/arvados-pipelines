@@ -25,6 +25,8 @@ inputs:
     type: File[]
   - id: MAPQ_cap
     type: int
+  - id: rg_values
+    type: string[]
 
 steps:
   - id: samtools_seq_cache_populate
@@ -32,14 +34,6 @@ steps:
     in:
       ref_fasta_files: ref_fasta_files
     out: [ref_cache]
-
-  - id: capmq
-    run: ../tools/capmq.cwl
-    in:
-      input_file: library_cram
-      MAPQ_cap: MAPQ_cap
-      ref_path_dir: samtools_seq_cache_populate/ref_cache
-    out: [capped_file]
 
   - id: get_cram_index
     run: ../tools/samtools/samtools-index.cwl
@@ -56,6 +50,44 @@ steps:
       - reference_fasta
       - reference_index
       - reference_dict
+
+  # - id: get_rg_values
+  #   in:
+  #     cram: library_cram
+  #   out:
+  #     - rg_values
+
+  - id: verify_bam_id
+    run: ../tools/verifybamid2-rg.cwl
+    scatter: rg
+    scatterMethod: dotproduct
+    in:
+      cram: library_cram
+      rg: rg_values
+      ref: cram_get_fasta/reference_fasta
+    out:
+      - out-file
+
+  - id: get_read_group_caps
+    run: ../tools/get_read_group_caps.cwl
+    scatter:
+      - read_group
+      - verify_bam_id_file
+    scatterMethod: dotproduct
+    in:
+      read_group: rg_values
+      verify_bam_id_file: verify_bam_id/out-file
+    out:
+      - read_groups_caps
+
+  - id: capmq
+    run: ../tools/capmq.cwl
+    in:
+      input_file: library_cram
+      MAPQ_cap: MAPQ_cap
+      ref_path_dir: samtools_seq_cache_populate/ref_cache
+      readgroup_caps: get_read_group_caps/read_groups_caps
+    out: [capped_file]
 
   - id: dict_to_interval_list
     run: ../tools/dict_to_interval_list.cwl
