@@ -11,4 +11,3 @@ intersect_file:
 ref_fasta_files:
   - class: File
     location: ./cwl-example-data/chr22_cwl_test.fa
-MAPQ_cap: 200
