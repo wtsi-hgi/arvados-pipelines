@@ -15,9 +15,6 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
-  - id: MAPQ_cap
-    type: int
-
 steps:
   - id: haplotype_caller
     scatter:
@@ -28,7 +25,6 @@ steps:
       chunks: chunks
       intersect_file: intersect_file
       ref_fasta_files: ref_fasta_files
-      MAPQ_cap: MAPQ_cap
     out:
       - gvcf_file
       - intervals

@@ -23,10 +23,6 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
-  - id: MAPQ_cap
-    type: int
-  - id: rg_values
-    type: string[]
 
 steps:
   - id: samtools_seq_cache_populate
@@ -51,11 +47,12 @@ steps:
       - reference_index
       - reference_dict
 
-  # - id: get_rg_values
-  #   in:
-  #     cram: library_cram
-  #   out:
-  #     - rg_values
+  - id: get_rg_values
+    run: ../tools/list_rgs.cwl
+    in:
+      cram: library_cram
+    out:
+      - rg_values
 
   - id: verify_bam_id
     run: ../tools/verifybamid2-rg.cwl
@@ -63,7 +60,7 @@ steps:
     scatterMethod: dotproduct
     in:
       cram: library_cram
-      rg: rg_values
+      rg: get_rg_values/rg_values
       ref: cram_get_fasta/reference_fasta
     out:
       - out-file
@@ -71,7 +68,7 @@ steps:
   - id: get_read_group_caps
     run: ../tools/get_read_group_caps.cwl
     in:
-      read_groups: rg_values
+      read_groups: get_rg_values/rg_values
       verify_bam_id_files: verify_bam_id/out-file
     out:
       - read_group_caps_file
@@ -80,7 +77,6 @@ steps:
     run: ../tools/capmq.cwl
     in:
       input_file: library_cram
-      MAPQ_cap: MAPQ_cap
       ref_path_dir: samtools_seq_cache_populate/ref_cache
       readgroup_caps_file: get_read_group_caps/read_group_caps_file
     out: [capped_file]
