@@ -70,15 +70,11 @@ steps:
 
   - id: get_read_group_caps
     run: ../tools/get_read_group_caps.cwl
-    scatter:
-      - read_group
-      - verify_bam_id_file
-    scatterMethod: dotproduct
     in:
-      read_group: rg_values
-      verify_bam_id_file: verify_bam_id/out-file
+      read_groups: rg_values
+      verify_bam_id_files: verify_bam_id/out-file
     out:
-      - read_groups_caps
+      - read_group_caps_file
 
   - id: capmq
     run: ../tools/capmq.cwl
@@ -86,7 +82,7 @@ steps:
       input_file: library_cram
       MAPQ_cap: MAPQ_cap
       ref_path_dir: samtools_seq_cache_populate/ref_cache
-      readgroup_caps: get_read_group_caps/read_groups_caps
+      readgroup_caps_file: get_read_group_caps/read_group_caps_file
     out: [capped_file]
 
   - id: dict_to_interval_list
