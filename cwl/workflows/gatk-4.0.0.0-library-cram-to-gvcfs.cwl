@@ -61,7 +61,7 @@ steps:
       ploidy:
         default: 1
       include_chromosome_regex:
-        default: "." #"^(chr)?Y$"
+        default: "^(chr)?Y$"
     out:
       - gvcf_files
       - intervals
