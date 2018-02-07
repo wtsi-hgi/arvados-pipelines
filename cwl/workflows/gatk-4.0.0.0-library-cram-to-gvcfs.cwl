@@ -16,6 +16,8 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
+  - id: haploid_chromosome_regex
+    type: string
 
 steps:
   - id: cram_get_fasta
@@ -60,8 +62,7 @@ steps:
       reference_dict: cram_get_fasta/reference_dict
       ploidy:
         default: 1
-      include_chromosome_regex:
-        default: "^(chr)?Y$"
+      include_chromosome_regex: haploid_chromosome_regex
     out:
       - gvcf_files
       - intervals

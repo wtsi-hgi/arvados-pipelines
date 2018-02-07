@@ -15,6 +15,10 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
+  - id: haploid_chromosome_regex
+    type: string
+    default: "^(chr)?Y$"
+
 steps:
 
   - id: haplotype_caller
@@ -26,6 +30,7 @@ steps:
       chunks: chunks
       intersect_file: intersect_file
       ref_fasta_files: ref_fasta_files
+      haploid_chromosome_regex: haploid_chromosome_regex
     out:
       - gvcf_files
       - intervals
