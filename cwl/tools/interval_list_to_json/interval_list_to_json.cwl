@@ -6,7 +6,7 @@ baseCommand: [
 ]
 hints:
   DockerRequirement:
-    dockerImageId: interval_list_to_json
+    dockerPull: mercury/interval-list-to-json:v1
 
 requirements:
   - class: InlineJavascriptRequirement
