@@ -134,6 +134,11 @@ requirements:
         return self;
     }
 
+    function addTagToArgument(tagObject, argument, prefix){
+        var allTags = Array.isArray(tagObject) ? tagObject.join(",") : tagObject;
+        return [prefix + ":" + allTags, argument];
+    }
+
     function applyTagsToArgument(prefix, tags){
         /**
          * Function to be used in the field valueFrom of File objects to add gatk tags.
@@ -146,25 +151,19 @@ requirements:
             return generateArrayCmd(prefix);
         }
         else{
-            function addTagToArgument(tagObject, argument){
-                var allTags = Array.isArray(tagObject) ? tagObject.join(",") : tagObject;
-
-                return [prefix + ":" + allTags, argument];
-            }
-
             if(Array.isArray(self)){
                 if(!Array.isArray(tags) || self.length !== tags.length){
                     throw new TypeError("Argument '" + prefix + "' tag field is invalid");
                 }
 
                 var value = self.map(function(element, i) {
-                    return addTagToArgument(tags[i], element);
+                    return addTagToArgument(tags[i], element, prefix);
                 }).reduce(function(a, b){return a.concat(b)})
 
                 return value;
             }
             else{
-                return addTagToArgument(tags, self);
+                return addTagToArgument(tags, self, prefix);
             }
         }
     }
