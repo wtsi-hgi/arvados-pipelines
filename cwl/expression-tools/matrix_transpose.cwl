@@ -7,7 +7,7 @@ requirements:
 
 expression: |
   $({
-    'transposed_array': inputs.array[0].map(function(col, i){return inputs.array.map(row => row[i])})
+    'transposed_array': inputs.array[0].map(function(col, i){return inputs.array.map(function(row){return row[i]})})
   })
 
 # NOTE: this has to use a specific type, due to
