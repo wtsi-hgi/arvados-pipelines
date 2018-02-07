@@ -156,7 +156,7 @@ inputs:
   - File
   inputBinding:
     valueFrom: $(applyTagsToArgument("--input", inputs['input_tags']))
-  secondaryFiles: $(self.basename + self.nameext.replace('m','i'))
+  secondaryFiles: .crai
 - doc: Threshold number of ambiguous bases. If null, uses threshold fraction; otherwise,
     overrides threshold fraction.
   id: ambig-filter-bases
