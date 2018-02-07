@@ -1,11 +1,8 @@
 id: GenotypeGVCFs
 cwlVersion: v1.0
 baseCommand:
-- java
-- -D64
-- -jar
-- /gatk/gatk.jar
-- GenotypeGVCFs
+- python
+- /gatk-wrapper.py
 class: CommandLineTool
 doc: |-
   Perform joint genotyping on one or more samples pre-called with HaplotypeCaller
@@ -137,13 +134,8 @@ requirements:
 
         return output;
     }
-- class: InitialWorkDirRequirement
-  listing:
-  - entry: $(inputs.variant)
-    entryname: variant_input_file
-    writable: true
 - class: DockerRequirement
-  dockerPull: broadinstitute/gatk:4.0.0.0
+  dockerPull: mercury/genotype-gvcf-wrapper:v1
 inputs:
 - doc: Reference sequence file
   id: reference
@@ -710,7 +702,6 @@ inputs:
   - Directory
   inputBinding:
     prefix: --variant
-    valueFrom: '$((self.class == "Directory" ? "gendb://" : "") + self.path)'
 - type:
   - 'null'
   - string
