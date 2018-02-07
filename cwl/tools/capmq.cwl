@@ -7,21 +7,6 @@ requirements:
     envDef:
       REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
   InlineJavascriptRequirement:
-    expressionLib:
-    - |
-      function checkExclusive(){
-        var names = Array.from(arguments);
-
-        if(!names.every(function(name){return typeof(name) === "string"})){
-            throw new Error("checkExclusive only takes arrays of strings")
-        }
-
-        if(!names.some(function(name){return inputs[name] !== undefined})){
-            throw new Error(names.join(" ,") + " are defined as exclusive parameters and none of them are declared.")
-        }
-
-        return self;
-      }
 baseCommand: ['capmq']
 
 inputs:
@@ -29,7 +14,6 @@ inputs:
     type: Directory?
   - id: input_file
     inputBinding:
-      valueFrom: $(checkExclusive("MAPQ_cap", "restore_mapq", "readgroup_caps"))
       position: 1
     type: File
   - id: output_filename
