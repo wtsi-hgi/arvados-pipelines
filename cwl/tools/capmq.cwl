@@ -1,12 +1,12 @@
 cwlVersion: v1.0
 class: CommandLineTool
 requirements:
-  DockerRequirement:
+  - class: DockerRequirement
     dockerPull: mercury/capmq:v1
-  EnvVarRequirement:
+  - class: EnvVarRequirement
     envDef:
       REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
-  InlineJavascriptRequirement:
+  - class: InlineJavascriptRequirement
 baseCommand: ['capmq']
 
 inputs:
