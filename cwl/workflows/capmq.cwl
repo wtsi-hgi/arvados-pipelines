@@ -3,6 +3,8 @@ class: Workflow
 
 requirements:
   - class: SubworkflowFeatureRequirement
+  - class: ScatterFeatureRequirement
+  - class: InlineJavascriptRequirement
 
 inputs:
   - id: library_cram
@@ -37,15 +39,39 @@ steps:
     out:
       - read_group_caps_file
 
+  - id: get_capmq_ref_cache
+    run: ../tools/samtools_seq_cache_populate.cwl
+    in:
+      ref_fasta_files:
+        source: reference_fasta
+        valueFrom: $([self])
+    out:
+      - ref_cache
+
   - id: capmq
     run: ../tools/capmq.cwl
     in:
       input_file: library_cram
-      reference_fasta: reference_fasta
+      ref_path_dir: get_capmq_ref_cache/ref_cache
       readgroup_caps_file: get_read_group_caps/read_group_caps_file
     out: [capped_file]
+
+  - id: cram_index
+    run: ../tools/samtools/samtools-index.cwl
+    in:
+      input: capmq/capped_file
+    out:
+      - cram_index
+
+  - id: combine_cram_index
+    run: ../expression-tools/combine_files.cwl
+    in:
+      main_file: capmq/capped_file
+      secondary_files: cram_index/cram_index
+    out:
+      - file_with_secondary_files
 
 outputs:
   - id: capped_file
     type: File
-    outputSource: capmq/capped_file
+    outputSource: combine_cram_index/file_with_secondary_files

@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 hints:
  DockerRequirement:
-   dockerPull: intersect_intervals:latest
+   dockerPull: mercury/bed-to-interval-list:v1
 baseCommand: ['python', '/bed_to_il.py']
 
 inputs:

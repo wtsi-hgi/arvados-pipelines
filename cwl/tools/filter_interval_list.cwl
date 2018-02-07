@@ -4,7 +4,7 @@ baseCommand: [
   "bash",
   "-c"
 ]
-  
+
 requirements:
   DockerRequirement:
     dockerPull: ubuntu:14.04
@@ -29,11 +29,9 @@ inputs:
 
   chromosome_regex:
     type: string
-    
+
 outputs:
   output:
     type: File
     outputBinding:
       glob: $(inputs.output_filename)
-
-     

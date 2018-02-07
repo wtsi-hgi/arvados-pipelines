@@ -1,4 +1,0 @@
-class: DockerRequirement
-dockerPull: scidap/samtools:v1.2-242-4d56437
-dockerFile: >
-  $import: samtools-Dockerfile

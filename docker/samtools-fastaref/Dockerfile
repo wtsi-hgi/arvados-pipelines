@@ -36,5 +36,3 @@ RUN \
   apt-get -q=2 -y autoremove && \
   apt-get -q=2 -y clean && \
   rm -rf /var/lib/apt/lists/*
-
-WORKDIR ~

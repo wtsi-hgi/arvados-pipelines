@@ -28,7 +28,7 @@ inputs:
   - id: ploidy
     type: int
   - id: include_chromosome_regex
-    type: string?
+    type: string
     default: "."
 
 steps:
@@ -39,7 +39,7 @@ steps:
     out: [interval_list]
 
   - id: intersect
-    run: ../tools/intersect_intervals/intersect_intervals.cwl
+    run: intersect_intervals.cwl
     in:
       interval_list_A: intersect_file
       interval_list_B: dict_to_interval_list/interval_list

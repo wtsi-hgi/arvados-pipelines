@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: ['python', '/dict_to_interval_list.py']
 hints:
   DockerRequirement:
-    dockerPull: dict_to_interval_list:latest
+    dockerPull: mercury/dict-to-interval-list:v1
 
 arguments:
   - prefix: "--output_dir"

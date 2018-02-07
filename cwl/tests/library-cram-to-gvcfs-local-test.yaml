@@ -1,0 +1,14 @@
+cwl:tool: ../workflows/gatk-4.0.0.0-library-cram-to-gvcfs.cwl
+chunks: 1
+intersect_file:
+  class: File
+  path: chr22_cwl_test.interval_list
+library_cram:
+  class: File
+  path: ./cwl-example-data/chr22_cwl_test_1.cram
+  secondaryFiles:
+    - class: File
+      path: ./cwl-example-data/chr22_cwl_test_1.cram.crai
+ref_fasta_files:
+  - class: File
+    path: ./cwl-example-data/chr22_cwl_test.fa

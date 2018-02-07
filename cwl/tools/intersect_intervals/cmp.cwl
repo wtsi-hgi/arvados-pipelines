@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 hints:
  DockerRequirement:
-   dockerPull: ubuntu:latest
+   dockerPull: ubuntu:14.04
 baseCommand: ['cmp']
 
 inputs:

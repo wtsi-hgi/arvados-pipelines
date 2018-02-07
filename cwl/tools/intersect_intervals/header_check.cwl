@@ -15,14 +15,14 @@ steps:
     run: cleanse_header.cwl
     in:
       header: header_A
-    out: 
+    out:
       - cleansed_header
 
   - id: cleanse_header_B
     run: cleanse_header.cwl
     in:
       header: header_B
-    out: 
+    out:
       - cleansed_header
 
   - id: cmp

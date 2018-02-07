@@ -1,0 +1,1 @@
+@PG	ID:capmq	PN:capmq	VN:0.5	CL:capmq -C 123 -I cram,reference=/private/var/lib/cwl/stg7bbf1c79-774c-4900-ba02-d24c823c7c4f/test_intersect.yml /private/var/lib/cwl/stg7bbf1c79-774c-4900-ba02-d24c823c7c4f/test_intersect.yml test_intersect.yml	DS:cap map quality values

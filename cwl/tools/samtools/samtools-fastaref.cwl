@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 requirements:
   DockerRequirement:
-    dockerPull: samtools:fastaref #mercury/samtools-fastaref
+    dockerPull: mercury/samtools-fastaref
   EnvVarRequirement:
     envDef:
       REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s

@@ -5,7 +5,7 @@ requirements:
   - class: InlineJavascriptRequirement
 hints:
  DockerRequirement:
-   dockerPull: split_interval_list:latest
+   dockerPull: mercury/split-interval-list:v1
 
 inputs:
  - id: number_of_intervals

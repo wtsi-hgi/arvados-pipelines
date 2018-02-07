@@ -37,6 +37,7 @@ steps:
       interval_list_file: intervals
     out:
       - list_of_intervals
+
   - id: consolidate_gvcfs_wrapper
     scatter:
       - variant
@@ -47,11 +48,13 @@ steps:
       variant: transpose_gvcf_files_list/transposed_array
       list_of_intervals: interval_list_to_cwl_list/list_of_intervals
     out: [genomicsdb-workspaces]
+
   - id: flatten-genomicsdb-workspaces-array
-    run: ../expression-tools/flatten-array.cwl
+    run: ../expression-tools/flatten-array-directory.cwl
     in:
       2d-array: consolidate_gvcfs_wrapper/genomicsdb-workspaces
     out: [flattened_array]
+
   - id: genotype_gvcfs
     run: ../tools/gatk-4.0/GenotypeGVCFs.cwl
     scatter:
@@ -65,6 +68,7 @@ steps:
     out:
       - output
       - variant-index
+
   - id: combine_gvcf_index
     scatter:
       - main_file
@@ -76,6 +80,7 @@ steps:
     out:
       [file_with_secondary_files]
     run: ../expression-tools/combine_files.cwl
+
   - id: combine_gvcfs
     run: ../tools/bcftools/bcftools-concat.cwl
     in:

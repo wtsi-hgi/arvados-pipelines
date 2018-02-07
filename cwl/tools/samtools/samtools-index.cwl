@@ -3,9 +3,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 requirements:
 - class: DockerRequirement
-  dockerPull: scidap/samtools:v1.2-242-4d56437
-  dockerFile: >
-    $import: samtools-Dockerfile
+  dockerPull: mercury/samtools-1.6:v2
 - class: InlineJavascriptRequirement
 
 inputs:

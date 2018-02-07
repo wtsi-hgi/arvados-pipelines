@@ -3,11 +3,11 @@ class: CommandLineTool
 
 requirements:
   DockerRequirement:
-    dockerPull: mercury/get_caps_file:v1
+    dockerPull: mercury/get-read-group-caps:v1
 
 baseCommand:
   - python
-  - /get_caps_file.py
+  - /get_read_group_caps.py
 
 inputs:
   - id: read_groups

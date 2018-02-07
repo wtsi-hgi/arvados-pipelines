@@ -1,5 +1,5 @@
 FROM python:3
 
-COPY get_caps_file.py /get_caps_file.py
+COPY get_read_group_caps.py /get_read_group_caps.py
 
 CMD /bin/bash

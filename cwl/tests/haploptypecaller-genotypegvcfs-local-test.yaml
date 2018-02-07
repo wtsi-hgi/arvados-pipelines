@@ -2,8 +2,14 @@ cwl:tool: ../workflows/gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl
 library_crams:
   - class: File
     location: ./cwl-example-data/chr22_cwl_test_1.cram
+    secondaryFiles:
+      - class: File
+        path: ./cwl-example-data/chr22_cwl_test_1.cram.crai
   - class: File
     location: ./cwl-example-data/chr22_cwl_test_2.cram
+    secondaryFiles:
+      - class: File
+        path: ./cwl-example-data/chr22_cwl_test_2.cram.crai
 chunks: 1
 intersect_file:
   class: File

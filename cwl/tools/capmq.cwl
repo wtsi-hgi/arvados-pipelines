@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 requirements:
   DockerRequirement:
-    dockerPull: capmq:latest
+    dockerPull: mercury/capmq:v1
   EnvVarRequirement:
     envDef:
       REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
@@ -21,30 +21,6 @@ requirements:
         }
 
         return self;
-      }
-
-      function parseHtslibOptions(){
-          if(typeof self !== "object")
-            throw new Error("Htslib option must be of type object")
-          if(self){
-            if(self.file_format === undefined){
-              throw new Error("Htslib option must have file_format defined");
-            }
-            var file_format = self.file_format;
-
-            delete self.file_format;
-
-            return [file_format].concat(Object.keys(self).map(function(key){
-              var value = self[key];
-              if(typeof(value) === "boolean"){
-                return key;
-              }
-              else if(key === "file_format")
-              return key + "=" + value;
-            })).join(",");
-          }
-          else
-            return null;
       }
 baseCommand: ['capmq']
 
@@ -128,22 +104,20 @@ inputs:
     # (record with no field property) of this in cwl doesn't work in most cwl implementations
     # See: https://github.com/common-workflow-language/cwltool/issues/608
     type:
-      - Any
+      - string
       - 'null'
     inputBinding:
       prefix: -I
-      valueFrom: $(parseHtslibOptions())
     doc: |
       Input format and format-options.
       This is passed in through a object which has fields of the options set
       plus a compulsory file_format to set the file format.
   - id: htslib_output_options
     type:
-      - Any
+      - string
       - 'null'
     inputBinding:
       prefix: -O
-      valueFrom: $(parseHtslibOptions())
     doc: |
       Output format and format-options [SAM].
       This is passed in through a object which has fields of the options set

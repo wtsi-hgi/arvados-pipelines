@@ -4,7 +4,7 @@ baseCommand: [
   "bash",
   "-c"
 ]
-  
+
 requirements:
   DockerRequirement:
     dockerPull: mercury/samtools-1.6:v2
@@ -33,7 +33,6 @@ arguments:
     }' > $(inputs.filename)
 
 inputs:
-   
   cram:
     type: File
     doc: |
@@ -43,7 +42,6 @@ inputs:
     type: string?
     doc: |
       Output file name of simplified header file
-      
 
 outputs:
   output:
@@ -51,10 +49,9 @@ outputs:
     outputBinding:
       glob: $(inputs.filename)
 
-     
+
 doc: |
   About:   Take the reference details from the CRAM Header and output a file
   containing only the SN, LN and M5 keys and values from each @SQ row,
   in the same order as the original. The awk is standard and the samtools 
   dockerfile has it. 
-  
