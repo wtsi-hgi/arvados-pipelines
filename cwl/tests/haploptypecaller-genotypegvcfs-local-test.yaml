@@ -16,5 +16,5 @@ intersect_file:
   location: chr22_cwl_test.interval_list
 ref_fasta_files:
   - class: File
-    location: ./cwl-example-data/chr22_cwl_test.fa
+    location: https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test/chr22_cwl_test.fa
 haploid_chromosome_regex: "^chr22$"
