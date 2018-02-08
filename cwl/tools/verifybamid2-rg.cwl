@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 requirements:
   DockerRequirement:
-    dockerPull: mercury/verifybamid2-1.0.2-samtools-1.6:v4
+    dockerPull: mercury/verifybamid2-1.0.2-samtools-1.6:v5
 
 baseCommand: ['verifybamid_rg']
 

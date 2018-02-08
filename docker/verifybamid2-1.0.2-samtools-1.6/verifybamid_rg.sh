@@ -56,3 +56,12 @@ output_file="$(basename ${cram_file} .cram).verifybamid2"
 
 VerifyBamID --PileupFile <(samtools mpileup -G <(echo "${exclude_rgs}") -f "${ref_file}" -l "${bed_file}" "${cram_file}") --UDPath "${ud_file}" --BedPath "${bed_file}" --MeanPath "${mu_file}" --Reference "${ref_file}" --Output "${output_file}"
 
+alpha=$(awk 'BEGIN { FS=":" } $1=="Alpha" { print $2 }' ${output_file}.out)
+if [[ -n "${alpha}" ]]; then
+    echo "Output has Alpha value ${alpha}"
+else
+    echo "Output missing Alpha value"
+    echo "Output was:"
+    cat "${output_file}.out"
+    exit 1
+fi
