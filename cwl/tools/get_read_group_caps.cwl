@@ -3,7 +3,7 @@ class: CommandLineTool
 
 requirements:
   DockerRequirement:
-    dockerPull: mercury/get-read-group-caps:v2
+    dockerPull: mercury/get-read-group-caps:v3
 
 baseCommand:
   - python
@@ -28,4 +28,3 @@ outputs:
     type: File
     outputBinding:
       glob: "caps_file"
-
