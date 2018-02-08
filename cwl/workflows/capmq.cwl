@@ -55,7 +55,7 @@ steps:
       ref_path_dir: get_capmq_ref_cache/ref_cache
       readgroup_caps_file: get_read_group_caps/read_group_caps_file
       use_max_contamination:
-        valueFrom: True
+        valueFrom: $(true)
       minimum_MAPQ:
         valueFrom: "20"
       output_filename:
