@@ -1,0 +1,11 @@
+input_vcf:
+  class: File
+  path: /home/sjc/vareval/syndip/CEU.exon.2010_03.genotypes.vcf
+
+sample_list_file:  
+  class: File
+  path: /home/sjc/vareval/syndip/samples.txt  
+
+
+
+

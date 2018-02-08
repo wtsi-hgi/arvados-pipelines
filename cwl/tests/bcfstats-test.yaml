@@ -1,0 +1,20 @@
+input_vcf:
+  class: File
+  path: /home/sjc/vareval/syndip/Syndip.dragen-gvcf_to_vcf.20180130.vcf.gz
+  secondaryFiles:
+    -   class: File
+        path: /home/sjc/vareval/syndip/Syndip.dragen-gvcf_to_vcf.20180130.vcf.gz.tbi
+
+split_by_ID: true
+
+# giving secondary files like this means they are optional
+# to test samples inputs, find samples in the test vcf using 
+#  bcftools query -l <vcf> ... it fails if the samples are not 
+# in the vcf file
+
+# ignores unrecognised inputs
+a: a
+b: b
+
+
+
