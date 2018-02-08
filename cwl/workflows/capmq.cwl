@@ -61,7 +61,7 @@ steps:
       output_filename:
         valueFrom: $(inputs.library_cram.path.nameroot).capmq.cram
       htslib_output_options:
-	valueFrom: cram
+        valueFrom: cram
     out: [capped_file]
 
   - id: cram_index
