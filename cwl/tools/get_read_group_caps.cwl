@@ -3,7 +3,7 @@ class: CommandLineTool
 
 requirements:
   DockerRequirement:
-    dockerPull: mercury/get-read-group-caps:v1
+    dockerPull: mercury/get-read-group-caps:v2
 
 baseCommand:
   - python
