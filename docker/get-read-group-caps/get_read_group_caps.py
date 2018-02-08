@@ -7,10 +7,14 @@ args = parser.parse_args()
 
 with open("caps_file", "w") as caps_file:
     for read_group, verify_bam_id_file_name in zip(args.read_groups, args.verify_bam_id_files):
+        alpha = None
         with open(verify_bam_id_file_name, "r") as verify_bam_id_file:
             for line in verify_bam_id_file:
-                key, value = line.strip().split(':')[:2]
+                key, value = line.strip().split(':', maxsplit=1)
                 if key == "Alpha":
                     alpha = value
                     break
+
+        if alpha is None:
+            raise Exception(f"Alpha is not found for file {verify_bam_id_file_name}")
         caps_file.write(read_group + "\t" + alpha + "\n")
