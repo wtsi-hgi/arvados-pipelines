@@ -57,7 +57,7 @@ steps:
       use_max_contamination:
         valueFrom: True
       minimum_MAPQ:
-        valueFrom: 20
+        valueFrom: "20"
       output_filename:
         valueFrom: $(inputs.library_cram.path.nameroot).capmq.cram
       htslib_output_options:
