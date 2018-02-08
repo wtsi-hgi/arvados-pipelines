@@ -55,11 +55,12 @@ steps:
       ref_path_dir: get_capmq_ref_cache/ref_cache
       readgroup_caps_file: get_read_group_caps/read_group_caps_file
       use_max_contamination:
-        valueFrom: $(true)
+        default: True
       minimum_MAPQ:
-        valueFrom: "20"
+        default: 20
       output_filename:
-        valueFrom: $(inputs.library_cram.path.nameroot).capmq.cram
+        source: library_cram
+        valueFrom: $(self.nameroot).capmq.cram
       htslib_output_options:
         valueFrom: cram
     out: [capped_file]

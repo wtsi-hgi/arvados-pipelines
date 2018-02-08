@@ -12,3 +12,4 @@ library_cram:
 ref_fasta_files:
   - class: File
     path: ./cwl-example-data/chr22_cwl_test.fa
+haploid_chromosome_regex: "^chr22$"
