@@ -1,6 +1,11 @@
 # need one cram file to test
 # (would also work for sam and bam as headers and commands are the same)
 # test crams can be found at ???
+script:
+  class: File
+  path: /home/sjc/go/src/github.com/wtsi-hgi/arvados-pipelines/cwl/tools/extract_simple_header/extract_simple_header.sh
+
+
 cram: 
   class: File
   path: /home/sjc/go/src/github.com/wtsi-hgi/arvados-pipelines/cwl/tests/cwl-example-data/chr22_cwl_test_1.cram

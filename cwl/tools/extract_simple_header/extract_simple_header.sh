@@ -1,0 +1,1 @@
+samtools view -H $1 | awk 'BEGIN {FS="\t"; OFS="\t";} $1=="@HD" {print} $1=="@SQ" {for(i=2; i<=NF; i++){if($i~/^SN:/){sn=$i} else if($i~/^LN:/){ln=$i} else if($i~/^M5:/){m5=$i}}; print $1, sn, ln, m5;}'

@@ -1,42 +1,27 @@
 cwlVersion: v1.0
 class: CommandLineTool
 baseCommand: [
-  "bash",
-  "-c"
+  "bash"
 ]
 
 requirements:
   DockerRequirement:
     dockerPull: mercury/samtools-1.6:v2
 
-arguments:
-  - >
-    samtools view -H $(inputs.cram.path) | awk 
-    'BEGIN {
-      FS="\\t";
-      OFS="\\t";
-    } 
-    $1=="@HD" {
-      print;
-    }
-    $1=="@SQ" {
-      for(i=2; i<=NF; i++) {
-        if($i~/^SN:/) {
-          sn=$i;
-        } else if($i~/^LN:/) {
-          ln=$i;
-        } else if($i~/^M5:/) {
-          m5=$i;
-        }
-      }; 
-      print $1, sn, ln, m5;
-    }' 
-
 inputs:
+  script:
+    type: File
+    inputBinding:
+      position: 1
+    doc: |
+      Script to extract and format the header
+
   cram:
     type: File
     doc: |
       Input file with header to be simplified
+    inputBinding:
+      position: 2
 
   filename:
     type: string?
