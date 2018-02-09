@@ -160,3 +160,6 @@ doc: |
   
 label: bcftools-stats
 
+# eg to test sudo cwltool --debug ./bcftools-stats.cwl /home/sjc/go/src/github.com/wtsi-hgi/arvados-pipelines/cwl/tests/bcfstats-test.yaml 
+
+
