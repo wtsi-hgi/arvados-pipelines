@@ -5,6 +5,8 @@ input_vcf:
     -   class: File
         path: /home/sjc/vareval/syndip/Syndip.dragen-gvcf_to_vcf.20180130.vcf.gz.tbi
 
+statsfile: stats.txt        
+
 split_by_ID: true
 
 # giving secondary files like this means they are optional

@@ -6,6 +6,8 @@ sample_list_file:
   class: File
   path: /home/sjc/vareval/syndip/samples.txt  
 
+statsfile: stats.dat
+
 
 
 

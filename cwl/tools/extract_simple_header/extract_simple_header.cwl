@@ -30,7 +30,7 @@ arguments:
         }
       }; 
       print $1, sn, ln, m5;
-    }' > $(inputs.filename)
+    }' 
 
 inputs:
   cram:
@@ -43,11 +43,11 @@ inputs:
     doc: |
       Output file name of simplified header file
 
+stdout: $(inputs.filename)
+     
 outputs:
-  output:
-    type: File
-    outputBinding:
-      glob: $(inputs.filename)
+  stats:
+    type: stdout 
 
 
 doc: |

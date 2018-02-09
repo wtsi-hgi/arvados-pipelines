@@ -11,6 +11,11 @@ inputs:
     inputBinding:
       position: 1 
 
+  statsfile:
+    type: string 
+    doc: Output file name of stats file
+   
+
   allele_frequency_bins_list:
     type: string[]?       
     inputBinding:    
@@ -139,7 +144,7 @@ inputs:
     doc: produce verbose per-site and per-sample output
    
   
-stdout: statsfile
+stdout: $(inputs.statsfile)
      
 outputs:
   stats:

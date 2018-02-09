@@ -3,7 +3,7 @@
 # test crams can be found at ???
 cram: 
   class: File
-  path: ./x.sam
+  path: /home/sjc/go/src/github.com/wtsi-hgi/arvados-pipelines/cwl/tests/cwl-example-data/chr22_cwl_test_1.cram
   #path: ./chr22_cwl_test.cram
 
 # the filename for the simplified header
