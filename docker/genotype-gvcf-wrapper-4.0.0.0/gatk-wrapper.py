@@ -17,6 +17,7 @@ new_arguments[variant_folder_index] = "gendb://" + new_location
 gatk_command = [
     "java",
     "-D64",
+    "-Xmx4g",
     "-jar",
     "/gatk/gatk.jar",
     "GenotypeGVCFs"
