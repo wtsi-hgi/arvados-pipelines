@@ -3,7 +3,6 @@ cwlVersion: v1.0
 baseCommand:
 - java
 - -D64
-- "-Xmx4g"
 - -jar
 - /gatk/gatk.jar
 - GenomicsDBImport
