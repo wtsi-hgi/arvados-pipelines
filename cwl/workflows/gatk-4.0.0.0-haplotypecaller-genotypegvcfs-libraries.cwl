@@ -6,6 +6,12 @@ requirements:
   - class: StepInputExpressionRequirement
   - class: ScatterFeatureRequirement
 
+hints:
+  ResourceRequirement:
+    ramMin: 4000
+    coresMin: 1
+    tmpdirMin: 1000
+
 inputs:
   - id: library_crams
     type: File[]
