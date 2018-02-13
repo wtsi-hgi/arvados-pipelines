@@ -15,7 +15,8 @@ requirements:
 
 inputs: []
 
-outputs: []
+outputs:
+- test_output: stdout
 
 baseCommand:
 - java
