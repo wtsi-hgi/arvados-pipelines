@@ -20,4 +20,6 @@ outputs:
 
 baseCommand:
 - java
+- -XX:+UnlockExperimentalVMOptions
+- -XX:+UseCGroupMemoryLimitForHeap
 - MemoryTest
