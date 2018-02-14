@@ -13,10 +13,17 @@ requirements:
 - class: DockerRequirement
   dockerPull: mercury/java-memory-test:v2
 
-inputs: []
+inputs:
+ - id: input
+   type: string
+
+stdout: output.txt
 
 outputs:
-- test_output: stdout
+ - id: output
+   type: File
+   outputBinding:
+     glob: output.txt
 
 baseCommand:
 - java
