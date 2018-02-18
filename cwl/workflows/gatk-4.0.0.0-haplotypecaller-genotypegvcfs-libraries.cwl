@@ -1,3 +1,7 @@
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
+
 cwlVersion: v1.0
 class: Workflow
 
@@ -11,7 +15,14 @@ hints:
     ramMin: 4000
     coresMin: 1
     tmpdirMin: 1000
-
+  arv:RuntimeConstraints:
+    keep_cache: 1024
+    outputDirType: keep_output_dir
+  cwltool:LoadListingRequirement:
+    loadListing: no_listing
+  arv:IntermediateOutput:
+      outputTTL: 2592000
+      
 inputs:
   - id: library_crams
     type: File[]

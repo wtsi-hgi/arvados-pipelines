@@ -18,6 +18,9 @@ steps:
     in:
       ref_fasta_files: ref_fasta_files
     out: [ref_cache]
+    hints:
+      ResourceRequirement:
+        ramMin: 100000
 
   - id: samtools_fastaref
     run: ../tools/samtools/samtools-fastaref.cwl
@@ -27,6 +30,9 @@ steps:
         default: "reference.fa"
       input: input_cram
     out: [reference_fasta]
+    hints:
+      ResourceRequirement:
+        ramMin: 8000
 
   - id: samtools_faidx
     run: ../tools/samtools/samtools-faidx.cwl

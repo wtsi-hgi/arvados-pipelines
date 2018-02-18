@@ -10,7 +10,7 @@ requirements:
 
 hints:
   ResourceRequirement:
-    ramMin: 100
+    ramMin: 4000
     coresMin: 1
     tmpdirMin: 1000
 
@@ -66,7 +66,7 @@ steps:
       - intervals
     hints:
       ResourceRequirement:
-        ramMin: 8500
+        ramMin: 12500
     run: ../tools/gatk-4.0/HaplotypeCaller.cwl
     in:
       reference: reference_fasta
