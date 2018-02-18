@@ -162,7 +162,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: broadinstitute/gatk:4.0.0.0
+  dockerPull: mercury/gatk-4.0.0.0:v1
 inputs:
 - doc: Reference sequence
   id: reference
