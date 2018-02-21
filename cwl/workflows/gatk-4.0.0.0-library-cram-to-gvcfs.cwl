@@ -1,3 +1,7 @@
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
+
 cwlVersion: v1.0
 class: Workflow
 
@@ -6,6 +10,19 @@ requirements:
   - class: StepInputExpressionRequirement
   - class: ScatterFeatureRequirement
   - class: MultipleInputFeatureRequirement
+
+hints:
+  ResourceRequirement:
+    ramMin: 4000
+    coresMin: 1
+    tmpdirMin: 1000
+  arv:RuntimeConstraints:
+    keep_cache: 1024
+    outputDirType: keep_output_dir
+  cwltool:LoadListingRequirement:
+    loadListing: no_listing
+  arv:IntermediateOutput:
+      outputTTL: 2592000
 
 inputs:
   - id: library_cram
@@ -18,6 +35,7 @@ inputs:
     type: File[]
   - id: haploid_chromosome_regex
     type: string
+    default: "^(chr)?Y$"
 
 steps:
   - id: cram_get_fasta

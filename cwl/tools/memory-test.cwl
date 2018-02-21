@@ -5,7 +5,7 @@ class: CommandLineTool
 
 hints:
   ResourceRequirement:
-    ramMin: 4000
+    ramMin: 100
     coresMin: 1
     tmpdirMin: 1000
 
@@ -26,7 +26,6 @@ outputs:
      glob: output.txt
 
 baseCommand:
-- java
-- -XX:+UnlockExperimentalVMOptions
-- -XX:+UseCGroupMemoryLimitForHeap
-- MemoryTest
+ - bash
+ - "-c"
+ - "java -XX:MaxRAMFraction=1 -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap MemoryTest && echo -n \"limit_in_bytes for cgroup: \" && cat /sys/fs/cgroup/memory/memory.limit_in_bytes"
