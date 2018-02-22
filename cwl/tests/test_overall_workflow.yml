@@ -1,8 +1,0 @@
-input_file:
-   class: File
-   path: cwl-example-data/chr22_cwl_test.cram
-chunks: 2
-intersect_file:
-    class: File
-    path: chr22_cwl_test.interval_list
-MAPQ_cap: 200
