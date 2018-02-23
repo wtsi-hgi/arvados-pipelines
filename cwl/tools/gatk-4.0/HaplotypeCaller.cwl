@@ -113,6 +113,7 @@ doc: |-
        to the desired level in the next step of the workflow (GenotypeGVCFs)</li>
        <li>We recommend using a list of intervals to speed up analysis. See <a href='https://software.broadinstitute.org/gatk/documentation/article?id=4133'>this document</a> for details.</li>
    </ul>
+temporaryFailCodes: [3]
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
@@ -193,7 +194,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0:v1
+  dockerPull: mercury/gatk-4.0.0.0:v2
 inputs:
 - doc: Reference sequence file
   id: reference

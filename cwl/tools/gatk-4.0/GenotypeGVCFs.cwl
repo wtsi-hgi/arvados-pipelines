@@ -54,6 +54,7 @@ doc: |-
    <h3>Special note on ploidy</h3>
    <p>This tool is able to handle any ploidy (or mix of ploidies) intelligently; there is no need to specify ploidy
    for non-diploid organisms.</p>
+temporaryFailCodes: [3]
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
@@ -134,7 +135,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v1
+  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v2
 inputs:
 - doc: Reference sequence file
   id: reference

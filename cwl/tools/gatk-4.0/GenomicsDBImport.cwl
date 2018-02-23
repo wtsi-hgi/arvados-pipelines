@@ -82,6 +82,7 @@ doc: |-
 
    <h3>Developer Note</h3>
    To read data from GenomicsDB, use the query interface com.intel.genomicsdb.GenomicsDBFeatureReader
+temporaryFailCodes: [3]
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
@@ -162,7 +163,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0:v1
+  dockerPull: mercury/gatk-4.0.0.0:v2
 inputs:
 - doc: Reference sequence
   id: reference

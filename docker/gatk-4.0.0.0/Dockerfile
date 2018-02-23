@@ -1,5 +1,17 @@
-FROM openjdk:jre-alpine3.7
+FROM openjdk:8u151-jre-slim-stretch
+# NOTE: It is tricky to make this using alpine linux, as GenomicsDBImport requires
+# glibc and alpine doesn't have this installed by default.
+# One task that could be done is to make this work - if so, any docker
+# container will need to pass the test described here:
+# https://github.com/broadinstitute/gatk/issues/4124#issuecomment-356988842
+
 LABEL author="th10@sanger.ac.uk"
+
+RUN apt-get -q=2 update && \
+    apt-get -q=2 install wget && \
+    apt-get autoremove && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN cd /tmp && \
     mkdir gatk && \
@@ -10,4 +22,3 @@ RUN cd /tmp && \
     mkdir /gatk && \
     mv gatk-4.0.0.0/gatk-package-4.0.0.0-local.jar /gatk/gatk.jar && \
     rm -rf /tmp/gatk
-
