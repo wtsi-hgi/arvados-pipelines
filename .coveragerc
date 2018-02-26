@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = .
+omit =
+    cwl/tests/*
+parallel = True
