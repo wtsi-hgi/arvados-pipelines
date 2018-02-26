@@ -1,7 +1,7 @@
 id: GenotypeGVCFs
 cwlVersion: v1.0
 baseCommand:
-- python
+- python3
 - /gatk-wrapper.py
 class: CommandLineTool
 doc: |-
@@ -135,7 +135,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v3
+  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v5
 inputs:
 - doc: Reference sequence file
   id: reference
