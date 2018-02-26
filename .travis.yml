@@ -13,7 +13,6 @@ install:
 
 script:
   - PYTHONPATH=. coverage run -m unittest discover -v -s cwl/tests
-  - coverage run setup.py install
   - coverage combine
   - coverage report
 
