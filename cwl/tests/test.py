@@ -18,11 +18,12 @@ class TestWorkflowSteps(unittest.TestCase):
     def setUpClass(cls):
 
         # Get test data.
-        if not os.path.isfile("tests/cwl-example-data/chr22_cwl_test.cram"):
+        if not os.path.isfile("tests/cwl-example-data/chr22_cwl_test_1.cram"):
             from six.moves.urllib.request import urlopen
             import tarfile
             print("Downloading and extracting cwl-example-data")
             tgz = urlopen("https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test.tgz")
+            
             tar = tarfile.open(fileobj=tgz, mode="r|gz")
             tar.extractall(path="./tests/cwl-example-data")
             tar.close()
@@ -35,11 +36,14 @@ class TestWorkflowSteps(unittest.TestCase):
         shutil.rmtree(self._temp_folder)
 
     def test_workflow(self):
+        cwl = '/workflows/gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl'
+        
+        yml = '/tests/haploptypecaller-genotypegvcfs-local-test.yaml'
+        
+        cmd = "cwl-runner {0}/{1} {0}/{2}".format(base_dir, cwl, yml)
 
-        rval = subprocess.call(
-            "cwl-runner --debug --js-console --outdir {0} {1}".format(self._temp_folder,
-                      base_dir.join("/workflows/gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl")),
-            shell=True)
+        #cmd = 'ls -l'
+        rval = subprocess.call(cmd,  shell=True)       
         self.assertEqual(rval, 0)
 
         self.assertGreater(len(os.listdir(self._temp_folder)), 0)
