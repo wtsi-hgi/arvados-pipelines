@@ -40,10 +40,10 @@ class TestWorkflowSteps(unittest.TestCase):
         
         yml = '/tests/haploptypecaller-genotypegvcfs-local-test.yaml'
         
-        cmd = "cwl-runner {0}/{1} {0}/{2}".format(base_dir, cwl, yml)
+        cmd = "cwl-runner --outdir {0} {1}/{2} {1}/{3}".format(self._temp_folder, base_dir, cwl, yml)
 
         #cmd = 'ls -l'
-        rval = subprocess.call(cmd,  shell=True)       
+        rval = subprocess.call(cmd, shell=True)
         self.assertEqual(rval, 0)
 
         self.assertGreater(len(os.listdir(self._temp_folder)), 0)
