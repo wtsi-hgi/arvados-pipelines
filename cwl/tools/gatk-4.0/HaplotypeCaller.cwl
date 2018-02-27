@@ -2,7 +2,7 @@ id: HaplotypeCaller
 cwlVersion: v1.0
 baseCommand:
 - java
-- -D64
+- -d64
 - -jar
 - /gatk/gatk.jar
 - HaplotypeCaller
