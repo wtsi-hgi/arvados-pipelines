@@ -1,0 +1,10 @@
+test_whole_workflow:
+  stage: test
+  tags:
+    - docker-privileged
+  image: 
+    name: commonworkflowlanguage/cwltool
+    entrypoint: [""]
+  script:
+    - pip install -r cwl/test_requirements.txt
+    - python -m unittest discover -v -s cwl/tests
