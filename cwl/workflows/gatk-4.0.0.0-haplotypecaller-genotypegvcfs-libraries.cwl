@@ -35,7 +35,7 @@ inputs:
   - id: haploid_chromosome_regex
     type: string
     default: "^(chr)?Y$"
-
+  
 steps:
 
   - id: haplotype_caller

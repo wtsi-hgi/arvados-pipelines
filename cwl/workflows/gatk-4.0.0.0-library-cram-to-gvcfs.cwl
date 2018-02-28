@@ -65,6 +65,8 @@ steps:
       reference_dict: cram_get_fasta/reference_dict
       ploidy:
         default: 2
+      pcr_free:
+        default: true
     out:
       - gvcf_files
       - intervals

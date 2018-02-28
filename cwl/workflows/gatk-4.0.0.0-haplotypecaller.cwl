@@ -30,7 +30,10 @@ inputs:
   - id: include_chromosome_regex
     type: string
     default: "."
-
+  - id: pcr_free
+    type: boolean
+    default: true
+    
 steps:
   - id: dict_to_interval_list
     run: ../tools/dict_to_interval_list.cwl
@@ -72,35 +75,31 @@ steps:
       reference: reference_fasta
       input: library_cram
       intervals: split_interval_list/interval_lists
-      # Below are already set to their default value
-      # num_cpu_threads_per_data_thread:
-      #   valueFrom: ${ return 1 }
-      # num_threads:
-      #   valueFrom: ${ return 1 }
+      num_cpu_threads_per_data_thread:
+        valueFrom: ${ return 1 }
+      num_threads:
+        valueFrom: ${ return 1 }
       add-output-vcf-command-line:
-        valueFrom: $( true )
-      # Removed StrandAlleleCountsBySample in gatk 4
+        valueFrom: $( false )
       annotation:
-        valueFrom: $(["StrandBiasBySample"])
+        valueFrom: $(["DepthPerAlleleBySample","StrandBiasBySample"])
       emit-ref-confidence:
         valueFrom: GVCF
-      ploidy: ploidy
-      # I think below isn't needed in GATK 4 anymore
-      # variant_index_type:
-      #   valueFrom: LINEAR
-      # variant_index_parameter:
-      #   valueFrom: ${ return 128000 }
-
-      # Below is already set to the default value
-      # sample-ploidy:
-      #   valueFrom: ${ return 2 }
-      # verbosity:
-      #   valueFrom: INFO
+      sample-ploidy: ploidy
+      pcr-indel-model:
+	valueFrom: ${ if(inputs.pcr_free) { return "NONE" } else { return "CONSERVATIVE" }}
+      verbosity:
+        valueFrom: INFO
+      create-output-variant-index:
+        valueFrom: $( true )
+      create-output-variant-md5:
+        valueFrom: $( true )
       output-filename:
         valueFrom: $(inputs.input.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
     out:
       - output
       - variant-index
+      - variant-md5
 
   - id: combine_haplotype_index
     scatter:
