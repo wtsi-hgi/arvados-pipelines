@@ -135,7 +135,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v5
+  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v6
 inputs:
 - doc: Reference sequence file
   id: reference
