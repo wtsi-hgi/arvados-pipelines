@@ -1,4 +1,4 @@
-FROM mercury/gatk-4.0.0.0:v2
+FROM mercury/gatk-4.0.0.0:v3
 
 RUN apt-get -q=2 update && \
     apt-get -q=2 install python3 && \

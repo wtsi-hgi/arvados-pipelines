@@ -163,7 +163,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0:v2
+  dockerPull: mercury/gatk-4.0.0.0:v3
 inputs:
 - doc: Reference sequence
   id: reference
