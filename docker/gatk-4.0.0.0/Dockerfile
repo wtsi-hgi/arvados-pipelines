@@ -8,7 +8,7 @@ FROM openjdk:8u151-jre-slim-stretch
 LABEL author="th10@sanger.ac.uk"
 
 RUN apt-get -q=2 update && \
-    apt-get -q=2 install wget && \
+    apt-get -q=2 install -y --no-install-recommends wget libblas3 libgfortran3 liblapack3 && \
     apt-get autoremove && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
