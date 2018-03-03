@@ -73,7 +73,7 @@ steps:
       variant: flatten-genomicsdb-workspaces-array/flattened_array
       reference: reference
       output-filename:
-        valueFrom: output.gvcf
+        valueFrom: output.g.vcf.gz
     out:
       - output
       - variant-index
@@ -95,7 +95,7 @@ steps:
     in:
       vcfs: combine_gvcf_index/file_with_secondary_files
       filename:
-        valueFrom: output.gvcf
+        valueFrom: output.g.vcf.gz
     out:
       - output
 
