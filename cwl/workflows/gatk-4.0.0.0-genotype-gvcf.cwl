@@ -6,6 +6,12 @@ requirements:
   - class: ScatterFeatureRequirement
   - class: StepInputExpressionRequirement
 
+hints:
+  ResourceRequirement:
+    ramMin: 4000
+    coresMin: 1
+    tmpdirMin: 1000
+
 inputs:
   - id: gvcf_files
     doc: Array of array of GVCF files. Each inner array contains vcfs called for the corresponding interval\
@@ -60,6 +66,9 @@ steps:
     scatter:
       - variant
     scatterMethod: dotproduct
+    hints:
+      ResourceRequirement:
+        ramMin: 12500
     in:
       variant: flatten-genomicsdb-workspaces-array/flattened_array
       reference: reference
