@@ -1,11 +1,11 @@
 id: GenomicsDBImport
 cwlVersion: v1.0
 baseCommand:
-- java
-- -d64
-- -jar
-- /gatk/gatk.jar
-- GenomicsDBImport
+- python3
+- /gatk-tmpdir-output-wrapper.py
+- '["--genomicsdb-workspace-path"]' # output paths to redirect to tmpdir
+- '["-Xmx4g","-Xms4g"]' # extra java args
+- GenomicsDBImport # GATK command
 class: CommandLineTool
 doc: |-
   Import single-sample GVCFs into GenomicsDB before joint genotyping.
@@ -83,6 +83,11 @@ doc: |-
    <h3>Developer Note</h3>
    To read data from GenomicsDB, use the query interface com.intel.genomicsdb.GenomicsDBFeatureReader
 temporaryFailCodes: [3]
+hints:
+  ResourceRequirement:
+    ramMin: 8000 # currently hard-coded for Java to use 4g, leaving 4g for TileDB - see Caveats above
+  arv:RuntimeConstraints:
+    outputDirType: keep_output_dir
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
@@ -163,7 +168,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0:v4
+  dockerPull: mercury/gatk-4.0.0.0-tmpdir-output-wrapper:v1
 inputs:
 - doc: Reference sequence
   id: reference
