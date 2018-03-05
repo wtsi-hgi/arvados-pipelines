@@ -1,3 +1,6 @@
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
 id: GenomicsDBImport
 cwlVersion: v1.0
 baseCommand:
