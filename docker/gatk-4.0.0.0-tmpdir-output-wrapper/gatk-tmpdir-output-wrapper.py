@@ -39,7 +39,7 @@ for output_argument_name in output_argument_names:
     tmpdirs.append(tmp_dir)
     m = re.search(r'^(?P<scheme>\w+://)?(?P<path>.*)$', output_arg)
     if m:
-        output_scheme = m.group('scheme')
+        output_scheme = m.group('scheme') or ""
         output_path = m.group('path')
     else:
         output_scheme = ""
