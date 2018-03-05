@@ -171,7 +171,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0-tmpdir-output-wrapper:v1
+  dockerPull: mercury/gatk-4.0.0.0-tmpdir-output-wrapper:v2
 inputs:
 - doc: Reference sequence
   id: reference
