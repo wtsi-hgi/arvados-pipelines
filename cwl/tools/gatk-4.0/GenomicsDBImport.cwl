@@ -88,7 +88,7 @@ doc: |-
 temporaryFailCodes: [3]
 hints:
   ResourceRequirement:
-    ramMin: 8000 # currently hard-coded for Java to use 4g, leaving 4g for TileDB - see Caveats above
+    ramMin: 18000 # currently hard-coded for Java to use 4g, leaving 4g+ for TileDB (see Caveats above) and another 10g for arv-mount's large memory consumption when reading lots of collections
   arv:RuntimeConstraints:
     outputDirType: keep_output_dir
 requirements:
