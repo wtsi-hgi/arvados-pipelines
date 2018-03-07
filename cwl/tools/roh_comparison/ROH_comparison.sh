@@ -52,9 +52,9 @@ h="$(bcftools view -H hets_in_ROH_$sample.vcf | wc -l)"
 g="$(bcftools view -H hets_$sample.vcf | wc -l)"
   
 #output
-echo -e "$sample"'\t'"$h"'\t'"$g"
+echo -e "$expVCF"'\t'"$sample"'\t'"$h"'\t'"$g"
 
-#cleanup
+#cleanup (left from when it was a loop, probably not needed)
 rm hets_$sample.vcf
 rm hets_$sample.vcf.gz
 rm hets_in_ROH_$sample.vcf 

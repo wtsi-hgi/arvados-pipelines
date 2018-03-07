@@ -20,17 +20,21 @@ steps:
 
   - id: ROH_calc
     scatter:
-      - filein_ROH
-      
+      - filein_ROH      
     run: ROH_comparison.cwl
     in:
       script: script
       filein_ROH: ROH_beds
-      filein_VCF: vcf_file
-          
+      filein_VCF: vcf_file          
     out: [output]
 
+  - id: ROH_combine
+    run: ROH_combine.cwl
+    in:
+      files:  ROH_calc/output
+    out: [stats] 
+
 outputs:
-  - id: output
-    type: File[]
-    outputSource: ROH_calc/output
+  - id: stats
+    type: File
+    outputSource: [ROH_combine/stats]
