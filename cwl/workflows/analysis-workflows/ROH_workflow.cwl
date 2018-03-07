@@ -1,8 +1,9 @@
 cwlVersion: v1.0
 class: Workflow
 
-# input the array of sample files and scatter the ROH calculations (DONE)
-# then combine the results to a single output file (TO DO)
+# input the script, the array of sample files and a multisample vcf and scatter 
+# the ROH calculations then combine the results (vcf, sample, hets in ROH, all hets, 
+# tab separated) to a single output file
 
 requirements:
   - class: ScatterFeatureRequirement
