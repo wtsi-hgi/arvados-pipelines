@@ -98,8 +98,10 @@ for input_argument_name in input_argument_names:
     try:
         if os.path.isdir(input_path):
             shutil.copytree(input_path, tmp_path)
+            print("gatk-local-io-wrapper.py: successfully copied tree from '%s' to '%s'" % (input_path, tmp_path), file=sys.stderr)
         elif os.path.isfile(input_path):
             shutil.copy(input_path, tmp_path)
+            print("gatk-local-io-wrapper.py: successfully copied file from '%s' to '%s'" % (input_path, tmp_path), file=sys.stderr)
         else:
             raise Exception('ERROR: input_path %s was neither a directory nor a file, not sure what to do to copy it to tmp_path %s!' % (input_path, tmp_path))
     except shutil.Error as e:
