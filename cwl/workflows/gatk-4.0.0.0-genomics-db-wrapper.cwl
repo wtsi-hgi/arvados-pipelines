@@ -4,6 +4,12 @@ class: Workflow
 requirements:
   - class: ScatterFeatureRequirement
 
+hints:
+  ResourceRequirement:
+    ramMin: 4000
+    coresMin: 1
+    tmpdirMin: 1000
+
 inputs:
   variant:
     type: File[]

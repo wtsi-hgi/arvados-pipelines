@@ -1,3 +1,7 @@
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
+
 cwlVersion: v1.0
 class: Workflow
 
@@ -11,6 +15,13 @@ hints:
     ramMin: 4000
     coresMin: 1
     tmpdirMin: 1000
+  arv:RuntimeConstraints:
+    keep_cache: 1024
+    outputDirType: keep_output_dir
+  cwltool:LoadListingRequirement:
+    loadListing: no_listing
+  arv:IntermediateOutput:
+      outputTTL: 2592000
 
 inputs:
   - id: gvcf_files
@@ -68,7 +79,7 @@ steps:
     scatterMethod: dotproduct
     hints:
       ResourceRequirement:
-        ramMin: 12500
+        ramMin: 16500 # FIXME tool is hard-coded for java to use 12500, plus an additional 4GB for arv-mount 
     in:
       variant: flatten-genomicsdb-workspaces-array/flattened_array
       reference: reference
