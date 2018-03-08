@@ -2,7 +2,11 @@ id: GenotypeGVCFs
 cwlVersion: v1.0
 baseCommand:
 - python3
-- /gatk-wrapper.py
+- /gatk-tmpdir-output-wrapper.py
+- '["--variant"]' # input paths to copy to tmpdir before starting GATK
+- '[]' # output paths to redirect to tmpdir and copy to output dir after GATK finishes
+- '["-Xmx12500m","-Xms12500m"]' # FIXME this is hardcoded as a workaround for arv-mount problems '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
+- GenotypeGVCFs # GATK command
 class: CommandLineTool
 doc: |-
   Perform joint genotyping on one or more samples pre-called with HaplotypeCaller
@@ -135,7 +139,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/genotype-gvcf-wrapper-4.0.0.0:v8
+  dockerPull: mercury/gatk-4.0.0.0-local-io-wrapper:v1
 inputs:
 - doc: Reference sequence file
   id: reference
