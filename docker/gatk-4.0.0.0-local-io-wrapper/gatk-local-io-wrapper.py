@@ -92,7 +92,7 @@ for input_argument_name in input_argument_names:
         tmp_path = os.path.join(tmp_dir, input_path)
     tmp_arg = input_scheme + tmp_path
     new_arguments[argument_index] = tmp_arg
-    arg2inputpath[input_argument_name] = input_path
+    arg2input[input_argument_name] = input_path
     input2tmp[input_path] = tmp_path
     print("gatk-local-io-wrapper.py: copying input from '%s' to '%s'" % (input_path, tmp_path), file=sys.stderr)
     try:
@@ -107,9 +107,9 @@ for input_argument_name in input_argument_names:
     print("gatk-local-io-wrapper.py: redirected input for GATK argument '%s' from '%s' to '%s'" % (input_argument_name, input_arg, tmp_arg), file=sys.stderr)
     
 for output_argument_name in output_argument_names:
-    if output_argument_name in arg2inputpath:
+    if output_argument_name in arg2input:
         # this argument has already been copied as an input, just register it as an output as well
-        input_path = arg2inputpath[output_argument_name]
+        input_path = arg2input[output_argument_name]
         tmp_path = input2tmp[input_path]
         output_path = input_path # the input_path is also the output_path
         tmp2output[tmp_path] = output_path
