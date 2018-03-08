@@ -142,6 +142,11 @@ for output_argument_name in output_argument_names:
     
 gatk_command_args = ["java", "-d64"] + extra_java_args + ["-jar", "/gatk/gatk.jar", gatk_command] + new_arguments
 
+# set hostname in /etc/hosts to squash java.net.UnknownHostException during log4j default configuration
+print('gatk-local-io-wrapper.py: setting hostname in /etc/hosts', file=sys.stderr)
+if subprocess.run(["bash","-c","echo 127.0.0.1 ${HOSTNAME} >> /etc/hosts"]) != 0:
+    print('gatk-local-io-wrapper.py: failed to set hostname', file=sys.stderr)
+
 # run GATK!
 print('gatk-local-io-wrapper.py: running GATK: `%s`' % (' '.join([('"%s"' % arg) for arg in gatk_command_args])), file=sys.stderr)
 gatk_exit_code = subprocess.run(gatk_command_args).returncode
@@ -163,9 +168,9 @@ for tmp_path in tmp2output.keys():
 
 # clean up tmp dirs
 for tmp_dir in tmpdirs:
-    print("gatk-local-io-wrapper.py: removing temporary directory '%s'" % (tmp_dir))
+    print("gatk-local-io-wrapper.py: removing temporary directory '%s'" % (tmp_dir), file=sys.stderr)
     shutil.rmtree(tmp_dir, ignore_errors=True)
-    print("gatk-local-io-wrapper.py: removed temporary directory '%s'" % (tmp_dir))
+    print("gatk-local-io-wrapper.py: removed temporary directory '%s'" % (tmp_dir), file=sys.stderr)
     
 print('gatk-local-io-wrapper.py: finished copying output, exiting with status: %s' % (gatk_exit_code), file=sys.stderr)
 exit(gatk_exit_code)
