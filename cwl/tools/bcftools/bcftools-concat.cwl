@@ -9,7 +9,7 @@ class: CommandLineTool
 requirements:
 - class: DockerRequirement
   dockerPull: mercury/bcftools-1.6:v2
-- class: InlineJavascriptRequirement
+
 
 inputs:
   allow_overlaps:
