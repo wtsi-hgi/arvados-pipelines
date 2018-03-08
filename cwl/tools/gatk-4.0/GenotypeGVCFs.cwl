@@ -706,6 +706,7 @@ inputs:
   - Directory
   inputBinding:
     prefix: --variant
+    valueFrom: ${if(self.class=="File"){return self.path;} else {return "gendb://"+self.path;}}
 - type:
   - 'null'
   - string
