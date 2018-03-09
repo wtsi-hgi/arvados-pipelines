@@ -58,7 +58,7 @@ doc: |-
    <h3>Special note on ploidy</h3>
    <p>This tool is able to handle any ploidy (or mix of ploidies) intelligently; there is no need to specify ploidy
    for non-diploid organisms.</p>
-temporaryFailCodes: [3]
+temporaryFailCodes: [3, -6]
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
