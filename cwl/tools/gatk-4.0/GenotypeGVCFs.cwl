@@ -139,7 +139,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0-local-io-wrapper:v1
+  dockerPull: mercury/gatk-4.0.0.0-local-io-wrapper:v4
 inputs:
 - doc: Reference sequence file
   id: reference
