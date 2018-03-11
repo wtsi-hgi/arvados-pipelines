@@ -5,7 +5,7 @@ baseCommand:
 - /gatk-local-io-wrapper.py
 - '["--variant"]' # input paths to copy to tmpdir before starting GATK
 - '[]' # output paths to redirect to tmpdir and copy to output dir after GATK finishes
-- '["-Xmx12500m","-Xms12500m"]' # FIXME this is hardcoded as a workaround for arv-mount problems '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
+- '["-Xmx16000m","-Xms16000m"]' # FIXME this is hardcoded as a workaround for arv-mount problems '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
 - GenotypeGVCFs # GATK command
 class: CommandLineTool
 doc: |-
