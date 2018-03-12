@@ -81,10 +81,15 @@ steps:
       ResourceRequirement:
         ramMin: 16500 # FIXME tool is hard-coded for java to use 12500, plus an additional 4GB for arv-mount 
     in:
+      # TODO: Should we add a dbsnp option?
       variant: flatten-genomicsdb-workspaces-array/flattened_array
       reference: reference
       output-filename:
         valueFrom: output.g.vcf.gz
+      only-output-calls-starting-in-intervals:
+        valueFrom: $(true)
+      use-new-qual-calculator:
+        valueFrom: $(true)
     out:
       - output
       - variant-index
