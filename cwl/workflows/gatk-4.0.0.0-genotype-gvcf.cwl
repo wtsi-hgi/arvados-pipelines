@@ -86,10 +86,8 @@ steps:
       reference: reference
       output-filename:
         valueFrom: output.g.vcf.gz
-      only-output-calls-starting-in-intervals:
-        valueFrom: $(true)
       use-new-qual-calculator:
-        valueFrom: $(true)
+        default: true
     out:
       - output
       - variant-index
