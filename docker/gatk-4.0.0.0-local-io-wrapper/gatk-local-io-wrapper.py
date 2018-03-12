@@ -92,14 +92,16 @@ for input_argument_name in input_argument_names:
         tmp_path = os.path.join(tmp_dir, input_path)
     tmp_arg = input_scheme + tmp_path
     new_arguments[argument_index] = tmp_arg
-    arg2inputpath[input_argument_name] = input_path
+    arg2input[input_argument_name] = input_path
     input2tmp[input_path] = tmp_path
     print("gatk-local-io-wrapper.py: copying input from '%s' to '%s'" % (input_path, tmp_path), file=sys.stderr)
     try:
         if os.path.isdir(input_path):
             shutil.copytree(input_path, tmp_path)
+            print("gatk-local-io-wrapper.py: successfully copied tree from '%s' to '%s'" % (input_path, tmp_path), file=sys.stderr)
         elif os.path.isfile(input_path):
             shutil.copy(input_path, tmp_path)
+            print("gatk-local-io-wrapper.py: successfully copied file from '%s' to '%s'" % (input_path, tmp_path), file=sys.stderr)
         else:
             raise Exception('ERROR: input_path %s was neither a directory nor a file, not sure what to do to copy it to tmp_path %s!' % (input_path, tmp_path))
     except shutil.Error as e:
@@ -107,9 +109,9 @@ for input_argument_name in input_argument_names:
     print("gatk-local-io-wrapper.py: redirected input for GATK argument '%s' from '%s' to '%s'" % (input_argument_name, input_arg, tmp_arg), file=sys.stderr)
     
 for output_argument_name in output_argument_names:
-    if output_argument_name in arg2inputpath:
+    if output_argument_name in arg2input:
         # this argument has already been copied as an input, just register it as an output as well
-        input_path = arg2inputpath[output_argument_name]
+        input_path = arg2input[output_argument_name]
         tmp_path = input2tmp[input_path]
         output_path = input_path # the input_path is also the output_path
         tmp2output[tmp_path] = output_path
@@ -142,6 +144,11 @@ for output_argument_name in output_argument_names:
     
 gatk_command_args = ["java", "-d64"] + extra_java_args + ["-jar", "/gatk/gatk.jar", gatk_command] + new_arguments
 
+# set hostname in /etc/hosts to squash java.net.UnknownHostException during log4j default configuration
+print('gatk-local-io-wrapper.py: setting hostname in /etc/hosts', file=sys.stderr)
+if subprocess.run(["bash","-c","echo 127.0.0.1 ${HOSTNAME} >> /etc/hosts"]) != 0:
+    print('gatk-local-io-wrapper.py: failed to set hostname', file=sys.stderr)
+
 # run GATK!
 print('gatk-local-io-wrapper.py: running GATK: `%s`' % (' '.join([('"%s"' % arg) for arg in gatk_command_args])), file=sys.stderr)
 gatk_exit_code = subprocess.run(gatk_command_args).returncode
@@ -163,9 +170,9 @@ for tmp_path in tmp2output.keys():
 
 # clean up tmp dirs
 for tmp_dir in tmpdirs:
-    print("gatk-local-io-wrapper.py: removing temporary directory '%s'" % (tmp_dir))
+    print("gatk-local-io-wrapper.py: removing temporary directory '%s'" % (tmp_dir), file=sys.stderr)
     shutil.rmtree(tmp_dir, ignore_errors=True)
-    print("gatk-local-io-wrapper.py: removed temporary directory '%s'" % (tmp_dir))
+    print("gatk-local-io-wrapper.py: removed temporary directory '%s'" % (tmp_dir), file=sys.stderr)
     
 print('gatk-local-io-wrapper.py: finished copying output, exiting with status: %s' % (gatk_exit_code), file=sys.stderr)
 exit(gatk_exit_code)

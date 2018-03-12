@@ -1,11 +1,12 @@
 id: HaplotypeCaller
 cwlVersion: v1.0
 baseCommand:
-- java
-- -d64
-- -jar
-- /gatk/gatk.jar
-- HaplotypeCaller
+- python3
+- /gatk-local-io-wrapper.py
+- '[]' # input paths to copy to tmpdir before starting GATK
+- '[]' # output paths to redirect to tmpdir and copy to output dir after GATK finishes
+- '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
+- HaplotypeCaller # GATK Command
 class: CommandLineTool
 doc: |-
   Call germline SNPs and indels via local re-assembly of haplotypes
@@ -194,7 +195,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0:v4
+  dockerPull: mercury/gatk-4.0.0.0-local-io-wrapper:v4
 inputs:
 - doc: Reference sequence file
   id: reference

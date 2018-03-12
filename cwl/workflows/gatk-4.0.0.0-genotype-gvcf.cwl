@@ -79,7 +79,7 @@ steps:
     scatterMethod: dotproduct
     hints:
       ResourceRequirement:
-        ramMin: 16500 # FIXME tool is hard-coded for java to use 12500, plus an additional 4GB for arv-mount 
+        ramMin: 20000 # FIXME tool is hard-coded for java to use 16000, plus an additional 4GB for arv-mount 
     in:
       # TODO: Should we add a dbsnp option?
       variant: flatten-genomicsdb-workspaces-array/flattened_array

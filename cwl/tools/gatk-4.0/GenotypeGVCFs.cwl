@@ -2,10 +2,10 @@ id: GenotypeGVCFs
 cwlVersion: v1.0
 baseCommand:
 - python3
-- /gatk-tmpdir-output-wrapper.py
+- /gatk-local-io-wrapper.py
 - '["--variant"]' # input paths to copy to tmpdir before starting GATK
 - '[]' # output paths to redirect to tmpdir and copy to output dir after GATK finishes
-- '["-Xmx12500m","-Xms12500m"]' # FIXME this is hardcoded as a workaround for arv-mount problems '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
+- '["-Xmx16000m","-Xms16000m"]' # FIXME this is hardcoded as a workaround for arv-mount problems '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
 - GenotypeGVCFs # GATK command
 class: CommandLineTool
 doc: |-
@@ -58,7 +58,7 @@ doc: |-
    <h3>Special note on ploidy</h3>
    <p>This tool is able to handle any ploidy (or mix of ploidies) intelligently; there is no need to specify ploidy
    for non-diploid organisms.</p>
-temporaryFailCodes: [3]
+temporaryFailCodes: [3, 250]
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
@@ -139,7 +139,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerPull: mercury/gatk-4.0.0.0-local-io-wrapper:v1
+  dockerPull: mercury/gatk-4.0.0.0-local-io-wrapper:v4
 inputs:
 - doc: Reference sequence file
   id: reference
@@ -706,6 +706,7 @@ inputs:
   - Directory
   inputBinding:
     prefix: --variant
+    valueFrom: ${if(self.class=="File"){return self.path;} else {return "gendb://"+self.path;}}
 - type:
   - 'null'
   - string
