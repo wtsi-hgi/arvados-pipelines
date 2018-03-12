@@ -1,74 +1,57 @@
 from __future__ import print_function
-import pytest
+import unittest
 import subprocess
 import tempfile
 import shutil
 import os
 
-GATK_CWL_GENERATOR_VERSION="v1.4.1"
-
-"""
-Download example data to be used in CWL integration tests
-"""
-@pytest.fixture(scope="module")
-def example_data():
-    if not os.path.isfile("tests/cwl-example-data/chr22_cwl_test.cram"):
-        from six.moves.urllib.request import urlopen
-        import tarfile
-        print("Downloading and extracting cwl-example-data")
-        tgz = urlopen("https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test.tgz")
-        tar = tarfile.open(fileobj=tgz, mode="r|gz")
-        tar.extractall(path="./tests/cwl-example-data")
-        tar.close()
-        tgz.close()
-
-def ensure_docker_build(image):
-    p = subprocess.Popen(["docker", "build", "-t", image, "tools/%s" % (image)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (stdout, stderr) = p.communicate()
-    rval = p.wait()
-    if rval != 0:
-        raise Exception("docker build returned %s: %s %s" % (rval, stderr, stdout))
-
-"""
-Ensure docker images are built locally
-"""
-@pytest.fixture(scope="module")
-def docker_images():
-    for image in ["dict_to_interval_list", "split_interval_list", "intersect_intervals"]:
-        print("Building docker image %s" % image)
-        ensure_docker_build(image)
+GATK_CWL_GENERATOR_VERSION = "v1.4.1"
 
 base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 os.chdir(base_dir) # Make the current directory cwl
-os.environ["XDG_DATA_HOME"] = "%s/tests" % (base_dir)
+os.environ["XDG_DATA_HOME"] = "%s/tests" % base_dir
 
-class TestWorkflowSteps:
-    def test_intersect(self, docker_images):
-        tmp_folder = tempfile.mkdtemp()
 
-        rval = subprocess.call(
-            "cwl-runner --outdir {} tools/intersect_intervals/intersect_intervals.cwl tests/test_intersect.yml".format(tmp_folder),
-            shell=True)
-        assert rval == 0
+class TestWorkflowSteps(unittest.TestCase):
 
-        with open(tmp_folder + "/output.bed") as file:
-            assert len(file.readlines()) == 5
+    @classmethod
+    def setUpClass(cls):
 
-        shutil.rmtree(tmp_folder)
+        # Get test data.
+        if not os.path.isfile("tests/cwl-example-data/chr22_cwl_test_1.cram"):
+            from six.moves.urllib.request import urlopen
+            import tarfile
+            print("Downloading and extracting cwl-example-data")
+            tgz = urlopen("https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test.tgz")
+            
+            tar = tarfile.open(fileobj=tgz, mode="r|gz")
+            tar.extractall(path="./tests/cwl-example-data")
+            tar.close()
+            tgz.close()
 
-    def test_workflow(self, docker_images, example_data):
-        tmp_folder = tempfile.mkdtemp()
+    def setUp(self):
+        self._temp_folder = tempfile.mkdtemp()
 
-        rval = subprocess.call(
-            "cwl-runner --debug --js-console --outdir {} overall_workflow.cwl tests/test_overall_workflow.yml".format(tmp_folder),
-            shell=True)
-        assert rval == 0
+    def tearDown(self):
+        shutil.rmtree(self._temp_folder)
 
-        assert len(os.listdir(tmp_folder)) > 0
+    def test_workflow(self):
+        cwl = '/workflows/gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl'
+        
+        yml = '/tests/haploptypecaller-genotypegvcfs-local-test.yaml'
+        
+        cmd = "cwl-runner --outdir {0} {1}/{2} {1}/{3}".format(self._temp_folder, base_dir, cwl, yml)
 
-        out_file = "%s/out.vcf" % (tmp_folder)
-        assert os.path.isfile(out_file)
+        #cmd = 'ls -l'
+        rval = subprocess.call(cmd, shell=True)
+        self.assertEqual(rval, 0)
 
-        assert os.path.getsize(out_file) > 500000
+        self.assertGreater(len(os.listdir(self._temp_folder)), 0)
 
-        shutil.rmtree(tmp_folder)
+        out_file = "%s/out.vcf" % self._temp_folder
+        self.assertTrue(os.path.isfile(out_file))
+
+        self.assertGreater(os.path.getsize(out_file), 500000)
+
+if __name__ == '__main__':
+    unittest.main()
