@@ -60,7 +60,7 @@ inputs:
             - name: cap_value
               type: float
         inputBinding:
-          valueFrom: $(self.map(function (item){return x.read_group + ":" + x.cap_value}))
+          valueFrom: $(self.map(function (item){return item.read_group + ":" + item.cap_value}))
   - id: readgroup_caps_file
     inputBinding:
       prefix: -G
