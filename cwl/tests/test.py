@@ -7,6 +7,9 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import sys
+import contextlib
+import io
 
 import cwltool.main
 import schema_salad.ref_resolver
@@ -14,23 +17,21 @@ import schema_salad.ref_resolver
 GATK_CWL_GENERATOR_VERSION = "v1.4.1"
 
 base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-os.chdir(base_dir) # Make the current directory cwl
 os.environ["XDG_DATA_HOME"] = "%s/tests" % base_dir
 
 
 class TestWorkflowSteps(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-
         # Get test data.
-        if not os.path.isfile("tests/cwl-example-data/chr22_cwl_test_1.cram"):
+        if not os.path.isfile(f"{base_dir}/tests/cwl-example-data/chr22_cwl_test_1.cram"):
             from six.moves.urllib.request import urlopen
             import tarfile
             print("Downloading and extracting cwl-example-data")
             tgz = urlopen("https://cwl-example-data.cog.sanger.ac.uk/chr22_cwl_test.tgz")
 
             tar = tarfile.open(fileobj=tgz, mode="r|gz")
-            tar.extractall(path="./tests/cwl-example-data")
+            tar.extractall(path=f"{base_dir}/tests/cwl-example-data")
             tar.close()
             tgz.close()
 
@@ -66,28 +67,51 @@ class TestWorkflowSteps(unittest.TestCase):
         logger = logging.getLogger("cwltool")
         log_capturer = CWLToolWarningCapturer()
         logger.addHandler(log_capturer)
+        with tempfile.NamedTemporaryFile("w+") as tf:
+            print(f"Creating a tmp file {tf.name}")
+            process = subprocess.Popen(f"tail -f {tf.name}", shell=True)
+            try:
+                with contextlib.redirect_stderr(tf):
+                    try:
+                        rval = cwltool.main.main(
+                            cwltool_cmdline_args,
+                            custom_schema_callback=custom_schema_callback
+                        )
+                    except Exception:
+                        pass
+            finally:
+                process.kill()
 
-        rval = cwltool.main.main(
-            cwltool_cmdline_args,
-            custom_schema_callback=custom_schema_callback
-        )
+            tf.seek(0)
+            stderr_lines = tf.readlines()
+
+        for stderr_line in stderr_lines:
+            # a GATK error
+            self.assertNotIn(" WARN ", stderr_line)
         self.assertEqual(log_capturer.invalid_warnings, [])
         self.assertEqual(rval, 0)
 
     def test_is_workflow_valid(self):
         self.assert_CWLTool_call([
-            "--debug",
             "--validate",
             f"{base_dir}/workflows/gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl"
         ])
 
     @unittest.skip(reason="TODO: fix this test")
     def test_genotype_workflow(self):
-        yml = '/tests/genotype-gvcf-local-test.yaml'
-        cmd = f"cwl-runner --outdir {self._temp_folder} {base_dir}/{yml}"
+        self.assert_CWLTool_call([
+            "--outdir",
+            self._temp_folder,
+            f"{base_dir}/tests/genotype-gvcf-local-test.yaml"
+        ])
 
-        rval = subprocess.call(cmd, shell=True)
-        self.assertEqual(rval, 0)
+    @unittest.skip(reason="TODO: fix this test")
+    def test_cram_to_gvcfs_workflow(self):
+        self.assert_CWLTool_call([
+            "--outdir",
+            self._temp_folder,
+            f"{base_dir}/tests/library-cram-to-gvcfs-local-test.yaml"
+        ])
 
     @unittest.skip(reason="TODO: fix this test")
     def test_overall_workflow(self):
