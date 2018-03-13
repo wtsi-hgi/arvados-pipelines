@@ -53,8 +53,8 @@ steps:
       - intervals
       - reference
 
-  - id: genotype_gvcf
-    run: gatk-4.0.0.0-genotype-gvcf.cwl
+  - id: joint_calling
+    run: gatk-4.0.0.0-joint-calling.cwl
     in:
       gvcf_files: haplotype_caller/gvcf_files
       intervals:
