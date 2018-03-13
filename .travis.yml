@@ -3,10 +3,10 @@ sudo: required
 language: python
 
 python:
-  - 2.7
+  - "3.6"
 
 install:
   - pip install -r cwl/test_requirements.txt
 
 script:
-  - PYTHONPATH=. python -m unittest discover -v -s cwl/tests
+  - pytest cwl/tests/test.py
