@@ -69,5 +69,5 @@ steps:
 outputs:
   - id: output
     type: File
-    outputSource: genotype_gvcf/out
+    outputSource: joint_calling/out
 
