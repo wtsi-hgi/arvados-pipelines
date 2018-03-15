@@ -65,8 +65,11 @@ steps:
       2d-array: genomicsdbimport-and-genotype-gvcfs-per-interval-list/multisample-gvcf-outputs
     out: [flattened_array]
 
-  - id: concat_gvcfs
+  - id: concat_multisample_gvcfs
     run: ../tools/bcftools/bcftools-concat.cwl
+    hints:
+      ResourceRequirement:
+        ramMin: 100000
     in:
       vcfs: flatten-multisample-gvcf-outputs/flattened_array
       filename:
@@ -77,4 +80,4 @@ steps:
 outputs:
   - id: out
     type: File
-    outputSource: concat_gvcfs/output
+    outputSource: concat_multisample_gvcfs/output
