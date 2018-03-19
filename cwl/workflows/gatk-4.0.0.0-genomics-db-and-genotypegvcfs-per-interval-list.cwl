@@ -7,6 +7,7 @@ class: Workflow
 
 requirements:
   - class: ScatterFeatureRequirement
+  - class: SubworkflowFeatureRequirement
 
 hints:
   ResourceRequirement:
