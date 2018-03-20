@@ -72,16 +72,52 @@ steps:
         ramMin: 60000
       arv:RuntimeConstraints:
         keep_cache: 32768
+      coresMin: 8
     in:
       vcfs: flatten-multisample-gvcf-outputs/flattened_array
       filename:
         valueFrom: output.g.vcf.gz
       output_type:
         valueFrom: z
+      threads:
+        valueFrom: 8
     out:
       - output
+
+  - id: index_multisample_gvcfs_csi
+    run: ../tools/bcftools/bcftool-index.cwl
+    hints:
+      coresMin: 8
+    in:
+      vcf: concat_multisample_gvcfs/output
+      threads:
+        valueFrom: 8
+    out:
+      - index
+
+  - id: index_multisample_gvcfs_tbi
+    run: ../tools/bcftools/bcftool-index.cwl
+    hints:
+      coresMin: 8
+    in:
+      vcf: concat_multisample_gvcfs/output
+      threads:
+        valueFrom: 8
+      tbi_output:
+        valueFrom: $( true )
+    out:
+      - index
+
+  - id: combine_multisample_gvcf_indices
+    run: ../expression-tools/combine_files.cwl
+    in:
+      main_file: concat_multisample_gvcfs/output
+      secondary_files:
+        - index_multisample_gvcfs_csi/index
+        - index_multisample_gvcfs_tbi/index
+    out: [file_with_secondary_files]
 
 outputs:
   - id: out
     type: File
-    outputSource: concat_multisample_gvcfs/output
+    outputSource: combine_multisample_gvcf_indices/file_with_secondary_files
