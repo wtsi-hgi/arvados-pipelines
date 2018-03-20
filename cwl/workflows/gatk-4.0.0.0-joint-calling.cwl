@@ -69,7 +69,9 @@ steps:
     run: ../tools/bcftools/bcftools-concat.cwl
     hints:
       ResourceRequirement:
-        ramMin: 100000
+        ramMin: 60000
+      arv:RuntimeConstraints:
+        keep_cache: 32768
     in:
       vcfs: flatten-multisample-gvcf-outputs/flattened_array
       filename:
