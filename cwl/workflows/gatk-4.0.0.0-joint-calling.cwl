@@ -74,6 +74,8 @@ steps:
       vcfs: flatten-multisample-gvcf-outputs/flattened_array
       filename:
         valueFrom: output.g.vcf.gz
+      output_type:
+        valueFrom: z
     out:
       - output
 
