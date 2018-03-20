@@ -70,9 +70,9 @@ steps:
     hints:
       ResourceRequirement:
         ramMin: 60000
+        coresMin: 8
       arv:RuntimeConstraints:
         keep_cache: 32768
-      coresMin: 8
     in:
       vcfs: flatten-multisample-gvcf-outputs/flattened_array
       filename:
@@ -87,7 +87,8 @@ steps:
   - id: index_multisample_gvcfs_csi
     run: ../tools/bcftools/bcftool-index.cwl
     hints:
-      coresMin: 8
+      ResourceRequirement:
+        coresMin: 8
     in:
       vcf: concat_multisample_gvcfs/output
       threads:
@@ -98,7 +99,8 @@ steps:
   - id: index_multisample_gvcfs_tbi
     run: ../tools/bcftools/bcftool-index.cwl
     hints:
-      coresMin: 8
+      ResourceRequirement:
+        coresMin: 8
     in:
       vcf: concat_multisample_gvcfs/output
       threads:
