@@ -85,7 +85,7 @@ steps:
       - output
 
   - id: index_multisample_gvcfs_csi
-    run: ../tools/bcftools/bcftool-index.cwl
+    run: ../tools/bcftools/bcftools-index.cwl
     hints:
       ResourceRequirement:
         coresMin: 8
@@ -97,7 +97,7 @@ steps:
       - index
 
   - id: index_multisample_gvcfs_tbi
-    run: ../tools/bcftools/bcftool-index.cwl
+    run: ../tools/bcftools/bcftools-index.cwl
     hints:
       ResourceRequirement:
         coresMin: 8
