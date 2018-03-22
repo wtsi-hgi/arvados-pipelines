@@ -55,7 +55,7 @@ steps:
     out:
       - capped_file
 
-  - id: haplotype_caller
+  - id: haplotype_caller_diploid
     run: gatk-4.0.0.0-haplotypecaller.cwl
     in:
       library_cram: cap_crams/capped_file
@@ -88,17 +88,25 @@ steps:
       - intervals
 
 outputs:
-  - id: gvcf_files
+  - id: gvcf_files_diploid
     type: File[]
     linkMerge: merge_flattened
     outputSource:
-      - haplotype_caller/gvcf_files
+      - haplotype_caller_diploid/gvcf_files
+  - id: intervals_diploid
+    type: File[]
+    linkMerge: merge_flattened
+    outputSource:
+      - haplotype_caller_diploid/intervals
+  - id: gvcf_files_haploid
+    type: File[]
+    linkMerge: merge_flattened
+    outputSource:
       - haplotype_caller_haploid/gvcf_files
-  - id: intervals
+  - id: intervals_haploid
     type: File[]
     linkMerge: merge_flattened
     outputSource:
-      - haplotype_caller/intervals
       - haplotype_caller_haploid/intervals
   - id: reference
     type: File

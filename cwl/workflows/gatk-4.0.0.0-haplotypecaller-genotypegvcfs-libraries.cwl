@@ -49,16 +49,31 @@ steps:
       ref_fasta_files: ref_fasta_files
       haploid_chromosome_regex: haploid_chromosome_regex
     out:
-      - gvcf_files
-      - intervals
+      - gvcf_files_diploid
+      - intervals_diploid
+      - gvcf_files_haploid
+      - intervals_haploid
       - reference
 
-  - id: joint_calling
+  - id: joint_calling_diploid
     run: gatk-4.0.0.0-joint-calling.cwl
     in:
-      gvcf_files: haplotype_caller/gvcf_files
+      gvcf_files: haplotype_caller/gvcf_files_diploid
       intervals:
-        source: haplotype_caller/intervals
+        source: haplotype_caller/intervals_diploid
+        valueFrom: $(self[0])
+      reference:
+        source: haplotype_caller/reference
+        valueFrom: $(self[0])
+    out:
+       - out
+
+  - id: joint_calling_haploid
+    run: gatk-4.0.0.0-joint-calling.cwl
+    in:
+      gvcf_files: haplotype_caller/gvcf_files_haploid
+      intervals:
+        source: haplotype_caller/intervals_haploid
         valueFrom: $(self[0])
       reference:
         source: haplotype_caller/reference
@@ -67,7 +82,10 @@ steps:
        - out
 
 outputs:
-  - id: output
+  - id: output_diploid
     type: File
-    outputSource: joint_calling/out
+    outputSource: joint_calling_diploid/out
+  - id: output_haploid
+    type: File
+    outputSource: joint_calling_haploid/out
 
