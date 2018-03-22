@@ -130,5 +130,3 @@ outputs:
   - id: out
     type: File
     outputSource: combine_multisample_gvcf_indices/file_with_secondary_files
-
-    arv-mount --foreground --allow-other --read-write --crunchstat-interval=10 --file-cache 268435456 --mount-tmp tmp0 --mount-by-pdh by_id /tmp/crunch-run.ncucu-dz642-xuj0tbfnkvxfsfs.119910724/keep734625747
