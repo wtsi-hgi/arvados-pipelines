@@ -22,12 +22,18 @@ inputs:
     type: File
     inputBinding:
       position: 2
-
+  output_filename:
+    type: string
+    inputBinding:
+      position: 1
+      prefix: -o
+    valueFrom: "$(runtime.outdir)/$(self)"
+    
 outputs:
   index:
     type: File
     outputBinding:
-      glob: ${ if(inputs.tbi_output) { return self.path+".tbi" } else { return self.path+".csi"} }
+      glob: $(inputs.output_filename)
 
 baseCommand:
 - bcftools

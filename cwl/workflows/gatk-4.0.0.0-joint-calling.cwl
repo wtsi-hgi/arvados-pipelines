@@ -78,9 +78,9 @@ steps:
       filename:
         valueFrom: output.g.vcf.gz
       output_type:
-        valueFrom: z
+        valueFrom: "z"
       threads:
-        valueFrom: 8
+        default: 8
     out:
       - output
 
@@ -92,7 +92,10 @@ steps:
     in:
       vcf: concat_multisample_gvcfs/output
       threads:
-        valueFrom: 8
+        default: 8
+      output_filename:
+        source: concat_multisample_gvcfs/output
+        valueFrom: $(self.path.basename).csi
     out:
       - index
 
@@ -104,9 +107,12 @@ steps:
     in:
       vcf: concat_multisample_gvcfs/output
       threads:
-        valueFrom: 8
+        default: 8
       tbi_output:
         valueFrom: $( true )
+      output_filename:
+        source: concat_multisample_gvcfs/output
+        valueFrom: $(self.path.basename).tbi
     out:
       - index
 
