@@ -27,7 +27,7 @@ inputs:
     inputBinding:
       position: 1
       prefix: -o
-    valueFrom: "$(runtime.outdir)/$(self)"
+      valueFrom: "$(runtime.outdir)/$(self)"
     
 outputs:
   index:
