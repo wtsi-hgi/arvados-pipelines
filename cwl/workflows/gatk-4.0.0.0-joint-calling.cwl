@@ -9,6 +9,7 @@ requirements:
   - class: SubworkflowFeatureRequirement
   - class: ScatterFeatureRequirement
   - class: StepInputExpressionRequirement
+  - class: MultipleInputFeatureRequirement
 
 hints:
   ResourceRequirement:
@@ -94,7 +95,7 @@ steps:
       threads:
         default: 8
       output_filename:
-        source: concat_multisample_gvcfs/output
+        id: concat_multisample_gvcfs/output
         valueFrom: $(self.path.basename).csi
     out:
       - index
@@ -111,7 +112,7 @@ steps:
       tbi_output:
         valueFrom: $( true )
       output_filename:
-        source: concat_multisample_gvcfs/output
+        id: concat_multisample_gvcfs/output
         valueFrom: $(self.path.basename).tbi
     out:
       - index
