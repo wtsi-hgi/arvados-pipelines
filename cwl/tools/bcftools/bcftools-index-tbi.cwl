@@ -37,4 +37,4 @@ baseCommand:
 doc: |
   About: Creates index for bgzip compressed VCF/BCF files for random access
          using TBI (tabix index) index files, which support chromosome
-	 lengths up to 2^29.
+         lengths up to 2^29.
