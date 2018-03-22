@@ -96,7 +96,7 @@ steps:
         default: 8
       output_filename:
         id: concat_multisample_gvcfs/output
-        valueFrom: $(self.path.basename).csi
+        valueFrom: $(self.basename).csi
     out:
       - index
 
@@ -113,7 +113,7 @@ steps:
         valueFrom: $( true )
       output_filename:
         id: concat_multisample_gvcfs/output
-        valueFrom: $(self.path.basename).tbi
+        valueFrom: $(self.basename).tbi
     out:
       - index
 
