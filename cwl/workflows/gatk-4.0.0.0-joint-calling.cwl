@@ -39,6 +39,10 @@ inputs:
   - id: reference
     doc: The reference file for all the samples
     type: File
+  - id: output_filename
+    doc: The name of the output VCF to produce
+    type: string
+    default: output.vcf.gz
 
 steps:
   # Transpose the gvcf_files matrix to obtain lists which all have one interval list
@@ -76,8 +80,7 @@ steps:
         keep_cache: 32768
     in:
       vcfs: flatten-multisample-gvcf-outputs/flattened_array
-      filename:
-        valueFrom: output.g.vcf.gz
+      filename: output_filename
       output_type:
         valueFrom: "z"
       threads:
@@ -101,7 +104,7 @@ steps:
       - index
 
   - id: index_multisample_gvcfs_tbi
-    run: ../tools/bcftools/bcftools-index.cwl
+    run: ../tools/bcftools/bcftools-index-tbi.cwl
     hints:
       ResourceRequirement:
         coresMin: 8
@@ -109,8 +112,6 @@ steps:
       vcf: concat_multisample_gvcfs/output
       threads:
         default: 8
-      tbi_output:
-        valueFrom: $( true )
       output_filename:
         source: concat_multisample_gvcfs/output
         valueFrom: $(self.basename).tbi

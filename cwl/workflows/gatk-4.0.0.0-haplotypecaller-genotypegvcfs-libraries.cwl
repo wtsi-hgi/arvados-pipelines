@@ -32,10 +32,13 @@ inputs:
     type: File
   - id: ref_fasta_files
     type: File[]
+  - id: output_basename
+    type: string
+    default: output
   - id: haploid_chromosome_regex
     type: string
     default: "^(chr)?Y$"
-  
+    
 steps:
 
   - id: haplotype_caller
@@ -65,6 +68,9 @@ steps:
       reference:
         source: haplotype_caller/reference
         valueFrom: $(self[0])
+      output_filename:
+        source: output_basename
+        valueFrom: $(self).diploid.vcf.gz
     out:
        - out
 
@@ -78,6 +84,9 @@ steps:
       reference:
         source: haplotype_caller/reference
         valueFrom: $(self[0])
+      output_filename:
+        source: output_basename
+        valueFrom: $(self).haploid.vcf.gz
     out:
        - out
 
