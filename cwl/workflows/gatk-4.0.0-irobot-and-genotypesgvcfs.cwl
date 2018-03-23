@@ -5,6 +5,9 @@ $namespaces:
 cwlVersion: v1.0
 class: Workflow
 
+requirements:
+  - class: SubworkflowFeatureRequirement
+
 inputs:
   - id: input_file
     type: string
@@ -18,17 +21,25 @@ inputs:
     type: string
   - id: force
     type: boolean
-  - id: id: no_index
+  - id: no_index
     type: boolean
-
-outputs:
-  - id: output
+  - id: chunks
+    type: int
+  - id: intersect_file
     type: File
+  - id: ref_fasta_files
+    type: File[]
+  - id: output_basename
+    type: string
+    default: output
+  - id: haploid_chromosome_regex
+    type: string
+    default: "^(chr)?Y$"
 
 steps:
   
   - id: get_date_from_irods
-    run: irobot_wrapper.cwl
+    run: ../tools/irobot.cwl
     in:
       input_file: input_file
       irobot_url: irobot_url
@@ -38,17 +49,26 @@ steps:
       force: force
       no_index: no_index
     out:
-      - library_crams
+      - output
 
   - id: haplotype_caller
     run: gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl
     in:
-      library_crams: library_crams
+      library_crams: get_date_from_irods/output
+      chunks: chunks
+      intersect_file: intersect_file
+      ref_fasta_files: ref_fasta_files
+      output_basename: output_basename
+      haploid_chromosome_regex: haploid_chromosome_regex
     out:
-      - out
+      - output_diploid
+      - output_haploid
 
 outputs:
-  - id: output
+  - id: output_diploid
     type: File
-    outputSource: haplotype_caller/out
+    outputSource: haplotype_caller/output_diploid
+  - id: output_haploid
+    type: File
+    outputSource: haplotype_caller/output_diploid
       
