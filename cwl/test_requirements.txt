@@ -1,2 +1,1 @@
-pytest
-cwltool
+-e git://github.com/common-workflow-language/cwltool@e1db94fffa23ec6d30568f9e705180c8b33e7d0d#egg=cwltool
