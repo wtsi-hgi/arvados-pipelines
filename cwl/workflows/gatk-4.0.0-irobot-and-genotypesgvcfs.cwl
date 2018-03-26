@@ -8,6 +8,10 @@ class: Workflow
 requirements:
   - class: SubworkflowFeatureRequirement
 
+hints:
+  "cwltool:Secrets":
+    secrets: [arvados_token, basic_password]
+
 inputs:
   - id: input_file
     type: string

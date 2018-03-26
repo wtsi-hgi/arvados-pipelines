@@ -12,5 +12,9 @@ no_index: false                        # false = download index file
 
 # Inputs for the genotypesgvcfs element
 chunks: 50
-intersect_file: ????
-ref_fasta_files: ????
+intersect_file:
+  class: File
+  location: chr22_cwl_test.interval_list
+ref_fasta_files:
+  - class: File
+    location: ./cwl-example-data/chr22_cwl_test.fa
