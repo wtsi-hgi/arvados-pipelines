@@ -6,7 +6,7 @@ baseCommand: irobotclient
 $namespaces:
   arv: "http://arvados.org/cwl#"   # Arvados support and api token integration 'work in progress'
 
-hints:
+requirements:
 
   - class: arv:APIRequirement
 
