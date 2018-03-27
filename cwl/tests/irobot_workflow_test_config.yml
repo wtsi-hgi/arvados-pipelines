@@ -1,0 +1,21 @@
+# Config file to test the cwl/workflows/gatk-4.0.0-irobot-and-genotypesgvcfs.cwl
+# NOTE: the output_dir is declared on the command line or defaults to the current directory.
+
+# Inputs for the irobot element
+input_file: "test.cram"                # Test file in the bissell container (Dockerhub: mercury/bissell)
+irobot_url: "http://172.17.0.2:5000"   # Default bissell address if following the dockerhub instructions
+arvados_token: "testtoken"             # Bissell test token string
+basic_username: "testuser"             # Bissell test user string
+basic_password: "testpass"             # Bissell test password string
+force: true                            # true = force overwriting
+no_index: false                        # false = download index file
+
+# Inputs for the genotypesgvcfs element
+chunks: 1
+intersect_file:
+  class: File
+  location: chr22_cwl_test.interval_list
+ref_fasta_files:
+  - class: File
+    location: ./cwl-example-data/chr22_cwl_test.fa
+haploid_chromosome_regex: "^chr22$"
