@@ -65,4 +65,6 @@ outputs:
   - id: output
     type: File[]
     outputBinding:
-      glob: "*"
+      glob: 
+        - "*.cram*"
+        - "*.bam*"
