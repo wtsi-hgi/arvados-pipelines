@@ -8,7 +8,7 @@ RUN \
   cd /tmp && \
   git clone https://github.com/Griffan/VerifyBamID.git && \
   cd VerifyBamID && \
-  git checkout 1.0.3 && \
+  git checkout 6c7894cb && \
   mkdir build && \
   cd build && \
   cmake .. && \
