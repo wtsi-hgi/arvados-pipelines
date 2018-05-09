@@ -75,10 +75,10 @@ steps:
       reference: reference_fasta
       input: library_cram
       intervals: split_interval_list/interval_lists
-      num_cpu_threads_per_data_thread:
-        valueFrom: ${ return 1 }
-      num_threads:
-        valueFrom: ${ return 1 }
+      # num_cpu_threads_per_data_thread:
+      #   valueFrom: ${ return 1 }
+      # num_threads:
+      #   valueFrom: ${ return 1 }
       add-output-vcf-command-line:
         valueFrom: $( false )
       annotation:
@@ -95,7 +95,7 @@ steps:
       create-output-variant-md5:
         valueFrom: $( true )
       output-filename:
-        valueFrom: $(inputs.input.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
+        valueFrom: $(inputs.library_cram.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
     out:
       - output
       - variant-index
