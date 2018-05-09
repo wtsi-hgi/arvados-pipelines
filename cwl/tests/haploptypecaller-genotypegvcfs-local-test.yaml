@@ -1,20 +1,24 @@
 cwl:tool: ../workflows/gatk-4.0.0.0-haplotypecaller-genotypegvcfs-libraries.cwl
 library_crams:
   - class: File
-    location: ./cwl-example-data/chr22_cwl_test_1.cram
+    location: ./cwl-example-data/cwl_trio_father_15x.cram
     secondaryFiles:
       - class: File
-        path: ./cwl-example-data/chr22_cwl_test_1.cram.crai
+        path: ./cwl-example-data/cwl_trio_father_15x.cram.crai
   - class: File
-    location: ./cwl-example-data/chr22_cwl_test_2.cram
+    location: ./cwl-example-data/cwl_trio_mother_15x.cram
     secondaryFiles:
       - class: File
-        path: ./cwl-example-data/chr22_cwl_test_2.cram.crai
+        path: ./cwl-example-data/cwl_trio_mother_15x.cram.crai
+  - class: File
+    location: ./cwl-example-data/cwl_trio_son_15x.cram
+    secondaryFiles:
+      - class: File
+        path: ./cwl-example-data/cwl_trio_son_15x.cram.crai
 chunks: 1
 intersect_file:
   class: File
-  location: chr22_cwl_test.interval_list
+  location: ./cwl-example-data/intersect.interval_list
 ref_fasta_files:
   - class: File
-    location: ./cwl-example-data/chr22_cwl_test.fa
-haploid_chromosome_regex: "^chr22$"
+    location: ./cwl-example-data/chr22_Y_cwl_test.fa

@@ -1,0 +1,6 @@
+@CO This is a very small interval, to see if tools run (this will not produce output that is useful)
+@HD	VN:1.5	SO:unsorted
+@SQ	SN:chr22	LN:50818468	M5:ac37ec46683600f808cdd41eac1d55cd
+@SQ	SN:chrY	LN:57227415	M5:ce3e31103314a704255f3cd90369ecce
+chr22	1	2	+	chr22
+chrY	1	2	+	chrY

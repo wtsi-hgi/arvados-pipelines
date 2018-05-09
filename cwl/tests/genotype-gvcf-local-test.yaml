@@ -1,4 +1,4 @@
-cwl:tool: ../workflows/gatk-4.0.0.0-genotype-gvcf.cwl
+cwl:tool: ../workflows/gatk-4.0.0.0-joint-calling.cwl
 gvcf_files:
   - - class: File
       path: ./test-files/chr22_cwl_test_1_output.bed.1_of_1.g.vcf.gz
