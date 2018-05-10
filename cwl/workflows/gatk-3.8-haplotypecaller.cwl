@@ -95,6 +95,8 @@ steps:
     hints:
       ResourceRequirement:
         ramMin: 8500
+        coresMin: 1
+        tmpdirMin: 1000
     run: ../tools/HaplotypeCaller-3.8.cwl
     in:
       reference_sequence: combine_sequence_files/reference_with_files

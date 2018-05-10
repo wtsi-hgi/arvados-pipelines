@@ -21,6 +21,8 @@ steps:
     hints:
       ResourceRequirement:
         ramMin: 100000
+        coresMin: 1
+        tmpdirMin: 1000
 
   - id: samtools_fastaref
     run: ../tools/samtools/samtools-fastaref.cwl
@@ -33,6 +35,8 @@ steps:
     hints:
       ResourceRequirement:
         ramMin: 8000
+        coresMin: 1
+        tmpdirMin: 1000
 
   - id: samtools_faidx
     run: ../tools/samtools/samtools-faidx.cwl

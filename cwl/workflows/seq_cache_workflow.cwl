@@ -35,6 +35,8 @@ steps:
     hints:
       ResourceRequirement:
         ramMin: 100000
+        coresMin: 1
+        tmpdirMin: 1000
 
 outputs:
   - id: ref_cache

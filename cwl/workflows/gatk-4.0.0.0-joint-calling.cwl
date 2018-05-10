@@ -76,6 +76,7 @@ steps:
       ResourceRequirement:
         ramMin: 60000
         coresMin: 8
+        tmpdirMin: 1000
       arv:RuntimeConstraints:
         keep_cache: 32768
     in:
@@ -93,6 +94,8 @@ steps:
     hints:
       ResourceRequirement:
         coresMin: 8
+        ramMin: 4000
+        tmpdirMin: 1000
     in:
       vcf: concat_multisample_gvcfs/output
       threads:
@@ -108,6 +111,8 @@ steps:
     hints:
       ResourceRequirement:
         coresMin: 8
+        ramMin: 4000
+        tmpdirMin: 1000
     in:
       vcf: concat_multisample_gvcfs/output
       threads:

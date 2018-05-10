@@ -32,6 +32,8 @@ steps:
     hints:
       ResourceRequirement:
         coresMin: 6 # reader-threads + 1
+        ramMin: 18000 # currently hard-coded for Java to use 4g, leaving 4g+ for TileDB (see Caveats above) and another 10g for arv-mount's large memory consumption when reading lots of collections
+        tmpdirMin: 1000
       arv:RuntimeConstraints:
         keep_cache: 1280 # 64 * (4 * reader-threads)
     in:
@@ -53,6 +55,8 @@ steps:
     hints:
       ResourceRequirement:
         ramMin: 20000 # FIXME tool is hard-coded for java to use 16000, plus an additional 4GB for arv-mount 
+        coresMin: 1
+        tmpdirMin: 1000
     in:
       reference: reference
       output-filename:
