@@ -97,7 +97,7 @@ steps:
       create-output-variant-md5:
         valueFrom: $( true )
       output-filename:
-        valueFrom: $(inputs.library_cram.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
+        valueFrom: $(inputs.input.nameroot)_$(inputs.intervals.nameroot).g.vcf.gz
     out:
       - output
       - variant-index
