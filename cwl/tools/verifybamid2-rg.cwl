@@ -28,7 +28,7 @@ inputs:
   - id: svdset
     doc: SVD set to use
     type: string
-    default: hgdp.10k
+    default: hgdp.100k
     inputBinding:
       prefix: --svd-set
 
