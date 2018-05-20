@@ -69,7 +69,7 @@ steps:
       - intervals
     hints:
       ResourceRequirement:
-        ramMin: 12500
+        ramMin: 6000
         coresMin: 1
         tmpdirMin: 1000
     run: ../tools/gatk-4.0/HaplotypeCaller.cwl
