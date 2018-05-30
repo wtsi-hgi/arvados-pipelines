@@ -89,7 +89,8 @@ steps:
         valueFrom: GVCF
       sample-ploidy: ploidy
       pcr-indel-model:
-        valueFrom: ${ if(inputs.pcr_free) { return "NONE" } else { return "CONSERVATIVE" }}
+        source: pcr_free
+        valueFrom: ${ if(self) { return "NONE" } else { return "CONSERVATIVE" }}
       verbosity:
         valueFrom: INFO
       create-output-variant-index:

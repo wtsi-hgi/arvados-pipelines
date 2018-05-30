@@ -85,6 +85,7 @@ steps:
       ploidy:
         default: 1
       include_chromosome_regex: haploid_chromosome_regex
+      pcr_free: pcr_free
     out:
       - gvcf_files
       - intervals
