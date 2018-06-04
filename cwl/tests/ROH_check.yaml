@@ -1,0 +1,27 @@
+# Location of files must be changed
+# There is the vcf, the ROH region files per chromosome, and a mapping file
+# because the sample names differ in the vcf and the ROH region files
+# and the script. 
+
+ROH_chr:
+  - class: File
+    location:  ./chr1.ROHs.txt
+  - class: File
+    location: ./chr2.ROHs.txt
+  - class: File
+    location: ./chr3.ROHs.txt
+  
+script:
+  class: File
+  location: ./cwl/tools/roh_comparison/ROH_comparison.sh
+
+vcf_file:
+  class: File
+  location: ./a.vcf.gz
+  secondaryFiles:
+    - class: File
+      path:  ./.vcf.gz.tbi
+
+sample_mapping:
+  class: File
+  location: ./sample_id_mappings_egan_to_elgh

@@ -101,6 +101,14 @@ ENV/
 out.gvcf.gz
 
 test-files
-
+# data files
 *.gz
+*gz.csi
+*.vcf
+*.bed
+.coverage*
+*.dict 
+*.fa 
+*.fai 
+
 
