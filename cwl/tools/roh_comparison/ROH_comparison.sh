@@ -61,28 +61,25 @@ while read sample; do
     then
      echo $sample not found
     fi
-    echo "x"
+    
     # Make a bed file for that sample truth set chrom start end
     grep $real_sample $truthROH | cut -f3-5  > $sample.tmp
     # Transform the chromosome naming from 1 to chr1 (for a check, test if necessary before permanent use)
     awk '{$1 = "chr"$1; print}' $sample.tmp > $sample.tmp2
     awk '$1=$1' FS=" " OFS="\t" $sample.tmp2 > $sample.bed
 
-    # get single sample vcf#
-    echo "xx"
+    # get single sample vcf#    
     bcftools view -s $sample $expVCF  | \
     # apply filters if set   
     bcftools view -f PASS,. | \
     # take only heterozygous calls
     bcftools view -g het  > hets_"$sample"_"$chromosome".vcf
-    # compress
-     echo "xxx"
+    # compress   
     bcftools view -Oz -o hets_"$sample"_"$chromosome".vcf.gz hets_"$sample"_"$chromosome".vcf
     # index
     bcftools index hets_"$sample"_"$chromosome".vcf.gz
     
-    # find het calls in ROH regions
-    echo "xxxx"
+    # find het calls in ROH regions   
     bcftools view -R "$sample".bed hets_"$sample"_"$chromosome".vcf.gz > hets_in_ROH_"$sample"_"$chromosome".vcf 
     # compress
     bcftools view -Oz -o hets_in_ROH_"$sample"_"$chromosome".vcf.gz hets_in_ROH_"$sample"_"$chromosome".vcf
@@ -99,14 +96,14 @@ while read sample; do
     
     #output
     #echo -e "$chromosome"'\t'"$expVCF"'\t'"$sample"'\t'"$h"'\t'"$g"
-    echo $files
+   
 
 done < temp_samples.txt
 
-# combine to one file per chromosome, going to stdout
+# combine to one file per chromosome, going to stdout and collected in cwl
     bcftools  merge  $files
 
-#cleanup (left from when it was a loop, probably not needed)
+#cleanup (probably not needed in docker)
 #rm hets_$sample.vcf
 #rm hets_$sample.vcf.gz
 #rm hets_in_ROH_$sample.vcf 

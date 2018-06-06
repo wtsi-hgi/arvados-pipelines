@@ -111,5 +111,9 @@ test-files
 *.fa 
 *.fai 
 temp*
+*.temp
+*.tmp 
+*.tmp2 
+
 
 
