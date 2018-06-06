@@ -40,7 +40,7 @@ inputs:
       map sample names between vcf and ROH truth set
 
 
-stdout: $(inputs.filein_VCF.nameroot)_$(inputs.filein_ROH.nameroot)_stats.txt
+stdout: $(inputs.filein_VCF.nameroot)_$(inputs.filein_ROH.nameroot).vcf.gz
 
 outputs:
   output:

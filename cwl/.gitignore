@@ -110,5 +110,6 @@ test-files
 *.dict 
 *.fa 
 *.fai 
+temp*
 
 
