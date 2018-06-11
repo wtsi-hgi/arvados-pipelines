@@ -69,7 +69,7 @@ steps:
       - intervals
     hints:
       ResourceRequirement:
-        ramMin: 12500
+        ramMin: 6000
         coresMin: 1
         tmpdirMin: 1000
     run: ../tools/gatk-4.0/HaplotypeCaller.cwl
@@ -89,7 +89,8 @@ steps:
         valueFrom: GVCF
       sample-ploidy: ploidy
       pcr-indel-model:
-        valueFrom: ${ if(inputs.pcr_free) { return "NONE" } else { return "CONSERVATIVE" }}
+        source: pcr_free
+        valueFrom: ${ if(self) { return "NONE" } else { return "CONSERVATIVE" }}
       verbosity:
         valueFrom: INFO
       create-output-variant-index:

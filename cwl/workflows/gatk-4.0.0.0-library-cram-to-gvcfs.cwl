@@ -36,6 +36,9 @@ inputs:
   - id: haploid_chromosome_regex
     type: string
     default: "^(chr)?Y$"
+  - id: pcr_free
+    type: boolean
+    default: true
 
 steps:
   - id: cram_get_fasta
@@ -65,8 +68,7 @@ steps:
       reference_dict: cram_get_fasta/reference_dict
       ploidy:
         default: 2
-      pcr_free:
-        default: true
+      pcr_free: pcr_free
     out:
       - gvcf_files
       - intervals
@@ -83,6 +85,7 @@ steps:
       ploidy:
         default: 1
       include_chromosome_regex: haploid_chromosome_regex
+      pcr_free: pcr_free
     out:
       - gvcf_files
       - intervals

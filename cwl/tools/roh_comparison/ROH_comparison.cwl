@@ -22,7 +22,8 @@ inputs:
     inputBinding:
       position: 2
     doc: |
-      input file of known ROH for a sample (truth set)
+      input files of known ROH for each chromosome (truth set) \
+      format RG	[2]Sample	[3]Chromosome	[4]Start	[5]End	[6]Length (bp)	[7]Number of markers	[8]Quality (average fwd-bwd phred score)
       
   filein_VCF:
     type: File
@@ -31,9 +32,15 @@ inputs:
     doc: |
       input vcf, from variant caller being tested
 
-  
+  sample_mapping:
+    type: File
+    inputBinding:
+      position: 4
+    doc: |
+      map sample names between vcf and ROH truth set
 
-stdout: $(inputs.filein_VCF.nameroot)_$(inputs.filein_ROH.nameroot)_stats.txt
+
+stdout: $(inputs.filein_VCF.nameroot)_$(inputs.filein_ROH.nameroot).vcf.gz
 
 outputs:
   output:
