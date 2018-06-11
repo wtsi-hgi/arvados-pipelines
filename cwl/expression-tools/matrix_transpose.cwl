@@ -1,17 +1,26 @@
 cwlVersion: v1.0
-class: ExpressionTool
+class: CommandLineTool
 doc: Transpose a given matrix
 
 requirements:
-  - class: InlineJavascriptRequirement
+  InitialWorkDirRequirement:
+    listing:
+      - entryname: inputs.json
+        entry: '{"array": $(inputs.array)}'
 
-expression: |
-  $({
-    'transposed_array': inputs.array[0].map(function(col, i){return inputs.array.map(function(row){return row[i]})})
-  })
+baseCommand:
+  - python
+  - -c
+  - |
+      import json
 
-# NOTE: this has to use a specific type, due to
-# https://github.com/common-workflow-language/cwltool/issues/638
+      with open("inputs.json") as inputs_file:
+        matrix = json.load(inputs_file)["array"]
+
+      with open("cwl.output.json", "w") as output_file:
+        output_file.write(json.dumps({
+          "transposed_array": zip(*matrix)
+        }))
 
 inputs:
   - id: array
