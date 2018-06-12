@@ -46,7 +46,7 @@ files=""
 while read sample; do
     echo $sample
     # is the sample in the chromosome truth set?
-    echo "Here" 
+   
     s=$(grep "$sample" "$sampleMap")
     echo $s
     # the second value which starts with sc_ is the one we want
@@ -54,9 +54,9 @@ while read sample; do
     do
         real_sample=$word
     done
-    echo $real_sample
+   
     a=$(grep -c "$real_sample" "$truthROH")
-    echo "count is" $a
+   
     if [ $a = 0 ]
     then
      echo $sample not found
@@ -100,8 +100,8 @@ while read sample; do
 
 done < temp_samples.txt
 
-# combine to one file per chromosome, going to stdout and collected in cwl
-    bcftools  merge  $files
+# combine to one file per chromosome, to be collected in cwl
+    bcftools  merge  $files > output_"$chromosome".vcf
 
 #cleanup (probably not needed in docker)
 #rm hets_$sample.vcf

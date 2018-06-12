@@ -1,3 +1,7 @@
+$namespaces:
+  arv: "http://arvados.org/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
+
 cwlVersion: v1.0
 class: Workflow
 
@@ -8,7 +12,6 @@ class: Workflow
 
 requirements:
   - class: ScatterFeatureRequirement
-
 
 inputs:
   - id: script
@@ -31,15 +34,15 @@ steps:
       filein_ROH: ROH_chr
       filein_VCF: vcf_file 
       sample_mapping: sample_mapping       
-    out: [output]
+    out: [output1]
 
   - id: ROH_combine
     run: ../../tools/roh_comparison/ROH_combine.cwl
     in:
-      files:  ROH_calc/output
-    out: [stats] 
+      files:  ROH_calc/output1
+    out: [output1] 
 
 outputs:
   - id: stats
     type: File
-    outputSource: [ROH_combine/stats]
+    outputSource: [ROH_combine/output1]

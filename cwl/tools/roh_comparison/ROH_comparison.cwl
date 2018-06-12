@@ -40,11 +40,14 @@ inputs:
       map sample names between vcf and ROH truth set
 
 
-stdout: $(inputs.filein_VCF.nameroot)_$(inputs.filein_ROH.nameroot).vcf.gz
+#stdout: $(inputs.filein_VCF.nameroot)_stdout.txt
 
 outputs:
-  output:
-    type: stdout
+  output1:
+    type: File
+    outputBinding:
+      glob: output*.vcf
+  
 
 doc: | 
     Run script to calculate het calls in known region of homozygosity (ROH)
