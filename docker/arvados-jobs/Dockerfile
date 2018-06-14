@@ -2,6 +2,8 @@ FROM arvados/jobs:1.1.4.20180607205857
 
 USER root
 
+RUN echo "201806131924"
+
 RUN apt-get install -y build-essential bzip2 curl xz-utils && \
     sh -c "pip install -U pip setuptools wheel" && \
     pip install py_mini_racer && \
