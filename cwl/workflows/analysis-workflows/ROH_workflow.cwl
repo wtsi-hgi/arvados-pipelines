@@ -16,6 +16,8 @@ requirements:
 inputs:
   - id: script
     type: File
+  - id: combine_script
+    type: File
   - id: ROH_chr
     type: File[]
   - id: vcf_file
@@ -40,6 +42,7 @@ steps:
     run: ../../tools/roh_comparison/ROH_combine.cwl
     in:
       files:  ROH_calc/output1
+      script: combine_script
     out: [output1] 
 
 outputs:

@@ -38,15 +38,15 @@ inputs:
       position: 4
     doc: |
       map sample names between vcf and ROH truth set
-
-
-#stdout: $(inputs.filein_VCF.nameroot)_stdout.txt
+  #stdout: $(inputs.filein_VCF.nameroot)_stdout.txt
 
 outputs:
   output1:
-    type: File
+    type:
+      type: array
+      items: File
     outputBinding:
-      glob: output*.vcf
+      glob: hets_in_ROH_*.vcf.gz
   
 
 doc: | 

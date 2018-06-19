@@ -4,7 +4,7 @@ set -u
 set -o pipefail
 
 # Input:
-#   a 'truth set' of ROH regions in samples for a chromosome (already known) 
+#   a set of 'truth sets' of ROH regions in samples for a chromosome (already known) 
 #   a combined vcf including the same sample.
 
 # Output:
@@ -43,8 +43,10 @@ bcftools query -l $expVCF > temp_samples.txt
 #echo $sample
 # List files for concat step
 files="" 
+samples=""
 while read sample; do
     echo $sample
+    samples="$samples $sample" # save the list for later
     # is the sample in the chromosome truth set?
    
     s=$(grep "$sample" "$sampleMap")
@@ -86,8 +88,9 @@ while read sample; do
     # index 
     bcftools index hets_in_ROH_"$sample"_"$chromosome".vcf.gz
 
-    files+=" "
-    files+=hets_in_ROH_"$sample"_"$chromosome".vcf.gz
+    #files="$files hets_in_ROH_"$sample"_"$chromosome".vcf.gz"
+
+
     # Next lines give counts, for now output actual vcfs. 
     #h="$(bcftools view -H hets_in_ROH_"$sample"_"$chromosome".vcf | wc -l)"
     #g="$(bcftools view -H hets_"$sample"_"$chromosome".vcf | wc -l)"
@@ -100,14 +103,20 @@ while read sample; do
 
 done < temp_samples.txt
 
-# combine to one file per chromosome, to be collected in cwl
-    bcftools  merge  $files > output_"$chromosome".vcf
+# outputting sample files separately not combining into one
+# use lists of files and samples to make a vcf per sample
+for s in $samples
+do
+    #echo $s
+    samplefiles=""
+    for f in $("ls hets_in_ROH_*$s*.vcf.gz")
+       do        
+           samplefiles="$samplefiles $f"     
+       done
+    echo $samplefiles   
+    bcftools concat $samplefiles > all_hets_in_ROH_$sample.vcf
 
-#cleanup (probably not needed in docker)
-#rm hets_$sample.vcf
-#rm hets_$sample.vcf.gz
-#rm hets_in_ROH_$sample.vcf 
-#rm *.csi   
+done
 
 
 
