@@ -7,16 +7,23 @@ requirements:
 - class: DockerRequirement
   dockerPull: mercury/samtools-1.6:v2
 - class: InlineJavascriptRequirement
-- class: InitialWorkDirRequirement
-  listing:
-  - entry: $(inputs.fasta)
-    entryname: $(inputs.fasta.path.split('/').slice(-1)[0])
+
+arguments:
+  - bash
+  - -c
+  - ln -s $(inputs.fasta.path) $(inputs.fasta.basename) && exec "$@"
+  - bash
+  - samtools
+  - dict
+
+
 inputs:
   fasta:
     type: File
     doc: <file.fa|file.fa.gz>
     inputBinding:
       position: 1
+      valueFrom: $(self.basename)
   assembly:
     type: string?
     inputBinding:
@@ -44,8 +51,4 @@ outputs:
     type: File
     outputBinding:
       glob: $(inputs.output)
-
-baseCommand:
-- samtools
-- dict
 

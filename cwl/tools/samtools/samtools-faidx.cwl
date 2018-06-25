@@ -7,19 +7,26 @@
 cwlVersion: v1.0
 class: CommandLineTool
 
+arguments:
+  - bash
+  - -c
+  - ln -s $(inputs.fasta.path) $(inputs.fasta.basename) && exec "$@"
+  - bash
+  - samtools
+  - faidx
+
 requirements:
 - class: DockerRequirement
   dockerPull: mercury/samtools-1.6:v2
 - class: InlineJavascriptRequirement
-- class: InitialWorkDirRequirement
-  listing:
-  - entry: $(inputs.fasta)
-    entryname: $(inputs.fasta.basename)
 
 inputs:
   fasta:
     type: File
     doc: <file.fa|file.fa.gz>
+    inputBinding:
+      valueFrom: $(inputs.fasta.basename)
+      position: 1
   region:
     type: string?
     inputBinding:
@@ -30,11 +37,3 @@ outputs:
     type: File
     outputBinding:
       glob: $(inputs.fasta.basename).fai
-
-baseCommand:
-- samtools
-- faidx
-
-arguments:
-- valueFrom: $(inputs.fasta.basename)
-  position: 1
