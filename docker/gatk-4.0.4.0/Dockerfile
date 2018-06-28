@@ -17,7 +17,7 @@ RUN cd /tmp && \
     mkdir gatk && \
     cd gatk && \
     wget https://github.com/broadinstitute/gatk/releases/download/4.0.4.0/gatk-4.0.4.0.zip && \
-    echo "8412631a6ed7b50c223347e67a411ee7edb53eb0  gatk-4.0.4.0.zip" | sha1sum -c - && \
+    echo "badb42f1795b1ebcda4b495785cccda548a6bf3c  gatk-4.0.4.0.zip" | sha1sum -c - && \
     unzip gatk-4.0.4.0.zip && \
     mkdir /gatk && \
     mv gatk-4.0.4.0/gatk-package-4.0.4.0-local.jar /gatk/gatk.jar && \
