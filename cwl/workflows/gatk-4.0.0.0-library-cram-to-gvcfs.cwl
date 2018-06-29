@@ -50,18 +50,10 @@ steps:
       - reference_fasta
       - reference_dict
 
-  - id: cap_crams
-    run: capmq.cwl
-    in:
-      library_cram: library_cram
-      reference_fasta: cram_get_fasta/reference_fasta
-    out:
-      - capped_file
-
   - id: haplotype_caller_diploid
     run: gatk-4.0.0.0-haplotypecaller.cwl
     in:
-      library_cram: cap_crams/capped_file
+      library_cram: library_cram 
       chunks: chunks
       intersect_file: intersect_file
       reference_fasta: cram_get_fasta/reference_fasta
@@ -76,7 +68,7 @@ steps:
   - id: haplotype_caller_haploid
     run: gatk-4.0.0.0-haplotypecaller.cwl
     in:
-      library_cram: cap_crams/capped_file
+      library_cram: library_cram
       chunks:
         default: 1
       intersect_file: intersect_file
