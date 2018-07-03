@@ -33,7 +33,7 @@ inputs:
   - id: pcr_free
     type: boolean
     default: true
-    
+
 steps:
   - id: dict_to_interval_list
     run: ../tools/dict_to_interval_list.cwl
@@ -67,20 +67,17 @@ steps:
   - id: haplotype_caller
     scatter:
       - intervals
-    hints:
+    requirements:
       ResourceRequirement:
-        ramMin: 6000
+        ramMin: 7000
         coresMin: 1
-        tmpdirMin: 1000
     run: ../tools/gatk-4.0/HaplotypeCaller.cwl
     in:
       reference: reference_fasta
       input: library_cram
       intervals: split_interval_list/interval_lists
-      # num_cpu_threads_per_data_thread:
-      #   valueFrom: ${ return 1 }
-      # num_threads:
-      #   valueFrom: ${ return 1 }
+      native-pair-hmm-threads:
+        valueFrom: $( 1 )
       add-output-vcf-command-line:
         valueFrom: $( false )
       annotation:
