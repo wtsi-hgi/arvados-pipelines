@@ -1,11 +1,13 @@
 id: GenotypeGVCFs
 cwlVersion: v1.0
 baseCommand:
-- python3
-- /gatk-local-io-wrapper.py
-- '["--variant"]' # input paths to copy to tmpdir before starting GATK
-- '[]' # output paths to redirect to tmpdir and copy to output dir after GATK finishes
-- '["-Xmx16000m","-Xms16000m"]' # FIXME this is hardcoded as a workaround for arv-mount problems '["-XX:MaxRAMFraction=1","-XX:+UnlockExperimentalVMOptions","-XX:+UseCGroupMemoryLimitForHeap"]' # extra java args
+- java
+- -d64
+- -XX:MaxRAMFraction=1
+- -XX:+UnlockExperimentalVMOptions
+- -XX:+UseCGroupMemoryLimitForHeap
+- -jar
+- /gatk/gatk.jar
 - GenotypeGVCFs # GATK command
 class: CommandLineTool
 doc: |-

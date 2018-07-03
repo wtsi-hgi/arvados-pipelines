@@ -1,13 +1,13 @@
-$namespaces:
-  arv: "http://arvados.org/cwl#"
-  cwltool: "http://commonwl.org/cwltool#"
 id: GenomicsDBImport
 cwlVersion: v1.0
 baseCommand:
-- python3
-- /gatk-tmpdir-output-wrapper.py
-- '["--genomicsdb-workspace-path"]' # output paths to redirect to tmpdir
-- '["-Xmx4g","-Xms4g"]' # extra java args
+- java
+- -d64
+- -XX:MaxRAMFraction=1
+- -XX:+UnlockExperimentalVMOptions
+- -XX:+UseCGroupMemoryLimitForHeap
+- -jar
+- /gatk/gatk.jar
 - GenomicsDBImport # GATK command
 class: CommandLineTool
 doc: |-
@@ -86,9 +86,6 @@ doc: |-
    <h3>Developer Note</h3>
    To read data from GenomicsDB, use the query interface com.intel.genomicsdb.GenomicsDBFeatureReader
 temporaryFailCodes: [3]
-hints:
-  arv:RuntimeConstraints:
-    outputDirType: keep_output_dir
 requirements:
 - class: ShellCommandRequirement
 - class: InlineJavascriptRequirement
