@@ -33,7 +33,13 @@ inputs:
   - id: pcr_free
     type: boolean
     default: true
-
+  - id: hmm-acceleration
+    type: enum
+    default: AVX_LOGLESS_CACHING
+  - id: sw-acceleration
+    type: enum
+    default: AVX_ENABLED
+    
 steps:
   - id: dict_to_interval_list
     run: ../tools/dict_to_interval_list.cwl
@@ -88,6 +94,8 @@ steps:
       pcr-indel-model:
         source: pcr_free
         valueFrom: ${ if(self) { return "NONE" } else { return "CONSERVATIVE" }}
+      smith-waterman: sw-acceleration
+      pairhmm-implementation: hmm-acceleration
       verbosity:
         valueFrom: INFO
       create-output-variant-index:
