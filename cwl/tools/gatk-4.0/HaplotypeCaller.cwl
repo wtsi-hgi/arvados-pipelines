@@ -3,9 +3,7 @@ cwlVersion: v1.0
 baseCommand:
 - java
 - -d64
-- -XX:MaxRAMFraction=1
-- -XX:+UnlockExperimentalVMOptions
-- -XX:+UseCGroupMemoryLimitForHeap
+- -Xmx4g
 - -jar
 - /gatk/gatk.jar
 - HaplotypeCaller
