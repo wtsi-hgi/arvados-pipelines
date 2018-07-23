@@ -34,10 +34,24 @@ inputs:
     type: boolean
     default: true
   - id: hmm-acceleration
-    type: enum
+    type: 
+    - type: enum
+      symbols:
+      - EXACT
+      - ORIGINAL
+      - LOGLESS_CACHING
+      - AVX_LOGLESS_CACHING
+      - AVX_LOGLESS_CACHING_OMP
+      - EXPERIMENTAL_FPGA_LOGLESS_CACHING
+      - FASTEST_AVAILABLE
     default: AVX_LOGLESS_CACHING
   - id: sw-acceleration
-    type: enum
+    type: 
+    - type: enum
+      symbols:
+      - AVX_ENABLED
+      - FASTEST_AVAILABLE
+      - JAVA
     default: AVX_ENABLED
     
 steps:

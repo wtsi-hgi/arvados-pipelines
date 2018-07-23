@@ -758,15 +758,17 @@ inputs:
     prefix: --min-pruning
 - doc: The PairHMM implementation to use for genotype likelihood calculations
   id: pairhmm-implementation
-  type: enum?
-  symbols:
-  - EXACT
-  - ORIGINAL
-  - LOGLESS_CACHING
-  - AVX_LOGLESS_CACHING
-  - AVX_LOGLESS_CACHING_OMP
-  - EXPERIMENTAL_FPGA_LOGLESS_CACHING
-  - FASTEST_AVAILABLE
+  type: 
+  - 'null'
+  - type: enum
+    symbols:
+    - EXACT
+    - ORIGINAL
+    - LOGLESS_CACHING
+    - AVX_LOGLESS_CACHING
+    - AVX_LOGLESS_CACHING_OMP
+    - EXPERIMENTAL_FPGA_LOGLESS_CACHING
+    - FASTEST_AVAILABLE
   inputBinding:
     prefix: --pair-hmm-implementation
 - doc: How many threads should a native pairHMM implementation use

@@ -39,6 +39,26 @@ inputs:
   - id: pcr_free
     type: boolean
     default: true
+  - id: hmm-acceleration
+    type: 
+    - type: enum
+      symbols:
+      - EXACT
+      - ORIGINAL
+      - LOGLESS_CACHING
+      - AVX_LOGLESS_CACHING
+      - AVX_LOGLESS_CACHING_OMP
+      - EXPERIMENTAL_FPGA_LOGLESS_CACHING
+      - FASTEST_AVAILABLE
+    default: AVX_LOGLESS_CACHING
+  - id: sw-acceleration
+    type: 
+    - type: enum
+      symbols:
+      - AVX_ENABLED
+      - FASTEST_AVAILABLE
+      - JAVA
+    default: AVX_ENABLED
 
 steps:
   - id: cram_get_fasta
@@ -61,6 +81,8 @@ steps:
       ploidy:
         default: 2
       pcr_free: pcr_free
+      sw-acceleration: sw-acceleration
+      hmm-acceleration: hmm-acceleration
     out:
       - gvcf_files
       - intervals
@@ -78,6 +100,8 @@ steps:
         default: 1
       include_chromosome_regex: haploid_chromosome_regex
       pcr_free: pcr_free
+      sw-acceleration: sw-acceleration
+      hmm-acceleration: hmm-acceleration
     out:
       - gvcf_files
       - intervals
