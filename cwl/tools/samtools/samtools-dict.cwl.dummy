@@ -1,0 +1,75 @@
+#!/usr/bin/env cwl-runner
+
+cwlVersion: v1.0
+class: CommandLineTool
+
+requirements:
+- class: InlineJavascriptRequirement
+- class: InitialWorkDirRequirement
+  listing:
+  - entry: $(inputs.fasta)
+    entryname: $(inputs.fasta.path.split('/').slice(-1)[0])
+inputs:
+- id: fasta
+  type: File
+  doc: <file.fa|file.fa.gz>
+  inputBinding:
+    position: 1
+- id: assembly
+  type: string?
+  inputBinding:
+    prefix: -a
+- id: no-header
+  type: boolean?
+  inputBinding:
+    prefix: -H
+- id: species
+  type: string?
+  inputBinding:
+    prefix: -s
+- id: uri
+  type: string?
+  inputBinding:
+    prefix: -u
+- id: output
+  type: string
+  inputBinding:
+    prefix: -o
+
+outputs:
+- id: fasta_dict
+  type: File
+  outputBinding:
+    glob: $(inputs.output)
+
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- $(inputs.output)
+- cwl-dummy-mode-switch

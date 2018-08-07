@@ -1,0 +1,53 @@
+# should be fine
+# ================================ Unhandled CWL ================================
+#   Could not handle CWL file at ../expression-tools/matrix_transpose.cwl
+#   You must fix the .dummy file yourself, or the workflow will not run.
+#   Reason for failure:
+#     CommandLineTool has output without outputBinding (does it use cwl.output.json?)
+#   caused by the following exception:
+#     Traceback (most recent call last):
+#       File "/Users/jh36/src/cwl-dummy/cwl_dummy/__init__.py", line 120, in mock_command_line_tool
+#         output_binding = output["outputBinding"]
+#       File "/Users/jh36/venv/lib/python3.6/site-packages/ruamel/yaml/comments.py", line 595, in __getitem__
+#         return ordereddict.__getitem__(self, key)
+#     KeyError: 'outputBinding'
+# ===============================================================================
+cwlVersion: v1.0
+class: CommandLineTool
+doc: Transpose a given matrix
+
+requirements:
+- class: InitialWorkDirRequirement
+  listing:
+  - entryname: inputs.json
+    entry: '{"array": $(inputs.array)}'
+
+baseCommand:
+- python
+- -c
+- |
+  import json
+
+  with open("inputs.json") as inputs_file:
+    matrix = json.load(inputs_file)["array"]
+
+  with open("cwl.output.json", "w") as output_file:
+    output_file.write(json.dumps({
+      "transposed_array": list(zip(*matrix))
+    }))
+
+inputs:
+- id: array
+  type:
+    type: array
+    items:
+      type: array
+      items: File
+
+outputs:
+- id: transposed_array
+  type:
+    type: array
+    items:
+      type: array
+      items: File

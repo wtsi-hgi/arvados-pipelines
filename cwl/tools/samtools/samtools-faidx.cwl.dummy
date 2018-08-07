@@ -1,0 +1,69 @@
+# Fixed by creating the given file plus .fai
+# ================================ Unhandled CWL ================================
+#   Could not handle CWL file at ../tools/samtools/samtools-faidx.cwl
+#   You must fix the .dummy file yourself, or the workflow will not run.
+#   Reason for failure:
+#     Leading or trailing characters in field with parameter reference: $(inputs.fasta.basename).fai
+# ===============================================================================
+#!/usr/bin/env cwl-runner
+#
+# To use it as stand alone tool. The working directory should not have input .fa file
+#    example: "./samtools-faidx.cwl --input=./test-files/mm10.fa"
+# As part of a workflow should be no problem at all
+
+cwlVersion: v1.0
+class: CommandLineTool
+
+requirements:
+- class: InlineJavascriptRequirement
+- class: InitialWorkDirRequirement
+  listing:
+  - entry: $(inputs.fasta)
+    entryname: $(inputs.fasta.basename)
+
+inputs:
+- id: fasta
+  type: File
+  doc: <file.fa|file.fa.gz>
+- id: region
+  type: string?
+  inputBinding:
+    position: 2 
+
+outputs:
+- id: fasta_index
+  type: File
+  outputBinding:
+    glob: $(inputs.fasta.basename).fai
+
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg".fai
+          fi
+      fi
+  done
+- cwl_dummy_runner
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- $(inputs.fasta.basename)
+- cwl-dummy-mode-switch

@@ -1,0 +1,54 @@
+cwlVersion: v1.0
+class: CommandLineTool
+
+requirements: []
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+inputs:
+- id: read_groups
+  type:
+    type: array
+    items: string
+    inputBinding:
+      prefix: --read_groups
+- id: verify_bam_id_files
+  type:
+    type: array
+    items: File
+    inputBinding:
+      prefix: --verify_bam_id_files
+
+outputs:
+- id: read_group_caps_file
+  type: File
+  outputBinding:
+    glob: caps_file
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- caps_file
+- cwl-dummy-mode-switch

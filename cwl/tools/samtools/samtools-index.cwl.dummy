@@ -1,0 +1,75 @@
+#!/usr/bin/env cwl-runner
+cwlVersion: v1.0
+class: CommandLineTool
+requirements:
+- class: InlineJavascriptRequirement
+
+inputs:
+- id: input
+  type: File
+  doc: Input bam file.
+  inputBinding:
+    position: 0
+- id: output_filename
+  type: string?
+  default: ''
+  inputBinding:
+    position: 1
+    valueFrom: $(self || inputs.input.basename + ".crai")
+  doc: Filename of the the output file
+- id: generate_bai_index
+  type: boolean?
+  doc: Generate BAI-format index for BAM files [default]
+  inputBinding:
+    prefix: -b
+- id: generate_csi_index
+  type: boolean?
+  doc: Generate CSI-format index for BAM files
+  inputBinding:
+    prefix: -c
+- id: minimum_interval_size
+  type: int?
+  inputBinding:
+    prefix: -m
+- id: number_of_threads
+  type: int?
+  inputBinding:
+    prefix: -@
+
+outputs:
+- id: cram_index
+  type: File
+  outputBinding:
+    glob: $(inputs.output_filename || inputs.input.basename + ".crai")
+
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- $(inputs.output_filename || inputs.input.basename + ".crai")
+- cwl-dummy-mode-switch

@@ -1,0 +1,54 @@
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+
+requirements:
+- class: InlineJavascriptRequirement
+
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- $(inputs.filename)
+- cwl-dummy-mode-switch
+inputs:
+- id: cram
+  type: File
+  doc: |
+    Input file with header to be simplified
+- id: filename
+  type: string
+  default: rg_list.sam
+  doc: |
+    Output file name of rg list
+outputs:
+- id: rg_values
+  type: string[]
+  outputBinding:
+    loadContents: true
+    glob: $(inputs.filename)
+    outputEval: $(self[0].contents.split("\n").slice(0, -1))

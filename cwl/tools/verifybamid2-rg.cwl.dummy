@@ -1,0 +1,66 @@
+cwlVersion: v1.0
+class: CommandLineTool
+requirements: []
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+
+inputs:
+- id: cram
+  doc: Input cram file
+  type: File
+  inputBinding:
+    prefix: --cram-file
+- id: rg
+  doc: Read group
+  type: string
+  inputBinding:
+    prefix: --rg
+- id: ref
+  type: File
+  inputBinding:
+    prefix: --ref-file
+    # secondaryFiles:
+    #   - .fai
+      # this tool generates fai files if they aren't specified, but
+      # it's better if they're already there
+- id: svdset
+  doc: SVD set to use
+  type: string
+  default: hgdp.100k
+  inputBinding:
+    prefix: --svd-set
+
+outputs:
+- id: out-file
+  type: File
+  outputBinding:
+    glob: '*.out'
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- '*.out'
+- cwl-dummy-mode-switch

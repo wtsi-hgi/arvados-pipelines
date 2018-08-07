@@ -1,0 +1,80 @@
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+requirements:
+- class: InlineJavascriptRequirement
+hints: []
+inputs:
+- id: number_of_intervals
+  type: int
+  inputBinding:
+    position: 1
+    prefix: --chunks
+- id: interval_list
+  type: File
+  inputBinding:
+    position: 2
+    prefix: --path
+
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- 'aaa.1_of_1.interval_list'
+- cwl-dummy-mode-switch
+outputs:
+- id: interval_lists
+  type: File[]
+  outputBinding:
+    glob: '*.*_of_*.interval_list'
+    outputEval: |
+      ${
+        var files={};
+        var output=[];
+        var re = /^.*[.]([0-9]+)_of_[0-9]+[.]interval_list$/;
+        if (self.length == 0) {
+          return output;
+        }
+        for (var i = 0; i < self.length; ++i) {
+          var fn = self[i].basename
+          var result = re.exec(fn);
+          if (result === null) {
+            throw new Error("Unexpected filename in output " + fn);
+          } else {
+            var index = result[1];
+          }
+          files[index] = self[i];
+        }
+        var sorted_indices = Object.keys(files);
+        sorted_indices.sort(function(a,b){return parseInt(a) - parseInt(b);});
+        for (var i = 0; i < sorted_indices.length; ++i) {
+         index = sorted_indices[i];
+          output.push(files[index]);
+        }
+        return output;
+      }
+

@@ -1,0 +1,47 @@
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand:
+- sh
+- -c
+- |
+  sleep 10
+  mode=pre
+  for arg in "$@"; do
+      if [ "$mode" = pre ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=dir
+          fi
+      elif [ "$mode" = dir ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=file
+          else
+              mkdir -p -- "$arg"
+          fi
+      elif [ "$mode" = file ]; then
+          if [ "$arg" = cwl-dummy-mode-switch ]; then
+              mode=post
+          else
+              touch -- "$arg"
+          fi
+      fi
+  done
+- cwl_dummy_runner
+hints: []
+arguments:
+- cwl-dummy-mode-switch
+- cwl-dummy-mode-switch
+- 's.interval_list'
+- cwl-dummy-mode-switch
+inputs:
+- id: dictionary
+  type: File
+  inputBinding:
+    position: 1
+    prefix: --path
+    itemSeparator: ' '
+
+outputs:
+- id: interval_list
+  type: File
+  outputBinding:
+    glob: '*.interval_list'
