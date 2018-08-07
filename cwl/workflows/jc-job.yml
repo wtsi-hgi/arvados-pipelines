@@ -1,0 +1,15 @@
+gvcf_files:
+-
+  - {class: File, path: jc-testing/alpha_1.g.vcf}
+  - {class: File, path: jc-testing/alpha_2.g.vcf}
+  - {class: File, path: jc-testing/alpha_3.g.vcf}
+-
+  - {class: File, path: jc-testing/beta_1.g.vcf}
+  - {class: File, path: jc-testing/beta_2.g.vcf}
+  - {class: File, path: jc-testing/beta_3.g.vcf}
+intervals:
+- {class: File, path: jc-testing/intervals_one}
+- {class: File, path: jc-testing/intervals_two}
+- {class: File, path: jc-testing/intervals_three}
+reference: {class: File, path: jc-testing/reference}
+output_filename: out.g.vcf
