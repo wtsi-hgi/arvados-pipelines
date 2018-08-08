@@ -1,0 +1,10 @@
+library_crams:
+- class: File
+  path: libraries-testing/library.cram
+chunks: 1
+intersect_file:
+  class: File
+  path: libraries-testing/intersect_file
+ref_fasta_files:
+- class: File
+  path: libraries-testing/ref.fasta
