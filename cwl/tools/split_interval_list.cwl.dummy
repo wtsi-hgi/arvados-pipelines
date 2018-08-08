@@ -1,3 +1,4 @@
+# Fixed by hand to behave something like the real script
 cwlVersion: v1.0
 class: CommandLineTool
 baseCommand:
@@ -6,24 +7,30 @@ baseCommand:
 - |
   sleep 10
   mode=pre
+  chunks=0
   for arg in "$@"; do
       if [ "$mode" = pre ]; then
-          if [ "$arg" = cwl-dummy-mode-switch ]; then
-              mode=dir
+          if [ "$arg" = --chunks ]; then
+              mode=chunks
+          elif [ "$arg" = --path ]; then
+              mode=path
           fi
-      elif [ "$mode" = dir ]; then
-          if [ "$arg" = cwl-dummy-mode-switch ]; then
-              mode=file
-          else
-              mkdir -p -- "$arg"
-          fi
-      elif [ "$mode" = file ]; then
-          if [ "$arg" = cwl-dummy-mode-switch ]; then
-              mode=post
-          else
-              touch -- "$arg"
-          fi
+      elif [ "$mode" = chunks ]; then
+          chunks="$arg"
+          echo "got $chunks chunk count"
+          mode=pre
+      elif [ "$mode" = path ]; then
+          path="$(basename "$arg")"
+          echo "writing to $path"
+          mode=pre
       fi
+  done
+  i=1
+  while [ $i -le $chunks ]; do
+      filename="$path.${i}_of_$chunks.interval_list"
+      echo "creating file at $filename"
+      touch "$filename"
+      i=$(( i + 1 ))
   done
 - cwl_dummy_runner
 requirements:
@@ -41,11 +48,6 @@ inputs:
     position: 2
     prefix: --path
 
-arguments:
-- cwl-dummy-mode-switch
-- cwl-dummy-mode-switch
-- 'aaa.1_of_1.interval_list'
-- cwl-dummy-mode-switch
 outputs:
 - id: interval_lists
   type: File[]
