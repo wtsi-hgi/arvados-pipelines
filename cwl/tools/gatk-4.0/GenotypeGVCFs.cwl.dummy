@@ -32,6 +32,7 @@ baseCommand:
           fi
       fi
   done
+- cwl_dummy_runner
 class: CommandLineTool
 doc: |-
   Perform joint genotyping on one or more samples pre-called with HaplotypeCaller
