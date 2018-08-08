@@ -11,9 +11,10 @@ class: CommandLineTool
 #baseCommand: [bash, /interval_list_to_json.sh]
 baseCommand:
 - bash
-- -c 
+- -c
 - |
   cat $1 | grep ^[^@] | awk -F '\t' '{print $1 ":" $2 "-" $3}' - | jq -R . | jq -c -s .
+- cwl_dummy_runner
 hints:
   DockerRequirement:
     dockerPull: mercury/interval-list-to-json:v1
