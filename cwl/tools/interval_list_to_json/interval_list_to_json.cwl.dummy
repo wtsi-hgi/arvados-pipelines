@@ -8,13 +8,7 @@
 # ===============================================================================
 cwlVersion: v1.0
 class: CommandLineTool
-#baseCommand: [bash, /interval_list_to_json.sh]
-baseCommand:
-- bash
-- -c
-- |
-  cat $1 | grep ^[^@] | awk -F '\t' '{print $1 ":" $2 "-" $3}' - | jq -R . | jq -c -s .
-- cwl_dummy_runner
+baseCommand: [bash, /interval_list_to_json.sh]
 hints:
   DockerRequirement:
     dockerPull: mercury/interval-list-to-json:v1
