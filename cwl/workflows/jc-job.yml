@@ -11,5 +11,5 @@ intervals:
 - {class: File, path: jc-testing/intervals_one}
 - {class: File, path: jc-testing/intervals_two}
 - {class: File, path: jc-testing/intervals_three}
-reference: {class: File, path: jc-testing/reference}
+reference: {class: File, path: jc-testing/reference.fa}
 output_filename: out.g.vcf
