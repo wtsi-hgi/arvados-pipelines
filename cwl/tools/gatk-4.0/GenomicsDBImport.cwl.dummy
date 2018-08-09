@@ -106,7 +106,9 @@ doc: |-
    <h3>Developer Note</h3>
    To read data from GenomicsDB, use the query interface com.intel.genomicsdb.GenomicsDBFeatureReader
 temporaryFailCodes: [3]
-hints: []
+hints:
+- class: arv:RuntimeConstraints
+  outputDirType: keep_output_dir
 requirements:
 - class: InlineJavascriptRequirement
   expressionLib:

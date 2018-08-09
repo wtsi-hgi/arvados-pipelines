@@ -6,9 +6,9 @@ baseCommand: [
 ]
 
 requirements:
-  - class: DockerRequirement
-    dockerPull: mercury/samtools-1.6:v2
-  - class: InlineJavascriptRequirement
+- class: DockerRequirement
+  dockerPull: mercury/samtools-1.6:v2
+- class: InlineJavascriptRequirement
 
 arguments:
   - >
@@ -25,21 +25,21 @@ arguments:
     }' > $(inputs.filename)
 
 inputs:
-  cram:
-    type: File
-    doc: |
-      Input file with header to be simplified
+- id: cram
+  type: File
+  doc: |
+    Input file with header to be simplified
 
-  filename:
-    type: string
-    default: rg_list.sam
-    doc: |
-      Output file name of rg list
+- id: filename
+  type: string
+  default: rg_list.sam
+  doc: |
+    Output file name of rg list
 
 outputs:
-  rg_values:
-    type: string[]
-    outputBinding:
-      loadContents: true
-      glob: $(inputs.filename)
-      outputEval: $(self[0].contents.split("\n").slice(0, -1))
+- id: rg_values
+  type: string[]
+  outputBinding:
+    loadContents: true
+    glob: $(inputs.filename)
+    outputEval: $(self[0].contents.split("\n").slice(0, -1))

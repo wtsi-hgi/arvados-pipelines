@@ -1,6 +1,9 @@
 cwlVersion: v1.0
 class: CommandLineTool
 requirements:
+- class: EnvVarRequirement
+  envDef:
+    REF_PATH: $(inputs.ref_path_dir.path)/%2s/%2s/%s
 - class: InlineJavascriptRequirement
 baseCommand:
 - sh

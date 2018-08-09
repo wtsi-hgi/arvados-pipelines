@@ -12,18 +12,17 @@ requirements:
 - class: MultipleInputFeatureRequirement
 
 hints:
-  ResourceRequirement:
-    ramMin: 4000
-    coresMin: 1
-    tmpdirMin: 1000
-  arv:RuntimeConstraints:
-    keep_cache: 1024
-    outputDirType: keep_output_dir
-  cwltool:LoadListingRequirement:
-    loadListing: no_listing
-  arv:IntermediateOutput:
-    outputTTL: 2592000
-
+- class: ResourceRequirement
+  ramMin: 4000
+  coresMin: 1
+  tmpdirMin: 1000
+- class: arv:RuntimeConstraints
+  keep_cache: 1024
+  outputDirType: keep_output_dir
+- class: cwltool:LoadListingRequirement
+  loadListing: no_listing
+- class: arv:IntermediateOutput
+  outputTTL: 2592000
 inputs:
 - id: gvcf_files
   doc: Array of array of GVCF files. Each inner array contains vcfs called for the
