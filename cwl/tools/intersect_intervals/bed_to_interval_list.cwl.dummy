@@ -6,26 +6,19 @@ baseCommand:
 - -c
 - |
   sleep 10
-  mode=pre
-  for arg in "$@"; do
-      if [ "$mode" = pre ]; then
-          if [ "$arg" = cwl-dummy-mode-switch ]; then
-              mode=dir
-          fi
-      elif [ "$mode" = dir ]; then
-          if [ "$arg" = cwl-dummy-mode-switch ]; then
-              mode=file
-          else
-              mkdir -p -- "$arg"
-          fi
-      elif [ "$mode" = file ]; then
-          if [ "$arg" = cwl-dummy-mode-switch ]; then
-              mode=post
-          else
-              touch -- "$arg"
-          fi
-      fi
+  while ! [ "$1" = cwl-dummy-mode-switch ]; do
+      shift
   done
+  shift
+  while ! [ "$1" = cwl-dummy-mode-switch ]; do
+      mkdir -p -- "$1"
+      shift
+  done
+  shift
+  touch --  "$arg"; shift
+  if ! [ "$1" = cwl-dummy-mode-switch ]; then
+      printf 'Extra file argument?\n'
+  fi
 - cwl_dummy_runner
 
 inputs:
