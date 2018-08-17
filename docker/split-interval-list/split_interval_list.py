@@ -80,7 +80,7 @@ def split_interval_lists(genome_chunks, interval_list_path, out_dir):
                     targets.insert(0, target)
                     break
 
-                if not target_intervals.has_key(target):
+                if target not in target_intervals:
                     raise ValueError("target_intervals missing entry for target [%s]" % target)
 
                 sn, start, end = target_intervals[target]
