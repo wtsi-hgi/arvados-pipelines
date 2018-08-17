@@ -19,7 +19,7 @@ baseCommand:
 
       with open("cwl.output.json", "w") as output_file:
         output_file.write(json.dumps({
-          "transposed_array": zip(*matrix)
+          "transposed_array": list(zip(*matrix))
         }))
 
 inputs:
