@@ -4,7 +4,8 @@ USER root
 
 RUN echo 201806161340
 
-RUN apt-get install -y build-essential bzip2 curl xz-utils docker && \
+RUN apt-get update -y && \
+    apt-get install -y build-essential bzip2 curl xz-utils docker && \
     sh -c "pip install -U pip setuptools wheel" && \
     pip install py_mini_racer && \
     cd /usr/lib/python2.7/dist-packages && \
