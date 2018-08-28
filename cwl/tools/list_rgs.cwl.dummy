@@ -1,0 +1,32 @@
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand: [bash, -c]
+
+requirements:
+- class: DockerRequirement
+  dockerImageId: cwl-dummy-tool
+- class: InlineJavascriptRequirement
+
+arguments:
+- "samtools view -H $(inputs.cram.path) | awk 'BEGIN {\n  FS=\"\\\\t\";\n} /^@RG/\
+  \ {\n  for(i=1;i<=NF;i++) {\n    if($i~/^ID:/) {\n      print substr($i,4);\n  \
+  \  }\n  }\n}' > $(inputs.filename)\n"
+inputs:
+  cram:
+    type: File
+    doc: |
+      Input file with header to be simplified
+
+  filename:
+    type: string
+    default: rg_list.sam
+    doc: |
+      Output file name of rg list
+
+outputs:
+  rg_values:
+    type: string[]
+    outputBinding:
+      loadContents: true
+      glob: $(inputs.filename)
+      outputEval: $(self[0].contents.split("\n").slice(0, -1))
