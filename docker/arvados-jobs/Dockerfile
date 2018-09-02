@@ -2,7 +2,7 @@ FROM arvados/jobs:1.1.4.20180607205857
 
 USER root
 
-RUN echo 201809021120
+RUN echo 201809021158
 
 RUN apt-get update -y && \
     apt-get install -y build-essential bzip2 curl xz-utils docker && \
