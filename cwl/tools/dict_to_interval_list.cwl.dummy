@@ -3,7 +3,7 @@ class: CommandLineTool
 baseCommand: [python, /dict_to_interval_list.py]
 hints:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 arguments:
 - prefix: --output_dir
   valueFrom: $(runtime.outdir)

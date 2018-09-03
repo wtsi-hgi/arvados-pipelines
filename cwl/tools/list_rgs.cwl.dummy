@@ -4,7 +4,7 @@ baseCommand: [bash, -c]
 
 requirements:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 - class: InlineJavascriptRequirement
 
 arguments:

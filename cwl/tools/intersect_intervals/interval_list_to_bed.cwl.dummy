@@ -2,7 +2,7 @@ cwlVersion: v1.0
 class: CommandLineTool
 hints:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 baseCommand: [python, /il_to_bed.py]
 
 inputs:

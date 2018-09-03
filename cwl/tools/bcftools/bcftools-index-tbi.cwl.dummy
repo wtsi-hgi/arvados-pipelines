@@ -3,7 +3,7 @@ class: CommandLineTool
 
 requirements:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 inputs:
   threads:
     type: int?

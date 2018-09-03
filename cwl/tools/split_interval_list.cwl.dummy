@@ -5,7 +5,7 @@ requirements:
 - class: InlineJavascriptRequirement
 hints:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 inputs:
 - id: number_of_intervals
   type: int

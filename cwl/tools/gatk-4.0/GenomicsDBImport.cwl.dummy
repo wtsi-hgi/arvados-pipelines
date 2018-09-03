@@ -169,7 +169,7 @@ requirements:
         return output;
     }
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 inputs:
 - doc: Reference sequence
   id: reference

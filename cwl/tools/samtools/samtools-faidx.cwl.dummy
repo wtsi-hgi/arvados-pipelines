@@ -9,7 +9,7 @@ class: CommandLineTool
 
 requirements:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 - class: InlineJavascriptRequirement
 - class: InitialWorkDirRequirement
   listing:

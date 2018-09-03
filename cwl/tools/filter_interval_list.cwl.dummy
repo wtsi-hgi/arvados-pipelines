@@ -4,7 +4,7 @@ baseCommand: [bash, -c]
 
 requirements:
 - class: DockerRequirement
-  dockerImageId: cwl-dummy-tool
+  dockerPull: mercury/cwl-scheduler-tests
 arguments:
 - "cat \"$(inputs.interval_list.path)\" | awk  'BEGIN {\n  FS=\"\\\\t\";\n} /^@/ ||\
   \ $1~/$(inputs.chromosome_regex)/ {\n  print;\n}' > $(inputs.output_filename)\n"
