@@ -1,0 +1,26 @@
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand: [bash, -c]
+
+requirements:
+- class: DockerRequirement
+  dockerPull: mercury/cwl-scheduler-tests
+arguments:
+- "cat \"$(inputs.interval_list.path)\" | awk  'BEGIN {\n  FS=\"\\\\t\";\n} /^@/ ||\
+  \ $1~/$(inputs.chromosome_regex)/ {\n  print;\n}' > $(inputs.output_filename)\n"
+inputs:
+  interval_list:
+    type: File
+
+  output_filename:
+    default: filtered_interval_list.interval_list
+    type: string
+
+  chromosome_regex:
+    type: string
+
+outputs:
+  output:
+    type: File
+    outputBinding:
+      glob: $(inputs.output_filename)
