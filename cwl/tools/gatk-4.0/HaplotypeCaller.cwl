@@ -3,7 +3,7 @@ cwlVersion: v1.0
 baseCommand:
 - java
 - -d64
-- -Xmx4g
+- -Xmx6g
 - -jar
 - /gatk/gatk.jar
 - HaplotypeCaller
