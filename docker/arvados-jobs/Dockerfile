@@ -13,6 +13,7 @@ RUN apt-get update -y && \
     curl https://patch-diff.githubusercontent.com/raw/curoverse/arvados/pull/67.patch | patch -p3 && \
     curl https://patch-diff.githubusercontent.com/raw/curoverse/arvados/pull/78.patch | patch -p3 && \
     curl https://patch-diff.githubusercontent.com/raw/curoverse/arvados/pull/81.patch | patch -p3 && \
+    curl https://patch-diff.githubusercontent.com/raw/curoverse/arvados/pull/83.patch | patch -p3 && \
     curl https://github.com/curoverse/arvados/commit/fc582bfe0561092165f45b7b6f4d0025892aebfd.patch | patch -p3 && \
     curl https://patch-diff.githubusercontent.com/raw/wtsi-hgi/arvados/pull/13.patch | sed '/From bf61e04cae19ac003af8b9734a42c622d860c281/q' | head -n -1 | patch -p3 && \
     curl https://github.com/common-workflow-language/cwltool/compare/1.0.20180524215209...wtsi-hgi:mini_racer_patch2.patch | patch -p1 && \
